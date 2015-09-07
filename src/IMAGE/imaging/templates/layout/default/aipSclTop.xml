@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ !
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template name="aipSclTop" element="pages" type="imaging" >
+  <label size="60 20"
+      style="Label1"
+      label="Min Data "
+      justify="Right"
+      />
+  <entry size="80 20"
+      style="PlainText"
+      vq="aipVsFunction"
+      vc="aipVs('dmin',$VALUE)"
+      set="aipVs('dmin'):$VALUE"
+      digits="6"
+      disable="Grayed out"
+      />
+  <label  size="65 20"
+      style="Label1"
+      label="Max Data "
+      justify="Right"
+      />
+  <entry  size="80 20"
+      style="PlainText"
+      vq="aipVsFunction"
+      vc="aipVs('dmax',$VALUE)"
+      set="aipVs('dmax'):$VALUE"
+      digits="6"
+      disable="Grayed out"
+      />
+</template>
+

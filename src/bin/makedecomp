@@ -1,0 +1,38 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#
+# makedecomp  make file
+# make -f makedecomp,  creates decomp for PAID
+#
+#  ROOT is the root of SCCS
+#  binSCCS locates the ``bin'' category of SCCS
+#  BINGET gets stuff from the ``bin'' category of SCCS
+#  INCDIR is the include directory for VNMR stuff
+
+ROOT=$(sccsdir)
+binSCCS=$(ROOT)/bin/SCCS/s.
+BINGET = sccs -p$(ROOT)/bin/SCCS get
+
+decomp:  decomp.c
+	cc -o decomp -DUNIX -DSUN decomp.c
+
+IRIX:  decomp.c
+	cc -o decomp -cckr -DUNIX -DSUN decomp.c
+	
+AIX:  decomp.c
+	cc -o decomp -DUNIX -DSUN decomp.c
+
+SOLARIS:  decomp.c
+	cc -o decomp -DUNIX -DSUN -DSOLARIS decomp.c
+
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+
+decomp.c : $(binSCCS)decomp.c
+	$(BINGET) decomp.c

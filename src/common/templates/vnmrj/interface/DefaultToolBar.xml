@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ !
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template element="panels" type="acquisition" >
+  <toolBarButton loc="37 1" size="28 28"
+    style="Plain"
+    label="L1"
+    vc="vjtool('layout','use','style1')"
+    enabled="yes"
+    decor1="no"
+    icon="snapshot1.gif"
+    setVC="vjtool('layout','set','style1')"
+    toolTip="Layout"
+    />
+  <toolBarButton loc="65 1" size="28 28"
+    style="Plain"
+    label="L2"
+    vc="vjtool('layout','use','style2')"
+    enabled="yes"
+    decor1="no"
+    icon="snapshot2.gif"
+    setVC="vjtool('layout','set','style2')"
+    toolTip="Layout"
+    />
+</template>

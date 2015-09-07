@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="epi" author="varian" investigator="varian"
+    rfcoil="main" anatomy="head" time_created="20010816T120000"
+    application="imaging" apptype="imEPI" scans="epi" seqfil="epi">
+  <protocol title="epi" type="protocol">
+    <action  type="LIB" status="Ready" title="epi" exp="epi" time="4 sec" macro="sqexp('epi')" data="" />
+  </protocol>
+</template>

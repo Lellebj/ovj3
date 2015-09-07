@@ -773,8 +773,12 @@ initautostruct()
     {
        interLock[0] = 'n'; /* No lock interlock if lockpower = 0 */
     }
+    if (lockpower>48.0)
+       lockpower=48.0;
     if (getparm("lockgain","real",GLOBAL,&lockgain,1))
 	psg_abort(1);
+    if (lockgain>39.0)
+       lockgain=39.0;
     if (getparm("lockphase","real",GLOBAL,&lockphase,1))
 	psg_abort(1);
     if (getparm("z0","real",GLOBAL,&z0,1))

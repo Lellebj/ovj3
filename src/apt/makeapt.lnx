@@ -1,0 +1,150 @@
+#
+# Varian, Inc. All Rights Reserved. 
+# This software contains proprietary and confidential information of
+# Varian, Inc. and its contributors.  Use, disclosure and reproduction
+# is prohibited without prior consent.
+#
+
+SHELL = /bin/sh
+
+SCCSJDIR=        $(sccsjdir)
+MAKEFILE=        makeapt.lnx
+VNMRJ_SCCS_SRC=  $(SCCSJDIR)/vnmrj/SCCS/s.
+SCCS_JSRC_GET=   sccs -p$(SCCSJDIR)/vnmrj/SCCS get
+APT_SCCS_SRC=    $(SCCSJDIR)/apt/SCCS/s.
+SCCS_APT_GET= sccs -p$(SCCSJDIR)/apt/SCCS get
+
+BASE_DIR=        $(shell pwd)
+
+APT_DEST_DIR=    vnmr/apt
+GIF_DEST_DIR=    vnmr/apt
+BO_DEST_DIR=     vnmr/bo
+UTIL_DEST_DIR=   vnmr/util
+
+JDIR= $(JDK_DIR)
+JAVA_MAIN=       ProbeTune.java
+JAR_FILE=        apt.jar
+
+CLASS_PATH=$(BASE_DIR)
+
+
+APT_SRC=			\
+	AptDefs.java		\
+	ChannelInfo.java	\
+	CommandListener.java	\
+	DebugOutput.java	\
+	Executer.java		\
+	Messages.java		\
+	MotorControl.java	\
+	MotorInfo.java		\
+	MotorModule.java	\
+	Mtune.java		\
+	MtuneControl.java	\
+	NetworkAnalyzer.java	\
+	ProbeTune.java		\
+	ProbeTuneGui.java	\
+	ProtuneQuit.java	\
+	ReflectionData.java	\
+	SweepControl.java	\
+	TuneInfo.java		\
+	TuneUtilities.java
+
+BO_SRC=				\
+	EPSGraphics.java	\
+	Plot.java		\
+	PlotBox.java		\
+	PlotPoint.java
+
+UTIL_SRC=			\
+	Complex.java		\
+	Fmt.java		\
+	LinFit.java		\
+	NLFit.java		\
+	VButtonBorder.java
+
+GIF_IMAGES=			\
+	cross.gif		\
+	proTune.gif		\
+	target.gif
+
+#OVERVIEW_HTML=overview.html
+
+APT_CLASS= $(APT_SRC:.java=.class)
+BO_CLASS= $(BO_SRC:.java=.class)
+UTIL_CLASS= $(UTIL_SRC:.java=.class)
+
+
+all:	Java_src class
+
+Java_src:
+	(mkdir -p $(APT_DEST_DIR) ; cp -f $(MAKEFILE) $(APT_DEST_DIR))
+	(cd $(APT_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(APT_SRC)")
+
+	(mkdir -p $(UTIL_DEST_DIR) ; cp -f $(MAKEFILE) $(UTIL_DEST_DIR))
+	(cd $(UTIL_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(UTIL_SRC)")
+
+	(mkdir -p $(BO_DEST_DIR) ; cp -f $(MAKEFILE) $(BO_DEST_DIR))
+	(cd $(BO_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(BO_SRC)")
+
+	(mkdir -p $(GIF_DEST_DIR) ; cp -f $(MAKEFILE) $(GIF_DEST_DIR))
+	(cd $(GIF_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getGifs)
+
+
+class: 
+	(cd $(APT_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+	 "J_CLASS=$(APT_CLASS) " )
+	 @echo
+
+	(cd $(UTIL_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+	 "J_CLASS=$(UTIL_CLASS) " )
+	 @echo
+
+	(cd $(BO_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+	 "J_CLASS=$(BO_CLASS) " )
+	 @echo
+
+	jar cf $(JAR_FILE) \
+	    $(APT_DEST_DIR)/*.class	\
+	    $(BO_DEST_DIR)/*.class	\
+	    $(UTIL_DEST_DIR)/*.class	\
+	    $(GIF_DEST_DIR)/*.gif
+
+	rm -f apt.jar.std
+	ln -s apt.jar apt.jar.std
+
+	@echo +++++++ DONE makeapt +++++++
+
+classclean: 
+	(cd $(APT_DEST_DIR) ; rm -f *.class )
+	(cd $(BO_DEST_DIR) ; rm -f *.class )
+	(cd $(UTIL_DEST_DIR) ; rm -f *.class )
+
+javaDoc javadoc: Java_src
+	rm -fr html
+	mkdir html
+	@echo
+	javadoc -J-Xmx128m -private -breakiterator -windowtitle "ProTune" \
+	-classpath $(CLASS_PATH):../ -d html \
+	vnmr.apt vnmr.bo vnmr.util
+#	-overview overview.html \
+
+Buildclass: $(J_CLASS)
+	@echo "Buildclass:" $(shell pwd)
+
+getJavaSrc: $(J_SRC)
+
+getGifs: $(GIF_IMAGES)
+
+#-----------------------------------------------------
+
+$(BO_SRC) $(UTIL_SRC) : % :$(VNMRJ_SCCS_SRC)%
+	$(SCCS_JSRC_GET) $@
+
+$(APT_SRC) $(GIF_IMAGES) : % :$(APT_SCCS_SRC)%
+	$(SCCS_APT_GET) $@
+
+$(J_CLASS): $(@:.class=.java)
+	(umask 2; javac  -J-mx128m -deprecation -classpath $(CLASS_PATH) $(@:.class=.java))

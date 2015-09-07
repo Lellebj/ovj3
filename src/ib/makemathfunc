@@ -1,0 +1,73 @@
+# Copyright (c) Varian Assoc., Inc.  All Rights Reserved.
+
+BINDIR = ../bin
+SRCDIR = ../src
+
+CPPFLAGS = -I$(GCC_EXEC_PREFIX)include
+
+CFLAGS = -O
+CC = gcc
+
+#################################
+# List of "simple" source files
+#################################
+USRSRC = addms.c baseline.c circ.c maxof.c mean.c object.c snr.c snrme.c stats.c subms.c
+#################################
+
+USREXEC = $(USRSRC:.c=)
+
+FITSRC = fit.c \
+	linfit.c \
+	ufuncs.c
+FITOBJ = $(FITSRC:.c=.o)
+
+# All source / object files
+CSRC = $(FITSRC) $(USRSRC)
+COBJ = $(CSRC:.c=.o)
+
+all:
+	make fit
+	make $(USREXEC)
+	make clean
+
+fit: $(FITOBJ)
+	ld -G -o fit -R .:$(BROWSERDIR)/math/lib:$(vnmrsystem)/lib $(FITOBJ) \
+		-L. -L$(BROWSERDIR)/math/lib -L$(vnmrsystem)/lib \
+		-lddl -lport3 -lf2c -lC -lw -lm
+	rm -f $(BINDIR)/fit
+	ln -s $(SRCDIR)/fit $(BINDIR)/fit
+
+$(USREXEC): ufuncs.o $$(@:=.o)
+	ld -G -o $@ -R .:$(BROWSERDIR)/math/lib:$(vnmrsystem)/lib \
+		ufuncs.o $(@:=.o) \
+		-L. -L$(BROWSERDIR)/math/lib -L$(vnmrsystem)/lib \
+		-lddl -lport3 -lf2c -lC -lw -lm
+	rm -f $(BINDIR)/$@
+	ln -s $(SRCDIR)/$@ $(BINDIR)/$@
+
+$(COBJ) : $$(@:.o=.c)
+	$(COMPILE.c) $<
+
+clean:
+	rm *.o
+
+# "-Y": do not look in usual places for system include files.
+# (Produces a bunch of spurious warnings about not being able
+# to find header files.)
+depend:	$(CSRC)
+	makedepend -f makemathfunc -Y $(CSRC)
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+
+fit.o: imagemath.h parmlist.h ddl_c_interface.h userfit.c t1fit.c t2fit.c
+fit.o: adcfit.c qt1fit.c shamesfit.c polyfit.c
+linfit.o: f2c.h
+ufuncs.o: imagemath.h parmlist.h ddl_c_interface.h
+baseline.o: imagemath.h parmlist.h ddl_c_interface.h
+circ.o: imagemath.h parmlist.h ddl_c_interface.h image_utils.h
+maxof.o: imagemath.h parmlist.h ddl_c_interface.h
+mean.o: imagemath.h parmlist.h ddl_c_interface.h
+object.o: imagemath.h parmlist.h ddl_c_interface.h image_utils.h
+snr.o: imagemath.h parmlist.h ddl_c_interface.h image_utils.h
+snrme.o: imagemath.h parmlist.h ddl_c_interface.h image_utils.h
+stats.o: imagemath.h parmlist.h ddl_c_interface.h

@@ -1,0 +1,175 @@
+# Copyright (c) Varian Assoc., Inc.  All Rights Reserved.
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#  Build  static libraries (libparams.a, libparams_sol.a)
+#  and install include-files into ../../include/params and libraries into
+#  ../../lib directories. 
+#  NOTE: "install" assumes a directory structure of:
+#	<toplevel>/src/params/<sources>
+#	<toplevel>/lib/<libraries>
+#	<toplevel>/include/params/<include_files>
+#
+#    make -f makeparams.lnx -- decides which system it is on and makes the library
+#			accordingly
+#    make -f makeparams.lnx debug --- does the same for debug versions.
+#    make -f makeparams.lnx install	--- NOT currently being used
+#
+#  Build "shared" library (libparams.so.x.x) (not implemented yet)
+#
+#  Build "static" library (libparams.a)
+#    make -f makeparams.lnx libparams
+#    make -f makeparams.lnx libparams_sol
+#
+#
+#
+#
+#************************************************************************
+
+
+#-------------------------------------------------
+# Directories
+#-------------------------------------------------
+UTILSSRC=$(sccsdir)/ib
+PARAMSSRC=$(sccsdir)/ib
+PARAMSLIB=../../lib
+PARAMSINC=../../include/params
+SRCPARAMS=../src/params
+MAKEFILE=makeparams.lnx
+PARAMS_REV=
+UTILS_REV=
+
+
+CC=gcc -DLINUX -DSOLARIS
+TARGET_ARCH=
+CFLAGS=-O -c -m32 -Wno-deprecated
+#CFLAGS=-Wall -ansi -c -DANSI_C
+COMPILE.c=$(CC) $(CFLAGS)
+DEBUG=-DDEBUG
+DEBUG_ALLOC=-DDEBUG_ALLOC
+CLOCKTIME=-DCLOCKTIME
+
+OSTYPE=`uname -r | awk '{ print substr($$0,1,1) }'`
+
+#-------------------------------------------------
+# Target library to be built for shared and static
+#-------------------------------------------------
+# PARAMS_LIB_A=libparams.a
+PARAMS_LIB_SO=libparams.so.1.1
+# DEBUG_LIB_A=libparams_dbx.a
+DEBUG_LIB=libparams_dbg.so.1.1
+
+.c.o:
+	$(COMPILE.c) $(DEBUG) $(DEBUG_ALLOC) $(CLOCKTIME) $<
+
+.PRECIOUS: $(PARAMS_LIB)
+.KEEP_STATE:
+
+#-------------------------------------------------
+# Sources and include files						
+#-------------------------------------------------
+
+UTILS_INCS=boolean.h error.h debug_alloc.h
+
+LIB_INCS=params.h p_struct.inc p_static.inc storage.h stack.h \
+	 tree.h tp.h
+
+UTILS_SRCS=error.c debug_alloc.c
+
+LIB_SRCS=params.c tree.c stack.c
+
+
+UTILS_OBJS=$(UTILS_SRCS:.c=.o)
+LIB_OBJS=$(LIB_SRCS:.c=.o)
+
+#-------------------------------------------------
+#  Include files for include directory					
+#-------------------------------------------------
+.INIT: $(LIB_INCS) $(UTILS_INCS)
+
+ 
+
+#------------------------- library build --------------------------------------
+
+#-------------------------------------------------
+# User specified target for static library
+#-------------------------------------------------
+std:		
+		 ( $(MAKE) -e -f $(MAKEFILE) \
+		   libparams ) ; 
+debug: 
+		@echo $(OSTYPE)
+		 ( $(MAKE) -e -f $(MAKEFILE) \
+		   libparams_dbx ) ; 
+
+libparams: libparams.a
+
+libparams_dbx: libparams_dbx.a
+
+#-------------------------------------------------
+# install both libraries as a soft-link in $(PARAMSLIB) directory
+# install all include files into $(PARAMSINC) directory, and
+# Note that the last statement is to change ".nse_depinfo" to be writeable
+# by everybody.  The reason we put the "sleep" is to delay changing
+# the mode so that the built-in "make" will change it first.
+#-------------------------------------------------
+install: now
+	make -f $(MAKEFILE) static
+	make -f $(MAKEFILE) debug
+	/bin/rm -rf $(PARAMSLIB)/$(DEBUG_LIB_A) $(PARAMSLIB)/$(PARAMS_LIB_A)
+	(cd $(PARAMSLIB); cp $(SRCPARAMS)/$(PARAMS_LIB_A) $(PARAMS_LIB_A); \
+	 cp $(SRCPARAMS)/$(DEBUG_LIB_A) $(DEBUG_LIB_A))
+	(cd $(PARAMSINC); sccs -d $(PARAMSSRC) get $(PARAMS_REV) $(MAKEFILE); \
+		make -f $(MAKEFILE) now)
+	@(sleep 3; chmod -f 666 .nse_depinfo)&
+
+#-------------------------------------------------
+# Flags changed due to users
+#-------------------------------------------------
+debug := COMPILE.c=$(CC) -g -c -m32 -Wno-deprecated $(DEBUG) $(DEBUG_ALLOC) 
+
+
+$(PARAMS_LIB_SO): 
+	$(CC) -pic -O -c $(LIB_SRCS)
+	#ld -assert pure-text $(LIB_OBJS) -o $@
+	$(CC) -shared -W1 -m32 -assert pure-text $(LIB_OBJS) -o $@
+	rm $(LIB_OBJS)
+
+$(DEBUG_LIB): 
+	$(CC) -pic -g -c $(DEBUG) $(DEBUG_ALLOC) $(LIB_SRCS) debug_alloc.c
+	#ld -lolgx -assert pure-text $(LIB_OBJS) debug_alloc.o -o $@
+	$(CC) -shared -W1 -m32 -lolgx -assert pure-text $(LIB_OBJS) debug_alloc.o -o $@
+	rm $(LIB_OBJS) debug_alloc.o
+
+libparams.a: src $(LIB_OBJS) $(UTILS_OBJS)
+	ar cvlq $@ $(LIB_OBJS) $(UTILS_OBJS)
+	ranlib $@
+
+libparams_dbx.a: src $(LIB_OBJS) $(UTILS_OBJS)
+	ar cvlq $@ $(LIB_OBJS) $(UTILS_OBJS)
+	ranlib $@
+
+src : $(LIB_SRCS) $(LIB_INCS) $(UTILS_SRCS) $(UTILS_INCS)
+
+#$(LIB_OBJS) $(UTILS_OBJS): $(@:.o=.c) 
+$(LIB_OBJS) $(UTILS_OBJS): %.o:%.c 
+	(umask 2; $(COMPILE.c) $<)
+
+#------------------------- lint build -----------------------------------------
+
+#-------------------------------------------------
+# SCCS extraction				
+#-------------------------------------------------
+#$(LIB_SRCS) $(LIB_INCS) : $(PARAMSSRC)/SCCS/s.$$@
+$(LIB_SRCS) $(LIB_INCS) : %:$(PARAMSSRC)/SCCS/s.%
+	sccs -d $(PARAMSSRC) get $(PARAMS_REV) $@
+
+#$(UTILS_SRCS) $(UTILS_INCS) : $(UTILSSRC)/SCCS/s.$$@
+$(UTILS_SRCS) $(UTILS_INCS) : %:$(UTILSSRC)/SCCS/s.%
+	sccs -d $(UTILSSRC) get $(UTILS_REV) $@
+
+now:

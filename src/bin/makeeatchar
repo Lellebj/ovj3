@@ -1,0 +1,40 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+# 
+# makeeatchar - a make file for 'eatchar',
+#               a program used by vnmr for clearing the input window
+# make -f makeeatchar,  creates 'eatchar' for PAID
+#
+
+SCCSDIR=$(sccsdir)
+BSCCS=$(SCCSDIR)/bin/SCCS/s.
+BGET = sccs -d$(SCCSDIR)/bin get
+
+#-- Normal operational compile flags
+CFLAGS= -fsingle -c -O
+
+#-- Debugging with DBXTOOL compile flags
+#CFLAGS= -c -g
+
+#------------------------------------------------------------------------
+#--- objects that are needed for eatchar
+#------------------------------------------------------------------------
+OBJ=                     \
+                eatchar.o
+
+eatchar: $(OBJ)
+	(umask 2; cc -o eatchar $(OBJ) -ll -lm  )
+ 
+eatchar.o       : eatchar.c
+	(umask 2; cc $(CFLAGS) eatchar.c  )
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+
+eatchar.c : $(BSCCS)eatchar.c
+	$(BGET) eatchar.c

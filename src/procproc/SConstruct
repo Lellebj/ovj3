@@ -10,10 +10,6 @@ procprocTarget = 'Procproc'
 # can be called from any other SConstruct file
 cwd = os.getcwd()
 
-# needed for rpath 
-if not os.path.exists(os.path.join(os.pardir, 'lib')):
-   Execute('cd ..;ln -s ncomm lib')
-
 # library dependancies
 # os.path.join(cwd, os.pardir, 'procproc'),
 
@@ -66,7 +62,7 @@ procprocFileList = ['proccmds.c',
 # build environment
 env = Environment(CCFLAGS    = '-O2 -m32 -Wall',
                   CPPDEFINES = ['LINUX', 'DEBUG'],
-                  LINKFLAGS  = '-m32 -Wl,-rpath ../lib' ,
+                  LINKFLAGS  = '-m32 -Wl,-rpath,/vnmr/lib' ,
                   CPPPATH    = [cwd])
 
                                 # ncommPath,

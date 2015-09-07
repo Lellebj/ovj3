@@ -1,0 +1,34 @@
+#ifndef LINT
+static char SCCSid[] = "@(#)tndqcosy.c 13.1 10/10/97 Copyright (c) 1991-1996 Agilent Technologies All Rights Reserved";
+#endif
+/* 
+ * Agilent Technologies All Rights Reserved.
+ * This software contains proprietary and confidential
+ * information of Agilent Technologies and its contributors.
+ * Use, disclosure and reproduction is prohibited without
+ * prior consent.
+ */
+
+/* tndqcosy - double quantum filtered cosy experiment
+               using obs xmtr for presaturation during presat period
+               and d2, if desired 
+              TRANSMITTER MUST BY AT SOLVENT FREQUENCY
+
+  Parameters:
+
+         pw = 90 excitation pulse (at power level tpwr)
+      phase =   0: P-type non-phase-sensitive experiment
+              1,2: hypercomplex phase-sensitive experiment
+                3: TPPI phase-sensitive experiment
+   satmode  = 'yn' for saturation during relaxation period
+              'ny' for saturation during d2
+              'yy' for both
+     satdly = presaturation period -uses obs xmtr at tof with satpwr; 
+      sspul = 'y': selects for Trim(x)-Trim(y)
+               sequence at start of pulse sequence
+             (highly recommended to eliminate "long T1" artifacts)
+ 
+
+  revised from dqcosy.c       Sept 1991  g.gray
+	P.A.Keifer 940916 - modified d2 and rlpower 
+  */

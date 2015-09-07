@@ -1,0 +1,83 @@
+;  Auto upgraded to version 1.3 from 1.2
+;  Auto upgraded to version 2.0 from 1.3
+;  Auto upgraded to version 2.3 from 2.0
+-Version:
+2.0
+-MapFile:
+./managedb.map
+
+-ReportFile:
+./managedb.log
+
+-ClassPath:
+.
+/sw/Java/SDK/jre/lib/rt.jar
+
+-Destination:
+./managedb
+
+-TriggerMethods:
+vnmr.ui.shuf.FillDBManager:main:java.lang.String[]
+vnmr.templates.Types:(publics):
+postgresql:(library):
+
+-ExcludePackages:
+com
+org
+sunw
+javax
+
+-ExcludeClasses:
+
+-IncludeClasses:
+
+-NoRenameMethods:
+
+-NoOptimizeClasses:
+
+-NoOptimizeMethods:
+
+-NoRenameClasses:
+
+-OptimizationType:
+SPEED
+; NONE
+
+-Optimizations:
+
+-RemoveUnusedElements:
+;NONE
+;ONLYNONPUBLIC
+All
+
+-RenameOptions:
+; ONLYNONPUBLICS
+;OFF
+ON
+
+-RenamePrefix:
+
+-IncludeClassesUnconditional:
+vnmr.bo.User
+vnmr.bo.VMessage
+vnmr.templates.VElement
+vnmr.templates.VCommandDefinition
+vnmr.templates.VElement
+
+-IncludeNonClassFiles:
+./postgresql/*.properties		(postgresql)
+
+-General:
+FORNAMEDETECTION
+; LEAVEDEBUGGINGINFO
+
+-ExcludeMethods:
+
+-IncUpdateInputFile:
+
+-IncUpdateOutputFile:
+
+-TriggerFields:
+
+-ConstantPoolTag:
+

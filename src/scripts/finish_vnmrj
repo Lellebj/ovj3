@@ -1,0 +1,66 @@
+# /bin/sh
+ 
+#-----------------------------------------------------------------
+# Main main MAIN
+#-----------------------------------------------------------------
+# Login the user as a root user
+# Use the "su" command to ask for password and run the installer
+#
+
+notroot=0
+userId=`/bin/id | awk 'BEGIN { FS = " " } { print $1 }'`
+if [ $userId != "uid=0(root)" ]; then
+  notroot=1
+  echo
+  echo "To install VNMR you will need to be the system's root user."
+  echo "Or type cntrl-C to exit.\n"
+  echo
+  s=1
+  t=3
+  while [ $s = 1 -a ! $t = 0 ]; do
+     echo "Please enter this system's root user password \n"
+     su root -c "/vnmr/bin/setacq ${ARGS}";
+     s=$?
+     t=`expr $t - 1`
+     echo " "
+  done
+  if [ $t = 0 ]; then
+      echo "Access denied. Type cntrl-C to exit this window."
+      echo "Type $0 to start the installation program again \n"
+  fi
+  exit
+fi
+echo "One moment please..."
+
+#-----------------------------------------------------------------
+# update cptoconpar, loginvjpassword, 
+#-----------------------------------------------------------------
+if [ -f /vnmr/bin/cptoconpar ]
+then
+   chmod u+s /vnmr/bin/cptoconpar
+fi
+if [ -f /vnmr/bin/loginvjpassword ]
+then
+   chmod u+s /vnmr/bin/loginvjpassword
+fi
+#-----------------------------------------------------------------
+# update execkillacqproc, killroboproc
+#-----------------------------------------------------------------
+if [ -f /vnmr/bin/execkillacqproc ]
+then
+   chmod u+s /vnmr/bin/execkillacqproc
+   chown root:root /vnmr/bin/execkillacqproc
+fi
+if [ -f /vnmr/bin/killroboproc ]
+then
+   chmod u+s /vnmr/bin/killroboproc
+   chown root:root /vnmr/bin/killroboproc
+fi
+#-----------------------------------------------------------------
+# update execkillacqproc, killroboproc
+#-----------------------------------------------------------------
+owner=`ls -l $vnmrsystem/vnmrrev | awk '{ printf($3) }'`
+group=`ls -l $vnmrsystem/vnmrrev | awk '{ printf($4) }'`
+mkdir /vnmr/acqqueue
+chmod 777 /vnmr/acqqueue
+chown $owner:$group /vnmr/acqqueue

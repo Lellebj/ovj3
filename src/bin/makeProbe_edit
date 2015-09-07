@@ -1,0 +1,76 @@
+# 
+# Copyright (c) 1991-1994 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+SHELL=/bin/sh
+
+MAKEFILE= makeProbe_edit
+
+SCCSDIR= $(sccsdir)
+OBJDIR= undefined
+
+SRCDIR= $(sourcedir)
+SRC_DIR= $(sourcedir)/sysbin
+BIN_SRC_DIR= $(SRC_DIR)/
+
+BIN_SCCS_DIR= $(SCCSDIR)/bin/SCCS/s.
+
+BIN_LN= ln -s $(SRC_DIR)/$(@)
+
+BIN_SGET= sccs -p$(SCCSDIR)/bin/SCCS get
+
+BIN_GET= $(BIN_LN)
+
+CFLAGS= -DSUN -O
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) -c
+LPCOMPILE.c= $(CC) $(LPCFLAGS) $(CPPFLAGS) -c
+LINK.c= $(CC) $(LDFLAGS) 
+
+LIBS= -lXm -lXt -lX11
+MINCL= -I/usr/dt/include
+OINCL= -I/usr/openwin/include
+LIBDIR= /usr/dt/lib
+RLIBDIR=-R /usr/openwin/lib:/usr/dt/lib:/vnmr/lib
+
+
+PROG_SRC=		\
+	probe_edit.c
+
+
+PROG_OBJ= $(PROG_SRC:.c=.o)
+
+std : $$(MAKEFILE)
+	@( $(MAKE) -ef $(MAKEFILE) SOLARIS; )
+	@echo "makeProbe_edit  Complete."
+
+SOLARIS : $$(MAKEFILE)
+	@( $(MAKE) -ef $(MAKEFILE) sol_obj; )
+	@echo "makeProbe_edit  Complete."
+
+sol_obj :  Source
+	@($(MAKE) -e -f $(MAKEFILE)                    \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	Probe_edit )
+
+Probe_edit: $(PROG_OBJ)
+	(umask 2; $(LINK.c) -L$(LIBDIR) $(RLIBDIR) -o $@ $(PROG_OBJ) $(LIBS))
+
+Source:
+	@( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+	     "BIN_SRC_DIR= $(BIN_SCCS_DIR)"             \
+	     "BIN_GET= $(BIN_SGET)"                     \
+	     src )
+
+src:  $(PROG_SRC)
+	@echo  Sources up to date...
+
+$(PROG_OBJ): $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(MINCL) $(OINCL) $(@:.o=.c))
+
+$(PROG_SRC) : $$(BIN_SRC_DIR)$$(@)
+	$(BIN_GET) $@
+

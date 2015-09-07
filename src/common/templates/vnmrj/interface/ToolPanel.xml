@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<!-- Testing the SAXParserFactory and SAXParser classes -->
+<!-- Available tools are: Browser, Locator, ExperimentSelector, 
+                          ExperimentSelTree  Sq, RobotView, NotePad,
+                          Instructions   -->
+
+<!-- Of the two Experiment Selectors, the one that will show up in
+     the vertical panel will be the first one listed.  The second one
+     must also be listed so that it will show up in the View menu.
+ -->
+
+<toolDoc>
+    <tool name="ExperimentSelTree"/>
+    <tool name="ExperimentSelector"/>
+    <tool name="Sq"/>
+</toolDoc>

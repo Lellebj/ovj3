@@ -1,0 +1,60 @@
+/*
+ * Copyright (C) 2015  Stanford University
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
+/* Copyright (c) Varian Assoc., Inc.  All Rights Reserved. */
+#include "f2c.h"
+
+/*
+ * getenv - f77 subroutine to return environment variables
+ *
+ * called by:
+ *	call getenv (ENV_NAME, char_var)
+ * where:
+ *	ENV_NAME is the name of an environment variable
+ *	char_var is a character variable which will receive
+ *		the current value of ENV_NAME, or all blanks
+ *		if ENV_NAME is not defined
+ */
+
+#ifdef KR_headers
+VOID getenv_(fname, value, flen, vlen) char *value, *fname; ftnlen vlen, flen;
+#else
+void getenv_(char *fname, char *value, ftnlen flen, ftnlen vlen)
+#endif
+{
+extern char **environ;
+register char *ep, *fp, *flast;
+register char **env = environ;
+
+flast = fname + flen;
+for(fp = fname ; fp < flast ; ++fp)
+	if(*fp == ' ')
+		{
+		flast = fp;
+		break;
+		}
+
+while (ep = *env++)
+	{
+	for(fp = fname; fp<flast ; )
+		if(*fp++ != *ep++)
+			goto endloop;
+
+	if(*ep++ == '=') {	/* copy right hand side */
+		while( *ep && --vlen>=0 )
+			*value++ = *ep++;
+
+		goto blank;
+		}
+endloop: ;
+	}
+
+blank:
+	while( --vlen >= 0 )
+		*value++ = ' ';
+}

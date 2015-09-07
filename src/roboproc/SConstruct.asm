@@ -5,7 +5,7 @@ import shutil
 cwd=os.getcwd()
 
 rootGilson = os.path.join(cwd,os.pardir, os.pardir,os.pardir,
-                  'options','passworded','Gilson')
+                  'options','standard','Gilson')
 root768AS = os.path.join(cwd,os.pardir, os.pardir,os.pardir,
                   'options','passworded','768AS')
 root4896AS = os.path.join(cwd,os.pardir, os.pardir,os.pardir,
@@ -81,22 +81,22 @@ default768ASPath = os.path.join(root768AS,'asm','info','768AS')
 # make sure paths exitst
 if not os.path.exists(rackSetupPathG):
    os.makedirs(rackSetupPathG)
-if not os.path.exists(rackSetupPathA):
-   os.makedirs(rackSetupPathA)
+# if not os.path.exists(rackSetupPathA):
+#    os.makedirs(rackSetupPathA)
 if not os.path.exists(tclAsmGilsonPath):
    os.makedirs(tclAsmGilsonPath)
 if not os.path.exists(protocolsGilsonPath):
    os.makedirs(protocolsGilsonPath)
 if not os.path.exists(rackGilsonPath):
    os.makedirs(rackGilsonPath)
-if not os.path.exists(rack768ASPath):
-   os.makedirs(rack768ASPath)
+# if not os.path.exists(rack768ASPath):
+#    os.makedirs(rack768ASPath)
 if not os.path.exists(infoGilsonPath):
    os.makedirs(infoGilsonPath)
-if not os.path.exists(info768ASPath):
-   os.makedirs(info768ASPath)
-if not os.path.exists(default768ASPath):
-   os.makedirs(default768ASPath)
+# if not os.path.exists(info768ASPath):
+#    os.makedirs(info768ASPath)
+# if not os.path.exists(default768ASPath):
+#    os.makedirs(default768ASPath)
 if not os.path.exists(root4896AS):
    os.makedirs(root4896AS)
 
@@ -110,17 +110,17 @@ def copyFilesHere(srcList, dstPath):
 #copy to options/passworded/Gilson/asm
 copyFilesHere([ rackSetupList[0] ], rackSetupPathG)
 #copy to options/passworded/768AS/asm
-copyFilesHere(rackSetupList,rackSetupPathA)
+#copyFilesHere(rackSetupList,rackSetupPathA)
 #copy to options/passworded/Gilson/asm/tcl
 copyFilesHere(tclFileList,tclAsmGilsonPath)
 #copy to options/passworded/Gilson/asm/protocols
 copyFilesHere(protocolsGilsonList,protocolsGilsonPath)
 #copy to options/passworded/Gilson/asm/racks and .../768AS/asm/racks
 copyFilesHere(rackList,rackGilsonPath)
-copyFilesHere(rackList,rack768ASPath)
+# copyFilesHere(rackList,rack768ASPath)
 # copy to options/passworded/Gilson/asm/info and .../768AS/asm/racks
 copyFilesHere(infoList,infoGilsonPath)
-copyFilesHere(infoList,info768ASPath)
+# copyFilesHere(infoList,info768ASPath)
 #copy to options/passworded/768AS/asm/info/768AS
-copyFilesHere(defaultList,default768ASPath)
+# copyFilesHere(defaultList,default768ASPath)
 copyFilesHere(rack4896ASList,root4896AS)

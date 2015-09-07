@@ -1,0 +1,427 @@
+# Copyright (c) Varian Assoc., Inc.  All Rights Reserved.
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+
+# make -f makemagiclib
+
+#
+#  Note: vnmr yacc must be in /vobj/'arch'/yacc which is unique to architecture 
+#
+#
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#
+# Changed makefile to use the depend target to generate dependencies for .o targets
+# Note: the files are first passed through unifdef defining -DSUN -DUNIX. This means
+# dependencies are for SUNs not IBM or SGI, etc......
+#					Greg Brissey   6/2/92
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+MAKEFILE= makemagical
+
+.PRECIOUS=
+
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+VNMRDIR=$(vnmrdir)
+REV_DATE=$(VNMR_REV_DATE)
+
+# Shared Library version number   E.G.  3.2 -> libncomm.so.3.2
+SHAREDLIB_VER=0.0
+
+OPENWINHOME=/usr/openwin
+
+# Note: cannot define STDLIB this way and use it as a dependency!
+#STDLIB = `uname -sr | awk ' \
+#	/SunOS 4/ { print sunos } \
+#	/SunOS 5/ { print sol } ' \
+#	sunos='libmagical.a' sol='libmagical_sol.a' `
+
+#STDLIB = libmagical_sol.a
+
+# Note: This "NAME:sh =" construction only works with Sun Make
+STDLIB:sh = uname -sr | awk ' \
+	/SunOS 4/ { print sunos } \
+	/SunOS 5/ { print sol } ' \
+	sunos='libmagical.a' sol='libmagical_sol.a'
+
+SHRLIB:sh = uname -sr | awk ' \
+	/SunOS 4/ { print sunos } \
+	/SunOS 5/ { print sol } ' \
+	sunos='libmagical.so' sol='libmagical_sol.so'
+
+ARCH:sh = uname -sr | awk ' \
+	/SunOS 4/ { print sunos; match=1 } \
+	/SunOS 5/ { print sol; match=1 } ' \
+	sol='sol' sunos='sun4'
+
+RANLIB:sh = uname -sr | awk ' \
+	/SunOS 5/ { print sol; match=1 } \
+	match == 0 { print dflt } ' \
+	sol='echo RANLIB' dflt='ranlib'
+
+PIC:sh = OSTYPE=`uname -r | awk '{ print substr($0,1,1) }'`; \
+         if [ $OSTYPE = "5" ]; then \
+                echo "-K PIC"; \
+         elif [ $OSTYPE = "4" ]; then \
+                echo "-PIC"; \
+         else 			\
+                echo "-PIC"; \
+         fi;
+
+LDSOFLAGS:sh = OSTYPE=`uname -r | awk '{ print substr($0,1,1) }'`; \
+         if [ $OSTYPE = "5" ]; then \
+                echo "-G"; \
+         elif [ $OSTYPE = "4" ]; then \
+                echo "-assert pure-text"; \
+         else 			\
+                echo ""; \
+         fi;
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+#SRC_DIR=../
+#SRC_DIR=$(SRCDIR)/sysvnmr/
+#SRC_DIR=./
+SRC_DIR=../magical/
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+CFLAGS= -O -DBSDACQ -fsingle 
+debug := CFLAGS= -g -DBSDACQ -fsingle 
+LPCFLAGS= -O4 -fsingle -dalign
+CPPFLAGS= -DSUN -DBSDACQ
+LDFLAGS=  -O
+ASMCPP.s= /lib/cpp -P $(CPPFLAGS) $(TARGET_ARCH)
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(PIC) $(TARGET_ARCH) -c
+LPCOMPILE.c= $(CC) $(LPCFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(LDFLAGS) $(TARGET_ARCH)
+
+# -- sunview libraries ---
+LIBS = -lm
+
+VNMR_SRC_DIR= $(SRC_DIR)
+PARMLIB_SRC_DIR= $(SRC_DIR)
+MAGICLIB_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----  
+VNMR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmr/SCCS/s.
+PARMLIB_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ib/SCCS/s.
+MAGICLIB_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ib/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+VNMR_LN = ln -s $(VNMR_SRC_DIR)$(@)
+PARMLIB_LN = ln -s $(PARMLIB_SRC_DIR)$(@)
+MAGICLIB_LN = ln -s $(MAGICLIB_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+VNMR_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vnmr/SCCS get
+PARMLIB_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ib/SCCS get
+MAGICLIB_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ib/SCCS get
+
+#----  default source extraction to links -------
+VNMR_GET= $(VNMR_LN)
+PARMLIB_GET= $(PARMLIB_LN)
+MAGICLIB_GET= $(MAGICLIB_LN)
+
+# ----- This is paid's very own special yacc compiler, in /jaws/yacc
+#	(don't ask me.  gmb)
+YACC = $(YACCDIR)/yacc/yacc
+
+#------------------------------------------------------------------------
+#---  objects that are needed for libmagical 
+#	don't move magic.gram.o , creates magic.gram.h needed by others
+#------------------------------------------------------------------------
+VNMR_SRC=			\
+		allocate.c	\
+		node.c		\
+		ops.c		\
+		tempstuff.c
+
+VNMR_HDR=			\
+		allocate.h	\
+		graphics.h	\
+		group.h		\
+		init.h		\
+		node.h		\
+		params.h	\
+		pvars.h		\
+		stack.h		\
+		symtab.h	\
+		tools.h		\
+		variables.h	\
+		vnmrsys.h	\
+		wjunk.h		\
+		magic.parser
+
+PARMLIB_SRC=			\
+		assign.c	\
+		pvars.c		\
+		symtab.c	\
+		tools.c		\
+		variables1.c
+
+MAGICLIB_SRC=	 		\
+		magical_Exec.c	\
+		magical_io.c	\
+		magical_macro.c	\
+		magical_cmds.c	\
+		magical_funcs.c
+
+#		magic.gram.c	\
+#		magic.lex.c	\
+
+MAGICLIB_HDR=	 		\
+		magical_cmds.h	\
+		magical_io.h
+
+PARMLIB_OBJ= $(PARMLIB_SRC:.c=.o)
+MAGICLIB_OBJ= $(MAGICLIB_SRC:.c=.o)
+VNMR_OBJ= $(VNMR_SRC:.c=.o)
+
+#---- The yacc and lex sources and objects -----
+YACC_SRC=			\
+		magical_gram.y
+
+YACC_OBJ=			\
+		magical_gram.o
+
+LEX_SRC=			\
+		magical_lex.l
+
+LEX_OBJ=			\
+		magical_lex.o
+
+ALLSRC= $(VNMR_SRC) $(VNMR_HDR) $(PARMLIB_SRC) \
+	$(MAGICLIB_SRC) $(MAGICLIB_HDR) \
+	$(YACC_SRC) $(LEX_SRC) yytomagic
+DEPENDSRC= $(VNMR_SRC) $(VNMR_HDR) $(PARMLIB_SRC) \
+	$(MAGICLIB_SRC) $(MAGICLIB_HDR) \
+	$(YACC_SRC:.y=.c) $(LEX_SRC:.l=.c)
+
+#DEPENDSRC= $(ALLSRC) 
+
+# NOTE: YACC_OBJ must be built first because it makes magic.gram.h,
+#	which is used by others.
+ALL_OBJ= $(YACC_OBJ) $(LEX_OBJ) $(PARMLIB_OBJ) $(MAGICLIB_OBJ) $(VNMR_OBJ)
+
+YACCDIR=/vobj/$(ARCH)
+
+#--- make Targets ----------------------------------------------
+default: $$(MAKEFILE) Source $(STDLIB) $(SHRLIB)
+
+debug: default
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+	     "VNMR_SRC_DIR= $(VNMR_SCCS_SRC)" \
+	     "PARMLIB_SRC_DIR= $(PARMLIB_SCCS_SRC)" \
+	     "MAGICLIB_SRC_DIR= $(MAGICLIB_SCCS_SRC)" \
+	     "VNMR_GET= $(VNMR_SGET)" \
+	     "PARMLIB_GET= $(PARMLIB_SGET)" \
+	     "MAGICLIB_GET= $(MAGICLIB_SGET)" \
+	src)
+
+src : $$(MAKEFILE) $(ALLSRC) revdate.c
+	@echo Sources up to date...
+
+depend:	$$(MAKEFILE)
+	@ echo making dependencies...
+	@ rm -f makedepd
+	-@( for i in $(DEPENDSRC) ; do \
+	     echo "file: $$i" ;		\
+	     rm -f $${i}.pp	;	\
+	     unifdef -DSUN -DAIX -DUNIX -UVMS $$i > $${i}.pp ; \
+	   done; )
+	   grep '^#include' $(DEPENDSRC:.c=.c.pp) \
+		| sed 's/<\([^>]*\)>/"\/usr\/include\/\1"/' \
+		| sed 's/:[^"]*"\([^"]*\)".*/: \1/' \
+		| sed 's/\.p\.pp/.p/' \
+		| sed 's/\.c\.pp/.o/' \
+		| sed 's/\.h\.pp/.h/' \
+		| sed 's/\.icon\.pp/.icon/' \
+		| sed 's/\.y\.pp/.o/' \
+		| sed 's/\.l\.pp/.o/' \
+		| sed 's/\.y/.o/' \
+		| sed 's/\.lex\.l/.lex.o/' >makedepd ;
+	@ ls -1 $(DEPENDSRC) | awk "{ {len = length(\$$0)} {s2 = substr(\$$0, 1, len - 2)} {print s2 \".o: \", \$$0 >> \"makedepd\"} } "
+	@ awk "{ if ( \$$2 !~ /\/usr\// ) { print \$$0; } }" makedepd | sort > makedep
+	@ echo '/^# DO NOT DELETE THIS LINE/+2,$$d' >eddep
+	@ echo '$$r makedep' >>eddep
+	@ echo 'w' >>eddep
+	@ cp $(MAKEFILE) $(MAKEFILE).bak
+	@ ed - $(MAKEFILE) < eddep
+	@ rm eddep makedep makedepd
+	@ echo '# DEPENDENCIES MUST END AT END OF FILE' >> $(MAKEFILE)
+	@ echo '# IF YOU PUT STUFF HERE IT WILL GO AWAY' >> $(MAKEFILE)
+	@ echo '# see make depend above' >> $(MAKEFILE)
+
+
+$(STDLIB) : $(ALL_OBJ)
+	- (umask 2; rm -f $@ )
+	@echo Remake Library $@ 
+	@(umask 2; \
+	  ar rv $@ `lorder $(ALL_OBJ) | tsort 2>/dev/null` 1>/dev/null; \
+	  $(RANLIB) $@;)
+
+$(SHRLIB) :
+	- (umask 2; rm -f $@)
+	(umask 2; ld $(LDSOFLAGS) -o $@.$(SHAREDLIB_VER) $(ALL_OBJ) )
+	@echo $(SHRLIB) is complete
+
+#--- Object Targets ---------------------------
+
+$(COMMON_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(WIN_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#--- Special Object Targets ----------------------
+
+# This object is always compiled, VNMR_REV_ID & VNMR_REV_DATE are envirionment
+# variables and COMDATE is a makefile define passed to the makefile via a recusive
+# make call or from vmake itself.
+# REVISION_ID typically - "VERSION 4.2 REVISION A"
+# REVISION_DATE typically - "Aug. 17, 1993"
+# COMPDATE typically - "Compiled: 8/17/92 15:45"
+#
+revdate.o	: revdate.c doit
+	(umask 2; $(COMPILE.c) -DREVISION_ID='"$(VNMR_REV_ID)"' -DREVISION_DATE='"$(REV_DATE)"' -DCOMPDATE='"$(COMDATE)"' $(@:.o=.c) )
+
+revdate.c	:
+	$(VNMR_GET) $@
+
+doit :
+
+magical_gram.c	: $(YACC_SRC)
+	$(YACCDIR)/yacc/yacc -fd magic.parser $(@:.c=.y)
+	sed -f yytomagic y.tab.c > $@
+	mv y.tab.h magic.gram.h
+
+# stub for vmake, magical_gram.o is compiled first to be sure magical_gram.h
+# is present; otherwise will always attempt to compile magical_gram.o
+magic.gram.h	: 
+
+magical_gram.o	: $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+magical_lex.c	: magical_lex.l
+	lex $(@:.c=.l)
+	sed -f yytomagic lex.yy.c > $@
+
+magical_lex.o	: magical_lex.c
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(VNMR_SRC) $(VNMR_HDR) $(PARMLIB_SRC): $$(VNMR_SRC_DIR)$$(@)
+	$(VNMR_GET) $@
+
+$(MAGICLIB_SRC) $(MAGICLIB_HDR) $(YACC_SRC) $(LEX_SRC) yytomagic: $$(MAGICLIB_SRC_DIR)$$(@)
+	$(MAGICLIB_GET) $@
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+# DEPENDENCIES MUST END AT END OF FILE
+allocate.o:  allocate.c
+allocate.o:  allocate.h
+allocate.o: allocate.h
+assign.o:  assign.c
+assign.o: group.h
+assign.o: params.h
+assign.o: variables.h
+assign.o: pvars.h
+graphics.o:  graphics.h
+group.o:  group.h
+init.o:  init.h
+magic.pars.o:  magic.parser
+magical_Exec.o:  magical_Exec.c
+magical_Exec.o: graphics.h
+magical_Exec.o: group.h
+magical_Exec.o: magic.gram.h
+magical_Exec.o: node.h
+magical_Exec.o: params.h
+magical_Exec.o: symtab.h
+magical_Exec.o: variables.h
+magical_Exec.o: vnmrsys.h
+magical_cmds.o:  magical_cmds.c
+magical_cmds.o:  magical_cmds.h
+magical_cmds.o: magical_cmds.h
+magical_cmds.o: node.h
+magical_cmds.o: symtab.h
+magical_cmds.o: variables.h
+magical_cmds.o: vnmrsys.h
+magical_funcs.o:  magical_funcs.c
+magical_funcs.o: magical_cmds.h
+magical_funcs.o: magical_io.h
+magical_funcs.o: node.h
+magical_funcs.o: stack.h
+magical_gram.o:  magical_gram.c
+magical_gram.o: magical_io.h
+magical_gram.o: node.h
+magical_gram.o: stack.h
+magical_io.o:  magical_io.c
+magical_io.o:  magical_io.h
+magical_io.o: group.h
+magical_io.o: magic.gram.h
+magical_io.o: magical_io.h
+magical_io.o: node.h
+magical_lex.o:  magical_lex.c
+magical_lex.o: magic.gram.h
+magical_lex.o: magical_io.h
+magical_lex.o: node.h
+magical_lex.o: stack.h
+magical_macro.o:  magical_macro.c
+magical_macro.o: node.h
+magical_macro.o: symtab.h
+magical_macro.o: vnmrsys.h
+node.o:  node.c
+node.o:  node.h
+node.o: magic.gram.h
+node.o: node.h
+node.o: stack.h
+node.o: vnmrsys.h
+ops.o:  ops.c
+ops.o: variables.h
+params.o:  params.h
+pvars.o:  pvars.c
+pvars.o: group.h
+pvars.o: params.h
+pvars.o: symtab.h
+pvars.o: variables.h
+pvars.o: vnmrsys.h
+pvars.o: wjunk.h
+stack.o:  stack.h
+symtab.o:  symtab.c
+symtab.o:  symtab.h
+symtab.o: symtab.h
+tempstuff.o:  tempstuff.c
+tools.o:  tools.c
+tools.o:  tools.h
+tools.o: tools.h
+tools.o: vnmrsys.h
+variables.o:  variables.h
+variables1.o:  variables1.c
+variables1.o: graphics.h
+variables1.o: group.h
+variables1.o: init.h
+variables1.o: params.h
+variables1.o: symtab.h
+variables1.o: variables.h
+vnmrsys.o:  vnmrsys.h
+# DEPENDENCIES MUST END AT END OF FILE
+# IF YOU PUT STUFF HERE IT WILL GO AWAY
+# see make depend above

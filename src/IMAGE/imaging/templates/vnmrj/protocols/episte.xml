@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="episte" author="varian" investigator="varian"
+    application="imaging" rfcoil="main" anatomy="" time_created="20070824T160559"
+    parfile="episte" apptype="imEPI" scans="episte" seqfil="episte">
+  <protocol title="episte" type="protocol">
+    <action  type="LIB" status="Ready" title="episte" exp="episte" lock="off" time="8 sec" macro="sqexp('episte')" data="" />
+  </protocol>
+</template>

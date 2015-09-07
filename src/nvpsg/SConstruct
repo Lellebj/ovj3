@@ -50,10 +50,6 @@ s2pulTarget        = 's2pul'
 # can be called from any other SConstruct file
 cwd = os.getcwd()
 
-# needed for rpath 
-if not os.path.exists(os.path.join(os.pardir, 'lib')):
-   Execute('cd ..;ln -s ncomm lib')
-
 # library dependancies
 ncommPath = os.path.join(cwd, os.pardir, 'ncomm')
 srcNcommHeaderList = [ 'mfileObj.h' ]
@@ -413,7 +409,7 @@ buildMethods.makeSymLinks(cEnv, psglibSharedTarget, cwd, nvacqPath, srcNvacqHead
 
 s2pulcEnv.AppendUnique( LIBS    = ['psglib', 'param', 'acqcomm', 'stdc++', 'm'])
 s2pulcEnv.AppendUnique( LIBPATH = [cwd, psgPath, ncommPath] )
-s2pulcEnv.Append(LINKFLAGS  = ' -Wl,-rpath ../lib ')
+s2pulcEnv.Append(LINKFLAGS  = ' -Wl,-rpath,/vnmr/lib ')
 
 if ('interix' in platform):    # Win7 SUA Interix
     LibAcqCom=File(os.path.join(os.pardir,'ncomm','libacqcomm.a'))

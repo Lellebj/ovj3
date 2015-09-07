@@ -1,0 +1,90 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+#
+# send2Vnmr  make file
+#
+#
+
+MAKEFILE= makesend2vnmr.win
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+SCCSDIR=$(sccsdir)
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+#--- SCCS Sources ----
+BIN_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+
+BIN_HDR=
+BIN_SRC=	send2Vnmr.c
+BIN_OBJ= $(BIN_SRC:.c=.o)
+
+MAKE_SRC=		\
+	makesend2vnmr.win
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= 				\
+	$(MAKE_SRC) 			\
+	send2Vnmr.c
+ 
+ALL_C_SRC = $(BIN_SRC)
+
+#------------  Include Proper Rules for System base on environment variable ruleset ---- 
+
+# set defines acording to system Type
+CC= cc
+CDEFINE= -DLINUX -D_ALL_SOURCE
+LIBS= -Wl,-rpath /vnmr/lib -lm
+OPTIMIZE= -O
+DEBUGOPT=
+NCOMMDIR= $(vobjdir)/win/proglib/ncomm
+
+CFLAGS= -O
+CPPFLAGS=
+LDFLAGS=
+
+LINK.c= $(CC) $(CDEFINE) $(CFLAGS)
+LINK.c= gcc $(CFLAGS)
+
+BIN_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get $(REV)
+
+std WINDOWS : send2Vnmr
+	@echo send2Vnmr Complete
+
+send2Vnmr : $(BIN_OBJ)
+	(umask 2; $(LINK.c) -o $@  send2Vnmr.c -L$(NCOMMDIR) -lacqcomm $(LIBS))
+	@echo send2Vnmr is complete
+
+#---------------------------------------------------------------------------------------
+ 
+Source src : $(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+$(BIN_OBJ):
+	gcc -O -D_ALL_SOURCE -c $(@:.o=.c)
+
+#--- Object Targets ----------------------------------------------
+
+# ---------  Manual dependences ------------- 
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+# DEPENDENCIES MUST END AT END OF FILE
+
+
+# DEPENDENCIES MUST END AT END OF FILE
+# IF YOU PUT STUFF HERE IT WILL GO AWAY
+# see make depend above

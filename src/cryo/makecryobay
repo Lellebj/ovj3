@@ -1,0 +1,51 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+# makecryobay  make file
+# make -f makecryobay,  compiles standalone program for CryoBay monitor
+#
+
+# ----- PAID sccs home ----
+SCCSDIR=$(sccsjdir)
+JSCCS=$(SCCSDIR)/cryo/SCCS/s.
+JGET = sccs -d$(SCCSDIR)/cryo get
+BASE_DIR:sh =    pwd
+SRC_DIR=$(sourcedir)/syscryo
+MAKEFILE=makecryobay
+
+CP1=$(BASE_DIR):$(BASE_DIR)/cryoaccess.jar
+CLASS_PATH=$(CP1)
+
+#------------------------------------------------------------------------
+#---  object modules needed for "CryoClient"
+#------------------------------------------------------------------------
+
+
+CRYO_SRC=                      \
+		cryoaccess.jar \
+                ClientGui.java
+
+ClientGui.class: $(CRYO_SRC)
+	(umask 2; javac -classpath $(CLASS_PATH) ClientGui.java; \
+	jar xf cryoaccess.jar;\
+	jar cvf cryo.jar cryoaccess *.class)
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	@( cd $(SRC_DIR); $(JGET) $(MAKEFILE); \
+	     $(MAKE) -e -f $(MAKEFILE) \
+               src)
+
+src : $(CRYO_SRC)
+	@echo Sources up to date...
+
+SOLARIS : ClientGui.class
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(CRYO_SRC) : $$(JSCCS)$$(@)
+	$(JGET) $@

@@ -1,0 +1,175 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# pbox make file		
+#	- make executables Pbox, Pxfid, Pxsim, Pxspy
+#
+#
+# make -f makepbox
+# make -f makepbox dbx,  creates dbx versions 
+# make -f makepbox prof,  creates profiling versions 
+#
+
+MAKEFILE= makepbox
+
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+REV=
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+VNMRDIR=$(vnmrdir)
+
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+#SRC_DIR=../
+SRC_DIR=$(SRCDIR)/sysbin/
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+CFLAGS= -O -fsingle
+CPPFLAGS=
+LDFLAGS=
+ASMCPP.s= /lib/cpp -P $(CPPFLAGS) $(TARGET_ARCH)
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+ 
+BIN_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----  
+BIN_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+BIN_LN = ln -s $(BIN_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+BIN_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get $(REV)
+ 
+#----  default source extraction to links -------
+# BIN_GET= $(BIN_LN)
+
+#----  default source extraction (removed links) -------
+BIN_GET= $(BIN_SGET)
+
+LIBS = -ll -lm
+
+#------------------------------------------------------------------------
+#--- pbox source 
+#------------------------------------------------------------------------
+PBOX_SRC= 			\
+		Pbox.c		\
+		Pxfid.c		\
+		Pxsim.c		\
+		Pxspy.c
+
+
+PBOX_OBJ= $(PBOX_SRC:.c=.o)
+
+
+#---  Header files needed  -------
+PBOX_HDR=			\
+		Pbox.h		\
+		Pbox_amf.h	\
+		Pbox_def.h	\
+		Pbox_dsp.h	\
+		Pbox_err.h	\
+		Pbox_eqn.h	\
+		Pbox_fmf.h	\
+		Pbox_pro.h	\
+		Pbox_rsh.h	\
+		Pbox_sim.h	\
+		Pbox_utl.h	\
+		Px_util.h
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(PBOX_SRC) $(PBOX_HDR)
+ 
+#LINTFILES= $(ALLSRC:.c=.ln)
+
+.KEEP_STATE:
+
+#--- make Targets ----------------------------------------------
+
+
+std AIX SOLARIS IRIX: $$(MAKEFILE)
+	@( $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS= -O" \
+	  Pbox Pxfid Pxsim Pxspy; )
+	@echo Pbox Pxfid Pxsim Pxspy complete
+
+dbx : $$(MAKEFILE)
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 Pbox_dbx Pxfid_dbx Pxsim_dbx Pxspy_dbx; )
+	@echo Pbox_dbx Pxfid_dbx Pxsim_dbx Pxspy_dbx complete
+
+prof: $$(MAKEFILE)
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -pg" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	  Pbox_p Pxfid_p Pxsim_p Pxspy_p ; )
+	@echo Pbox_p Pxfid_p Pxsim_p Pxspy_p complete
+
+
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	@( cd $(SRC_DIR); $(BIN_SGET) $(MAKEFILE); \
+	     $(MAKE) -e -f $(MAKEFILE) \
+             "BIN_SRC_DIR= $(BIN_SCCS_SRC)"   \
+             "BIN_GET= $(BIN_SGET)" 		\
+               src)
+ 
+#--- Recursive Targets ------------------------------
+
+src : $(ALLSRC)
+	@echo Sources up to date...
+
+
+Pbox Pxfid Pxsim Pxspy : $$@.o
+	-(umask 2; \
+	$(LINK.c) -o $@ $@.o  $(LIBS)  )
+
+Pbox_dbx Pxfid_dbx Pxsim_dbx Pxspy_dbx : $(@:%_dbx=%.o)
+	-(umask 2; \
+	$(LINK.c) -o $@ $(@:%_dbx=%.o) $(LIBS)  )
+
+Pbox_p Pxfid_p Pxsim_p Pxspy_p : $(@:%_P=%.o)
+	-(umask 2; \
+	$(LINK.c) -o $@ $(@:%_P=%.o) $(LIBS)  )
+
+
+#--- Object Targets ---------------------------
+
+Pbox.o	: $(@:.o=.c) $(PBOX_HDR)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+Pxfid.o	: $(@:.o=.c) $(PBOX_HDR)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+Pxsim.o	: $(@:.o=.c) $(PBOX_HDR)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+Pxspy.o	: $(@:.o=.c) $(PBOX_HDR)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) :
+	$(BIN_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(PBOX_SRC) $(PBOX_HDR) : $$(BIN_SCCS_SRC)$$(@)
+	$(BIN_GET) $@
+

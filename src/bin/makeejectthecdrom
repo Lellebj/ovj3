@@ -1,0 +1,61 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+MAKEFILE=makeejectthecdrom
+
+ROOT=$(sccsdir)
+JAWS=$(vnmrdir)
+
+JSCCS=$(JAWS)/SCCS/
+
+binSCCS=$(ROOT)/bin/SCCS/s.
+expprocSCCS=$(ROOT)/expproc/SCCS/s.
+
+BINGET = sccs -p$(ROOT)/bin/SCCS get
+EXPPROCGET = sccs -p$(ROOT)/expproc/SCCS get
+
+#-- Normal operational compile flags
+CFLAGS= -fsingle -c -O
+
+#-- Debugging with DBXTOOL ccompile flags
+CFLAGS= -c -g -D SOLARIS
+
+#------------------------------------------------------------------------
+#--- objects that are needed for expfit
+#------------------------------------------------------------------------
+OBJ=			\
+	daemon.o	\
+	ejectthecdrom.o
+
+
+ejectthecdrom: $(OBJ)
+	(umask 2; cc -DSOLARIS -o ejectthecdrom $(OBJ) )
+
+AIX: ejectthecdrom
+
+SOLARIS: ejectthecdrom
+
+IRIX:
+	($(MAKE) -ef $(MAKEFILE) \
+	  "CFLAGS=-c -O -cckr -DIRIX" \
+	  ejectthecdrom)
+ 
+ejectthecdrom.o       : ejectthecdrom.c
+	(umask 2; cc $(CFLAGS) ejectthecdrom.c  )
+
+daemon.o       : daemon.c
+	(umask 2; cc $(CFLAGS) daemon.c  )
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+
+ejectthecdrom.c : $(binSCCS)ejectthecdrom.c
+	$(BINGET) ejectthecdrom.c
+
+daemon.c : $(expprocSCCS)daemon.c
+	$(EXPPROCGET) daemon.c
+

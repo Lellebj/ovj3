@@ -2856,8 +2856,12 @@ vInfo	info;
    getparm("vtwait","real",  CURRENT,&vtwait, 1);
    getparm("z0",    "real",  GLOBAL, &z0,     1);
    getparm("lockgain", "real",GLOBAL,&lockgain,   1);
+   if (lockgain>39.0)
+      lockgain=39.0;
    getparm("lockphase","real",GLOBAL,&lockphase,  1);
    getparm("lockpower","real",GLOBAL,&lockpower,  1);
+   if (lockpower>48.0)
+      lockpower=48.0;
    getparm("gain",  "real",  CURRENT,&gain,   1);
    again = !var_active("gain", CURRENT);
    getparm("traymax","real",  GLOBAL,&tmpval,    1);

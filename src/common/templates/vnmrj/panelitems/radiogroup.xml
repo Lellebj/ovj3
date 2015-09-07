@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template type="basic" element="composites">
+    <group size="96 80">
+      <label loc="16 0" size="64 24" fg="Label1"
+        font="Label1" style="Label1" point="Label1"
+        value="Radio" vq=""
+        show=""
+        />
+      <radio loc="8 24" size="80 24" fg="PlainText"
+        font="PlainText" style="PlainText" point="PlainText"
+        value="Radio 1" vq=""
+        vc="" vc2="" set="" show=""
+        />
+      <radio loc="8 48" size="80 24" fg="PlainText"
+        font="PlainText" style="PlainText" point="PlainText"
+        value="Radio 2" vq=""
+        vc="" vc2="" set="" show=""
+        />
+    </group>
+</template>

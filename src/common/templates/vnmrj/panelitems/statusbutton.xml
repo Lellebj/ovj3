@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="advanced" element="elements">
+  <statusbutton size="60 37" font="Dialog"
+      style="Bold"
+      point="12"
+      fg="black"
+      maxmark="true"
+      values="200"
+      name="Chart-Temp"
+      title="Temp"
+      enabled="yes"
+      color1="ffffff"
+      color2="000000"
+      />
+</template>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+ 
+<template type="basic" name="epi_dro" author="varian" investigator="varian"
+    application="imaging" rfcoil="main" anatomy="" time_created="20070824T160559"
+    parfile="epi_dro" apptype="imEPI" scans="epi" seqfil="epi">
+  <protocol title="EPI dro" type="protocol">
+    <action  type="LIB" status="Ready" title="epi dro" exp="epi" lock="off" time="8 sec" macro="sqexp('epi_dro')" data="" />
+  </protocol>
+</template>

@@ -1,0 +1,54 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#---PAID sccs home---
+SDIR=$(sccsdir)/bin/SCCS/s.
+SGET=sccs -p$(sccsdir)/bin/SCCS get
+MGET=sccs -p$(sccsdir)/motif/SCCS get
+
+MAKEFILE= makeeditdevices
+
+#---normal operational compile flags
+CFLAGS= -c -O
+
+#---debugging with DBXTOOL compile flags
+#CFLAGS= -c -g
+
+#---normally LDFLAGS is left undefined - symbol included for SOLARIS target
+
+#---object modules nedded for "editdevice"
+EDITDEVICES_OBJ=                       \
+		editdevices.o
+
+editdevices: $(EDITDEVICES_OBJ)
+	 (umask 2; cc -o editdevices $(LDFLAGS) $(EDITDEVICES_OBJ) \
+		-lcurses -ltermcap)
+
+IRIX:
+	($(MAKE) -ef $(MAKEFILE) \
+	  "CFLAGS=-c -O -cckr -DIRIX" \
+	  editdevices)
+
+AIX: AIXSOURCE
+	 (umask 2; cc -o editdevices editdevices.c \
+		-lcur)
+
+SOLARIS:
+	$(MAKE) -e -f $(MAKEFILE) 	\
+	"CFLAGS= -c -O -DSOLARIS"	\
+	"LDFLAGS= -L /usr/ccs/lib"	\
+	 editdevices
+
+
+editdevices.o: editdevices.c
+	  (umask 2; cc $(CFLAGS) editdevices.c)
+
+editdevices.c: $(SDIR)editdevices.c
+	  $(SGET) editdevices.c
+
+AIXSOURCE:
+	  $(MGET) editdevices.c

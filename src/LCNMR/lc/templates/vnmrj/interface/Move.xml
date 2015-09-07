@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='us-ascii'?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<mainmenu>
+	<mchoice label = "Parameters..."
+	      vc = "vnmrjcmd('popup', 'mode:modal',
+                        'file:MoveParameters.xml',
+                        'title:Move Parameters')"
+	      style="Menu1"
+        />
+	<mchoice label = "FID..."
+	      vc = "vnmrjcmd('popup', 'mode:modal',
+                        'file:MoveFID.xml',
+                        'title:Move FID')"
+	      style="Menu1"
+        />
+	<mchoice label = "Text..."
+	      vc = "vnmrjcmd('popup', 'mode:modal',
+                        'file:MoveText.xml',
+                        'title:Move Text')"
+	      style="Menu1"
+        />
+	<mchoice label = "Display parameters..."
+	      vc = "vnmrjcmd('popup', 'mode:modal',
+                        'file:MoveDisplayParameters.xml',
+                        'title:Move Display Parameters')"
+	      style="Menu1"
+        />
+</mainmenu>

@@ -1,0 +1,9 @@
+Copyright (c) Agilent Technologies  All Rights Reserved.
+*******************************************************************************
+lcplot - an LC-NMR plotting macro.
+*******************************************************************************
+
+A convenient macro to plot the LC-NMR data. This macro is executed
+with the "Plot LC-NMR " button on the LC-NMR display pane (labeled spare).
+
+

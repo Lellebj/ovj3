@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! @(#)TopPanel.xml 1.6 01/29/01 Copyright (c) 1998-2000 Agilent Technologies All Rights Reserved
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<toppanel>
+  <panel name="Setup" file="sample.xml" actionfile="sample_action.xml"
+        param="layout" type="sample">
+  </panel>
+  <panel name="Acquire" file="acq.xml" actionfile="acq_action.xml"
+        param="layout" type="acquisition"
+	>
+  </panel>
+  <panel name="Process" file="proc.xml" actionfile="proc_action.xml"
+        param="layout" type="processing"
+	>
+  </panel>
+  <panel name="Display" file="disp.xml" actionfile="disp_action.xml"
+        param="layout" type="display"
+      >
+  </panel>
+  <panel name="Plot" file="plot.xml" actionfile="plot_action.xml"
+        param="layout" type="plotting"
+       >
+  </panel>
+</toppanel>
+

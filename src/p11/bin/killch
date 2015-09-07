@@ -1,0 +1,13 @@
+: '@(#)killch.sh 22.1 03/24/08 Copyright (c) 1999-2002 Agilent Technologies All Rights Reserved'
+# 
+# Agilent Technologies All Rights Reserved.
+# This software contains proprietary and confidential
+# information of Agilent Technologies and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#!/bin/sh
+
+str=`ps -ef | grep chchsums | nawk '{printf(" %s ", $2) }'`
+echo kill -9 $str
+kill -9 $str

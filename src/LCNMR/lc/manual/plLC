@@ -1,0 +1,13 @@
+Copyright (c) Agilent Technologies  All Rights Reserved.
+*******************************************************************************
+plLC - plots LC detector trace(s) in a horizontal format.
+*******************************************************************************
+
+A plotting version of the dLC macro.
+
+See related Files:
+dLC
+plLC
+dLCNMR
+plLCNMR
+

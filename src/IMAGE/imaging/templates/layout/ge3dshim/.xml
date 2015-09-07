@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<template name="" element="pages" type="acquisition" >
+  <group size="840 322"
+    style="PlainText"
+    label="Calib"
+    bg="transparent"
+    border="None"
+    side="Top"
+    justify="Left"
+    tab="yes"
+    enable="no"
+    useref="no"
+    subtype="Basic"
+    expanded="yes"
+    >
+    <button loc="520 80" size="110 20"
+      style="Heading2"
+      label="Display image"
+      vq="gsimage"
+      vc="gs_image(gsimage)"
+      show="$VALUE=(gsimage&lt;&gt;'') $VALUE=2*$VALUE-1"
+      decor1="No"
+      />
+    <entry loc="640 80" size="80 20"
+      style="PlainText"
+      vq="gsimage"
+      vc="gsimage='$VALUE'"
+      set="$VALUE=gsimage"
+      disable="Grayed out"
+      />
+    <textfile loc="10 10" size="370 310"
+      style="Label4"
+      vq="userdir"
+      set="$fll=userdir+'/gshimdir/data/gshim.out' exists($fll,'file'):$e if $e&lt;0.5 then write('reset',$fll) endif $VALUE=$fll"
+      editable="yes"
+      wrap="yes"
+      />
+  </group>
+</template>

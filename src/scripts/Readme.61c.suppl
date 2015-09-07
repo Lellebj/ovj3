@@ -1,0 +1,68 @@
+
+6.1C Summer Supplement
+======================
+
+This CD-ROM is a supplement to the 6.1C VNMR release. For MERCURY-Series
+systems, including the new MERCURYplus, this CD-ROM contains an upgrade
+with support for CP/MAS, Performa II PFG, DOSY, as well as several
+bug fixes. This includes the 103 patch.
+
+For other systems, including INOVA, GEMINI 2000, this CD-ROM contains 
+patches. Details of the bugs fixed by these patches are listed in 
+the Readme file in the vnmr_patches directory. 
+
+If you already have installed the patches from our web-site, then 
+this CD is not needed.
+
+
+Choose the loading procedure appropriate for your system:
+
+-----------------------
+MERCURY-Series systems
+-----------------------
+
+1. Insert the VNMR 6.1C CDROM and as root execute 'load.nmr' if not 
+already done so.
+
+2. Insert this CDROM and as root execute 'load.nmr'.
+As usual, you are asked for a directory to load the software; this must be
+the same directory where VNMR was loaded.
+
+If you're not sure, enter the following command in a UNIX window:
+ cd /vnmr; pwd
+
+3. Select VNMR.
+
+4. Select DOSY if you have the password for the DOSY software.
+
+5. click Install.
+
+6. After the installation, enter:
+  /vnmr/bin/setacq.
+
+You don't have to start this as root. One of the new features with this
+release is that setacq will ask for the root password, if it is not started
+as root. Then restart the proc using "su acqproc".
+
+7. Finally run config as vnmr1. Note the new entry for "Type of Amplifier".
+
+-----------------------------
+INOVA or GEMINI 2000 systems
+-----------------------------
+
+1. Insert the VNMR 6.1C CDROM and as root execute 'load.nmr' if not 
+already done so.
+
+2. Change to the vnmr_patches directory and as vnmr1 use patchinstall to load
+the patch corresponding to your system.
+
+3. After the patches have been installed, enter:
+ /vnmr/bin/setacq.
+
+You don't have to start this as root. One of the new features with this
+release is that setacq will ask for the root password if not started as
+root.
+
+4. Then restart the proc using "su acqproc".
+
+

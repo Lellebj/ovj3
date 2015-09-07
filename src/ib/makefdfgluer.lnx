@@ -1,0 +1,117 @@
+# Copyright (c) Varian Assoc., Inc.  All Rights Reserved.
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#************************************************************************
+#
+#  Build "shared" library (libgluer.so.xx) and static library (libgluer.a)
+#  and install include-files and libraries into defined directories.
+#
+#
+#  Build executable (gluer)
+#    make -f makefdfgluer.lnx 	--- build fdfgluer
+#    make -f makefdfgluer.lnx dbx	--- build debug version fdfgluer_dbx
+#
+#
+#
+#************************************************************************
+
+
+#-------------------------------------------------
+# Directories
+#-------------------------------------------------
+UTILSSRC=$(sccsdir)/ib
+VNMRSRC=$(sccsdir)/vnmr
+MAKEFILE=makefdfgluer.lnx
+
+REV=
+CC=cc
+# CC=gcc
+TARGET_ARCH=
+#CFLAGS= -O `getconf LFS_CFLAGS`
+CFLAGS=-O -m32 -DLINUX -DMAIN
+LDFLAGS=`getconf LFS_LDFLAGS` `getconf LFS_LIBS`
+#CFLAGS=-Wall -ansi -c -DANSI_C
+fdfgluer fdfgluer_dbx := CPPFLAGS = -DMAIN
+COMPILE.c=$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+DEBUG=-DDEBUG
+
+.KEEP_STATE:
+
+#-------------------------------------------------
+# Sources and include files						
+#-------------------------------------------------
+
+VNMR_INCS= data.h
+
+GLUER_INCS=boolean.h crc.h error.h
+
+GLUER_SRCS= \
+	gluer.c \
+	crc.c \
+	getreply.c \
+	nfgets.c \
+	error.c
+
+
+GLUER_OBJS=$(GLUER_SRCS:.c=.o)
+
+#-------------------------------------------------
+#  Include files for include directory					
+#-------------------------------------------------
+.INIT:  $(GLUER_INCS) $(VNMR_INCS)
+
+ 
+
+#------------------------- library build --------------------------------------
+
+#-------------------------------------------------
+# Default target
+# install both libraries as a soft-link in $(GLUERLIB) directory
+# install all include files into $(GLUERINC) directory, and
+# Note that the last statement is to change ".nse_depinfo" to be writeable
+# by everybody.  The reason we put the "sleep" is to delay changing
+# the mode so that the built-in "make" will change it first.
+#-------------------------------------------------
+
+#-------------------------------------------------
+# User specified target for standard executable
+#-------------------------------------------------
+fdfgluer : $(GLUER_OBJS)
+	$(LINK.c) -o $@ $(GLUER_OBJS)
+
+#-------------------------------------------------
+# User specified target for debug executable
+#-------------------------------------------------
+dbx: $(GLUER_OBJS) $(LIB_OBJS)
+	$(LINK.c) -o fdfgluer_dbx -Bstatic $(GLUER_OBJS)
+
+
+#-------------------------------------------------
+# Flags changed due to users
+#-------------------------------------------------
+debug := CFLAGS=-g -c $(DEBUG) 
+stdexec := CFLAGS=-c -O -DMAIN
+stddbx := CFLAGS=-g -c -DMAIN $(DEBUG)
+
+
+$(GLUER_OBJS) $(LIB_OBJS):  %.o:%.c $(GLUER_SRCS) $(GLUER_INCS) $(VNMR_INCS) 
+	(umask 2; $(COMPILE.c) $<)
+
+#------------------------- lint build -----------------------------------------
+
+#-------------------------------------------------
+# SCCS extraction				
+#-------------------------------------------------
+
+$(GLUER_SRCS) $(GLUER_INCS) : %:$(UTILSSRC)/SCCS/s.%
+	sccs -d $(UTILSSRC) get $(REV) $@
+
+$(VNMR_INCS) : %:$(VNMRSRC)/SCCS/s.%
+	sccs -d $(VNMRSRC) get $(REV) $@
+now:

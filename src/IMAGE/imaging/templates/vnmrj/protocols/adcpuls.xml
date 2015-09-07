@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template type="basic" name="adcpuls" author="varian" investigator="varian"
+    application="imaging" rfcoil="test" anatomy="" time_created="20071120T115402"
+    parfile="adcpuls" apptype="adcpuls" scans="adcpuls" seqfil="adcpuls">
+  <protocol title="adcpuls" type="protocol">
+    <action  type="LIB" status="Ready" title="adcpuls" exp="adcpuls" lock="off" time="unknown" macro="sqexp('adcpuls')" data="" />
+  </protocol>
+</template>

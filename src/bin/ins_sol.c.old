@@ -1,0 +1,2188 @@
+/* 
+ * Varian Assoc.,Inc. All Rights Reserved.
+ * This software contains proprietary and confidential
+ * information of Varian Assoc., Inc. and its contributors.
+ * Use, disclosure and reproduction is prohibited without
+ * prior consent.
+ */
+
+#include <X11/Intrinsic.h>
+#include <X11/StringDefs.h>
+#include <Xol/OpenLook.h>
+#include <Xol/BulletinBo.h>
+#include <Xol/CheckBox.h>
+#include <Xol/ControlAre.h>
+#include <Xol/DrawArea.h>
+#include <Xol/Exclusives.h>
+#include <Xol/Form.h>
+#include <Xol/RectButton.h>
+#include <Xol/OblongButt.h>
+#include <Xol/PopupWindo.h>
+#include <Xol/Scrollbar.h>
+#include <Xol/ScrolledWi.h>
+#include <Xol/StaticText.h>
+#include <Xol/TextEdit.h>
+#include <Xol/TextField.h>
+#include <sys/signal.h>
+
+#include "inova.xicon"
+#include "g2000.xicon"
+#include "uplus.xicon"
+#include "logo.xicon"
+
+
+#define OPTFILES	4
+#define INOVA		0
+#define GEMINI		1
+#define UPLUS		2
+
+#define ICONGAP		30
+#define VGAP		8
+
+char *optfile[OPTFILES];
+char *prog_dir;
+char *help_dir;
+
+static Widget       topShell;
+static Widget       mainFrame;
+static Widget       mainWin, optWin, infoWin, execWin;
+static Widget       message_1, message_2, gauge;
+static Widget       installBut, quitBut, helpBut;
+static Widget       acqWidget, dirWidget;
+static Display      *dpy;
+static Widget	    *optCheck;
+static Widget	    sizeWidget;
+static Widget	    installShell = NULL;
+static Widget	    installFrame;
+static Widget 	    installGraf, scrolledWindow;
+static Widget	    confirmShell = NULL;
+static Widget	    confirmFrame;
+static Window 	    grafWin = -1;
+static Window 	    topShellId;
+static Widget 	    sep1, sep2, sep3;
+static Widget 	    disWin, disBut;
+static Widget	    helpShell = NULL;
+TextEditWidget   installText;
+
+static Arg          args[20];
+static char         tmpstr[256];
+static char         host_name[ 82 ];
+static char         message[ 82 ];
+static char	    **vnmr_option;
+
+char  location[12];
+char  *dest_label = "Destination Directory:";
+char  *acq_label    = "Stop acquisition?                    ";
+char  *online_label = "Create online manuals as link to CD? ";
+char  *vnmr_label   = "Create /vnmr link when done?         ";
+
+static int   n;
+static int   main_opt_num;
+static int   acq_pid;
+static int   online_link;
+static int   vnmr_link;
+static int   delete_acq;
+static int   screen;
+static int   winDepth;
+static int   gauge_val = 0;
+static int   charWidth, charHeight;
+static int   maxLabelWidth, maxLabelLen;
+static int   winWidth = 1, winHeight = 1;
+static int   maxOption;
+static int   maxLen;
+static int   sysload = INOVA;
+static int   sizeInstalled, totalSize;
+static int   installWidth, installHeight;
+static int   ch_ascent;
+static int   install_pid = -1;
+static int   pipe_1[2];
+static int   pipe_2[2];
+static int   barWidth = 0;
+static int   butHeight;
+static int   butWinY;
+static int   solaris;
+static int   screenHeight, screenWidth;
+static int   *optSelect;
+static int   shell_x, shell_y;
+
+static Pixel winFg, winBg;
+static Pixel xblack, xwhite, varianPix;
+static Pixel textPix, barBg, barLight;
+static Pixel lightPix, darkPix, grayPix;
+Colormap     cmap;
+XColor	     xcolor;
+GC	     gc;
+
+static XFontStruct  *labelFontInfo;
+XWindowAttributes   win_attributes;
+XtIntervalId  timerId = NULL;
+
+typedef struct  _choice {
+	char   *info;
+	int	subsize;
+	struct  _choice *next;
+	} vchoice;
+
+typedef struct  _voption {
+	int	num;
+	int	size;
+	vchoice *data;
+	}  voption;
+voption load_option[OPTFILES];
+
+
+typedef struct  _xiconInfo {
+   int   width, height;
+   int   id;
+   int   usePixmap;
+   int	 colors;
+   char  *colorChs;
+   Pixel *pixelVals;
+   Pixmap butMap;
+   Pixmap butMap2;
+   Window window;
+   char  **data;
+ } xiconInfo;
+
+xiconInfo *sysButInfo[OPTFILES];
+Widget    sysButton[OPTFILES];
+static XtInputId   install_input;
+char  		*nargv[36];
+Dimension	width, height;
+Position	posx, posy, winy;
+
+Widget create_separator();
+
+#define BGAP      6
+#define BWIDTH    4
+#define BSPACE    4
+#define BARPIX    7
+
+static Pixel barPix[BARPIX];
+
+void
+resize_main_frame(w, client_data, xev)
+  Widget          w;
+  XtPointer       client_data;
+  XEvent          *xev;
+{
+	Dimension	width, ww, height;
+	Dimension	w1, w2, w3,  h1;
+	Position	posy;
+	static  int	firstTime = 1;
+	int		diff, x, y, k, gap;
+	int		max;
+
+	n = 0;
+        XtSetArg(args[n], XtNwidth, &width);  n++;
+        XtSetArg(args[n], XtNheight, &height);  n++;
+        XtGetValues(topShell, args, n);
+	n = 0;
+        XtSetArg(args[n], XtNwidth, &w1);  n++;
+        XtSetArg(args[n], XtNheight, &h1);  n++;
+        XtGetValues(mainFrame, args, n);
+	if (firstTime)
+	{
+	    n = 0;
+            XtSetArg(args[n], XtNwidth, &w1);  n++;
+            XtSetArg(args[n], XtNheight, &h1);  n++;
+            XtSetArg(args[n], XtNy, &posy);  n++;
+            XtGetValues(mainWin, args, n);
+	    XtResizeWidget(mainWin, width, h1, 0);
+            XtGetValues(optWin, args, n);
+	    XtResizeWidget(optWin, width, h1, 0);
+	    gap = (int)(width - (main_opt_num + 1) * 66) / (main_opt_num + 2);
+	    if (gap < 0)
+		gap = 0;
+	    x = gap;
+	    for(k = 0; k < OPTFILES; k++)
+	    {
+	      if (sysButton[k] != NULL)
+	      {
+		 XtMoveWidget(sysButton[k], x, VGAP);
+		 x = x + gap + 66;
+	      }
+	    }
+            XtSetArg(args[0], XtNwidth, &w1);
+            XtSetArg(args[1], XtNy, &posy);
+            XtGetValues(installBut, args, 2);
+            XtSetArg(args[0], XtNwidth, &w2);
+            XtGetValues(helpBut, args, 1);
+            XtSetArg(args[0], XtNwidth, &w3);
+            XtGetValues(quitBut, args, 1);
+
+            XtSetArg(args[0], XtNheight, &h1);
+            XtGetValues(execWin, args, 1);
+	    XtResizeWidget(execWin, width, h1, 0);
+	    gap = (int)(width - w1 - w2 - w3) / 4;
+	    x = gap;
+	    y = posy;
+	    XtMoveWidget(installBut, x, y, 0);
+	    x = x + w1 + gap;
+	    XtMoveWidget(helpBut, x, y, 0);
+	    x = x + w2 + gap;
+	    XtMoveWidget(quitBut, x, y, 0);
+	    firstTime = 0;
+	}
+/**
+	diff = winWidth - width;
+	if (abs(diff) <= 4)
+		return;
+**/
+	winWidth = width;
+	winHeight = height;
+	
+	ww = width - 4;
+	
+	XtResizeWidget(sep1, ww, 3, 0);
+	XtResizeWidget(sep2, ww, 3, 0);
+	XtResizeWidget(sep3, ww, 3, 0);
+	n = 0;
+        XtSetArg(args[n], XtNx, &posx);  n++;
+        XtGetValues(dirWidget, args, n);
+	ww = ww - posx - 8;
+	if ((int)width > charWidth * 6)
+	{
+		XtSetArg(args[0], XtNwidth, ww);
+		XtSetValues(dirWidget, args, 1);
+	}
+}
+
+move_win(which, top)
+Widget  which, top;
+{
+	Dimension  height, width;
+	Position   posy;
+	int	   y;
+
+	n = 0;
+	XtSetArg(args[n], XtNheight, &height);  n++;
+	XtSetArg(args[n], XtNwidth, &width);  n++;
+	XtSetArg(args[n], XtNy, &posy);  n++;
+	XtGetValues(top, args, n);
+	y = posy + height;
+	XtMoveWidget(which, 0, y);
+}
+
+
+void
+win_exit_proc( w, client_data, event )
+Widget w;
+char *client_data;
+void *event;
+{
+        OlWMProtocolVerify      *olwmpv;
+
+        olwmpv = (OlWMProtocolVerify *) event;
+        if (olwmpv->msgtype == OL_WM_DELETE_WINDOW) {
+	   if (install_pid > 0)
+	       popup_confirmer();
+        }
+}
+
+
+
+set_win_position()
+{
+	Dimension  height, width;
+	Position   posy, posx;
+
+	move_win(sep1, mainWin);
+	move_win(optWin, sep1);
+	move_win(sep2, optWin);
+	move_win(infoWin, sep2);
+	move_win(sep3, infoWin);
+	move_win(execWin, sep3);
+	n = 0;
+	XtSetArg(args[n], XtNheight, &height);  n++;
+	XtSetArg(args[n], XtNwidth, &width);  n++;
+	XtSetArg(args[n], XtNy, &posy);  n++;
+	XtGetValues(execWin, args, n);
+	height = posy + height;
+	n = 0;
+	XtSetArg(args[n], XtNheight, height);  n++;
+	posy = screenHeight - height - 30;
+	if (posy < 0)
+	    posy  = 0;
+	if (posy < shell_y)
+	{
+	    if (!solaris)
+	        posy = posy + 10;
+	    XtSetArg(args[n], XtNy, posy);  n++;
+	}
+	posx = screenWidth - width - 10;
+	if (posx < 10)
+	    posx  = 10;
+	if (posx < shell_x)
+	{
+	    XtSetArg(args[n], XtNx, posx);  n++;
+	}
+
+	XtSetValues(topShell, args, n);
+}
+
+	
+main(argc, argv)
+int     argc;
+char    **argv;
+{
+	int    k;
+	char   *dstr;
+
+	if (argc < 2)
+	{
+	    fprintf(stderr, "Install: argument missing\n");
+	    exit(0);
+	}
+	for (n = 0; n < OPTFILES; n++)
+	{
+	    optfile[n] = NULL;
+	}
+	
+	n = strlen(argv[0]);
+	dstr = argv[0];
+	while (n > 0)
+	{
+	    n--;
+	    if (*(dstr + n) == '/')
+		break;
+	}
+	prog_dir = (char *) malloc(n + 4);
+	help_dir = (char *) malloc(n + 4);
+	if (n <= 0)
+	{
+	    strcpy(prog_dir, "./");
+	    strcpy(help_dir, "./");
+	}
+	else
+	{
+	    strncpy(prog_dir, argv[0], n+1);
+	    dstr = prog_dir;
+	    while (n > 0)
+	    {
+		n--;
+		if (*(dstr + n) == '/')
+		    break;
+	    }
+	    if (n <= 0)
+	        strcpy(help_dir, "./");
+	    else
+	        strncpy(help_dir, prog_dir, n+1);
+	}
+	for(n = 1; n < argc; n++)
+	{
+	    k = -1;
+	    if (strcmp("inova.opt", argv[n]) == 0)
+		k = INOVA;
+	    else if (strcmp("g2000.opt", argv[n]) == 0)
+		k = GEMINI;
+	    else if (strcmp("unity.opt", argv[n]) == 0)
+		k = UPLUS;
+	    if (k >= 0)
+	    {
+	        optfile[k] = (char *) malloc(strlen(argv[n]) + 2);
+	        strcpy(optfile[k], argv[n]);    
+	    }
+	}
+	find_acqproc();
+	maxOption = 0;
+	maxLen = 0;
+	main_opt_num = 0;
+	for(k = 0; k < OPTFILES; k++)
+	{
+	     sysButton[k] = NULL;
+	     if (optfile[k] != NULL)
+	     {
+		get_option_data(optfile[k], k);
+		main_opt_num++;
+	     }
+	}
+	if (main_opt_num <= 0)
+	{
+		fprintf(stderr, "ins_sol: no opt file exist\n");
+		exit(0);
+	}
+	maxLen += 14;
+	if (maxLen < 36)
+	   maxLen = 36;
+	create_main_frame(argc, argv);
+	create_icon_window();
+	sep1 = create_separator(mainWin);
+	create_option_window(sep1);
+	sep2 = create_separator(optWin);
+	create_info_window(sep2);
+	sep3 = create_separator(infoWin);
+	create_exec_window(sep3);
+
+	XtRealizeWidget(topShell);
+	topShellId = XtWindow(topShell);
+	set_win_position();
+	OlAddCallback(topShell, XtNwmProtocol, win_exit_proc, NULL);
+	for(k = 0; k < OPTFILES; k++)
+	{
+	      if (optfile[k] != NULL)
+	      {
+		set_option(k);
+		break;
+	      }
+	}
+        XtAddEventHandler(topShell,StructureNotifyMask, False, resize_main_frame,
+			 NULL);
+	XtMainLoop();
+}
+
+
+find_acqproc()
+{
+        char    field2[ 12 ], field3[ 12 ], field4[ 20 ], field5[ 122 ];
+        char    *cptr, *proc_name, *ptr;
+        int     proc_id, ival, len;
+        FILE    *fpipe;
+
+
+	acq_pid = -1;
+        fpipe = popen( "uname -r", "r" );
+	if (fpipe == NULL)
+                return;
+	solaris = 0;
+	while ((cptr = fgets(tmpstr, 120, fpipe )) != NULL)
+	{
+	     if ((int)strlen(tmpstr) > 0)
+	     {
+		while (*cptr == ' ')
+		   cptr++;
+		if ( *cptr == '5')
+		    solaris = 1;
+	     }
+	}
+	pclose(fpipe);
+
+	if (solaris)
+	{
+            fpipe = popen( "ps -e", "r" );
+	    proc_name = field4;
+	}
+	else
+	{
+            fpipe = popen( "ps xa", "r" );
+	    proc_name = field5;
+	}
+	if (fpipe == NULL)
+                return;
+	while ((cptr = fgets(tmpstr, 120, fpipe )) != NULL)
+	{
+	    if (solaris)
+	    {
+                ival = sscanf(
+                        tmpstr, "%d%s%s%s",
+                        &proc_id,
+                        &field2[ 0 ],
+                        &field3[ 0 ],
+                        &field4[ 0 ]
+                );
+                if (ival != 4) continue;
+	    }
+	    else
+	    {
+                ival = sscanf(
+                        tmpstr, "%d%s%s%s%s",
+                        &proc_id,
+                        &field2[ 0 ],
+                        &field3[ 0 ],
+                        &field4[ 0 ],
+                        &field5[ 0 ]
+                );
+                if (ival != 5) continue;
+	    }
+	    len = strlen(proc_name);
+	    if (len >= 7)
+	    {
+		ptr = proc_name + (len - 7);
+	        if (strcmp(ptr, "Acqproc") == 0)
+	        {
+			acq_pid = proc_id;
+		}
+	        if (strcmp(ptr, "Expproc") == 0)
+	        {
+			acq_pid = proc_id;
+		}
+		
+	    }
+	}
+	pclose(fpipe);
+}
+
+
+int
+find_vnmr3()
+{
+        char    field2[ 12 ], field3[ 12 ], field4[ 20 ], field5[ 122 ];
+        char    *cptr, *proc_name, *ptr;
+        int     proc_id, ival, len, ret;
+        FILE    *fpipe;
+
+
+	if (solaris)
+	{
+            fpipe = popen( "ps -e", "r" );
+	    proc_name = field4;
+	}
+	else
+	{
+            fpipe = popen( "ps xa", "r" );
+	    proc_name = field5;
+	}
+	if (fpipe == NULL)
+                return(-1);
+	ret = -1;
+	while ((cptr = fgets(tmpstr, 120, fpipe )) != NULL)
+	{
+	    if (solaris)
+	    {
+                ival = sscanf(
+                        tmpstr, "%d%s%s%s",
+                        &proc_id,
+                        &field2[ 0 ],
+                        &field3[ 0 ],
+                        &field4[ 0 ]
+                );
+                if (ival != 4) continue;
+	    }
+	    else
+	    {
+                ival = sscanf(
+                        tmpstr, "%d%s%s%s%s",
+                        &proc_id,
+                        &field2[ 0 ],
+                        &field3[ 0 ],
+                        &field4[ 0 ],
+                        &field5[ 0 ]
+                );
+                if (ival != 5) continue;
+	    }
+	    len = strlen(proc_name);
+	    if (len >= 8)
+	    {
+		ptr = proc_name + (len - 8);
+	        if (strcmp(ptr, "i_vnmr.3") == 0)
+		{
+			ret = proc_id;
+		}
+	    }
+	}
+	pclose(fpipe);
+	return(ret);
+}
+
+
+char  *fontp = "-fn";
+char  *fontv = "courb18";
+char  *bgp = "-bg";
+char  *bgv = "LightGray";
+char  *geomp = "-geometry";
+int   nargc;
+
+create_main_frame(argc, argv)
+int	argc;
+char    **argv;
+{
+     int     x, y;
+     char    *display;
+     Widget  tmpwidget;
+
+
+     display = NULL;
+     for (x = 1; x < argc - 1; x++)
+     {
+	if (argv[x] != NULL && strcmp(argv[x], "-display") == 0)
+	{
+	    if (argv[x+1] != NULL)
+		display = argv[x+1];
+	    x++;
+	}
+     }
+     dpy = XOpenDisplay(display);
+     if (dpy == NULL)
+     {
+	fprintf(stderr, "Could not open window\n");
+	exit(0);
+     }
+	     
+     screen = XDefaultScreen(dpy);
+     screenHeight = DisplayHeight (dpy, screen);
+     screenWidth = DisplayWidth (dpy, screen);
+     XCloseDisplay (dpy);
+
+     shell_y = 200;
+     if (screenHeight < 700)
+     {
+	sprintf(fontv, "courb12");
+	shell_y = 0;
+     }
+     else if (screenHeight < 900)
+     {
+	sprintf(fontv, "courb14");
+	shell_y = 100;
+     }
+     shell_x = 360;
+     if (screenWidth < 700)
+	shell_x = 30;
+     else if (screenWidth < 900)
+	shell_x = 100;
+     sprintf(location, "+%d+%d", shell_x, shell_y);
+
+     nargv[0] = argv[0];
+     nargv[1] = fontp;
+     nargv[2] = fontv;
+     nargv[3] = bgp;
+     nargv[4] = bgv;
+     nargv[5] = geomp;
+     nargv[6] = location;
+     n = 1;
+     nargc = 7;
+     while (n < argc)
+	nargv[nargc++] = argv[n++];
+     nargv[nargc] = NULL;
+     topShell = OlInitialize("Install","Install",
+                        NULL, 0, (Cardinal *)&nargc, nargv);
+     dpy = XtDisplay(topShell);
+
+     screen = XDefaultScreen(dpy);
+     n = 0;
+     XtSetArg (args[n], XtNtitle, "Installation of VNMR");  n++;
+     XtSetValues(topShell, args, n);
+
+     n = 0;
+     XtSetArg (args[n], XtNwidth, 100);  n++;
+     XtSetArg (args[n], XtNheight, 200);  n++;
+     XtSetArg (args[n], XtNlayout, OL_MAXIMIZE );  n++;
+     mainFrame = XtCreateManagedWidget("",
+                        bulletinBoardWidgetClass, topShell, args, n);
+     /* the following widgets are not mapped, they are created for
+        retrieving the information of font */
+     n = 0;
+     XtSetArg (args[n], XtNwidth, 4);  n++;
+     XtSetArg (args[n], XtNheight, 4);  n++;
+     XtSetArg (args[n], XtNmappedWhenManaged, FALSE);  n++;
+     tmpwidget = XtCreateWidget("label", staticTextWidgetClass,
+                                     mainFrame, args, n);
+     n = 0;
+     XtSetArg(args[n], XtNfont, &labelFontInfo);  n++;
+     XtSetArg(args[n], XtNbackground, &winBg);  n++;
+     XtSetArg(args[n], XtNforeground, &winFg);  n++;
+     XtGetValues(tmpwidget, args, n);
+     ch_ascent = labelFontInfo->max_bounds.ascent;
+     charHeight = ch_ascent + labelFontInfo->max_bounds.descent;
+     charWidth = labelFontInfo->max_bounds.width;
+     winDepth = DefaultDepth(dpy, screen);
+     xblack = XBlackPixel(dpy, screen);
+     xwhite = XWhitePixel(dpy, screen);
+     cmap = XDefaultColormap(dpy, screen);
+     gc = DefaultGC(dpy, screen);
+     get_light_color();
+     if (labelFontInfo && labelFontInfo->fid)
+	XSetFont(dpy, gc, labelFontInfo->fid);
+/*
+     XtAddEventHandler(topShell,StructureNotifyMask, False, resize_main_frame,
+			 NULL);
+*/
+}
+
+
+create_icon_window()
+{
+	Dimension	width, height;
+
+	width = (main_opt_num + 1) * (66 + ICONGAP) + ICONGAP;
+	height = 66 + VGAP * 2;
+	winWidth = width;
+	winHeight = height;
+        n = 0;
+        XtSetArg (args[n], XtNwidth, width);  n++;
+        XtSetArg (args[n], XtNheight, height);  n++;
+        XtSetArg (args[n], XtNlayout, OL_MAXIMIZE );  n++;
+        mainWin = XtCreateManagedWidget("",
+                        bulletinBoardWidgetClass, mainFrame, args, n);
+	create_graph_icon(logo_data, 0, logo_colors, logo_num, logo_chs,
+			logo_width, logo_height);
+	if (optfile[INOVA] != NULL)
+	    create_graph_icon(inova_data, 1, inova_colors, inova_num, inova_chs,
+			inova_width, inova_height);
+	if (optfile[GEMINI] != NULL)
+	    create_graph_icon(g2000_data, 2, g2000_colors, g2000_num, g2000_chs,
+			g2000_width, g2000_height);
+	if (optfile[UPLUS] != NULL)
+	    create_graph_icon(uplus_data, 3, uplus_colors, uplus_num, uplus_chs,
+			uplus_width, uplus_height);
+	winy = height;
+}
+
+void
+select_opt(w, client_data, call_data)
+  Widget          w;
+  XtPointer       client_data;
+  XtPointer       call_data;
+{
+	int	num, size;
+	Boolean set;
+	vchoice *tchoice;
+	char    mess[20];
+
+	if (install_pid >= 0)
+	{
+	     num = 0;
+	     while (num < maxOption)
+	     {
+		if (optCheck[num] == w)
+		{
+		     if (optSelect[num] == 0)
+			XtSetArg (args[0], XtNset, FALSE);
+		     else
+			XtSetArg (args[0], XtNset, TRUE);
+		     XtSetValues(optCheck[num], args, 1);
+		     return;
+		}
+		num++;
+	     }
+	}
+	size = 0;
+	num = 0;
+	tchoice = load_option[sysload].data;
+	while (tchoice != NULL)
+	{
+	     n = 0;
+             XtSetArg (args[n], XtNset, &set);  n++;
+	     XtGetValues(optCheck[num], args, n);
+	     if (set)
+	     {
+		optSelect[num] = 1;
+		size = size + tchoice->subsize;
+	     }
+	     else
+		optSelect[num] = 0;
+	     tchoice = tchoice->next;
+	     num++;
+	}
+	sprintf(mess, " %d KB ", size);
+	totalSize = size;
+        n = 0;
+        XtSetArg (args[n], XtNstring, mess);  n++;
+	XtSetValues(sizeWidget, args, n);
+}
+
+
+
+create_option_window(topWidget)
+Widget  topWidget;
+{
+	int	item;
+	Dimension       ww;
+	Widget		twidget, pwidget;
+	Position	posx, posy, labelx;
+
+	ww = charWidth * maxLen + ICONGAP + 20;
+        n = 0;
+        XtSetArg (args[n], XtNy, winy);  n++;
+        XtSetArg (args[n], XtNwidth, ww);  n++;
+        XtSetArg (args[n], XtNlayout, OL_MAXIMIZE );  n++;
+        optWin = XtCreateManagedWidget("",
+                        bulletinBoardWidgetClass, mainFrame, args, n);
+	if (maxOption <= 0)
+	    return;
+	optCheck = (Widget *) malloc(sizeof(Widget) * maxOption);
+	optSelect = (int *) malloc(sizeof(int) * maxOption);
+	labelx = 0;
+	posy = 0;
+	for (item = 0; item < maxOption; item++)
+	{
+	     n = 0;
+             XtSetArg (args[n], XtNy, posy);  n++;
+             XtSetArg (args[n], XtNlabel, "   ");  n++;
+             XtSetArg(args[n], XtNcharsVisible, maxLen);  n++;
+             XtSetArg (args[n], XtNposition, OL_RIGHT);  n++;
+             XtSetArg (args[n], XtNx, ICONGAP);  n++;
+             optCheck[item] = XtCreateManagedWidget("", checkBoxWidgetClass,
+                        optWin, args, n);
+             XtAddCallback(optCheck[item], XtNselect,(XtPointer) select_opt, 1);
+             XtAddCallback(optCheck[item], XtNunselect,(XtPointer) select_opt, 0);
+	     n = 0;
+             XtSetArg (args[n], XtNheight, &height);  n++;
+	     XtGetValues(optCheck[item], args, n);
+	     posy = posy + height;
+	     optSelect[item] = 0;
+	}
+        n = 0;
+        XtSetArg (args[n], XtNstring, "Total selected: ");  n++;
+        XtSetArg (args[n], XtNx, ICONGAP + charWidth * 3);  n++;
+        XtSetArg (args[n], XtNy, posy);  n++;
+        XtSetArg (args[n], XtNstrip, FALSE);  n++;
+        twidget = XtCreateManagedWidget("label", staticTextWidgetClass,
+                        optWin, args, n);
+        n = 0;
+        XtSetArg (args[n], XtNx, &posx);  n++;
+        XtSetArg (args[n], XtNwidth, &width);  n++;
+        XtSetArg (args[n], XtNheight, &height);  n++;
+	XtGetValues(twidget, args, n);
+	posx = posx + width + 4;
+        n = 0;
+        XtSetArg (args[n], XtNstring, " 0 KB    ");  n++;
+        XtSetArg (args[n], XtNx, posx);  n++;
+        XtSetArg (args[n], XtNy, posy);  n++;
+        XtSetArg (args[n], XtNfontColor, textPix);  n++;
+        XtSetArg (args[n], XtNstrip, FALSE);  n++;
+        sizeWidget = XtCreateManagedWidget("label", staticTextWidgetClass,
+                        optWin, args, n);
+	winy = posy + height;
+}
+
+
+set_option(which)
+int  which;
+{
+	int	num;
+	vchoice *tchoice;
+	char    mess[64];
+
+	sysload = which;
+	tchoice = load_option[which].data;
+
+	num = maxOption - 1;
+	while (num >= load_option[which].num)
+	{
+	     optSelect[num] = 0;
+	     XtUnmapWidget(optCheck[num]);
+	     num--;
+	}
+	for (num = 0; num < load_option[which].num; num++)
+	{
+	     XtMapWidget(optCheck[num]);
+	     sprintf(mess, "%s at %d KB", tchoice->info, tchoice->subsize);
+	     n = 0;
+             XtSetArg (args[n], XtNlabel, mess);  n++;
+             XtSetArg (args[n], XtNset, 0);  n++;
+	     XtSetValues(optCheck[num], args, n);
+	     optSelect[num] = 0;
+
+	     tchoice = tchoice->next;
+	}
+        XtSetArg (args[0], XtNstring, " 0 KB   ");
+	totalSize = 0;
+	XtSetValues(sizeWidget, args, 1);
+}
+	     
+
+void
+delete_acq_proc(w, client_data, call_data)
+  Widget          w;
+  XtPointer       client_data;
+  XtPointer       call_data;
+{
+	delete_acq = (int) client_data;
+}
+
+
+void
+online_lk_proc(w, client_data, call_data)
+  Widget          w;
+  XtPointer       client_data;
+  XtPointer       call_data;
+{
+	online_link = (int) client_data;
+}
+
+void
+vnmr_lk_proc(w, client_data, call_data)
+  Widget          w;
+  XtPointer       client_data;
+  XtPointer       call_data;
+{
+	vnmr_link = (int) client_data;
+}
+
+
+
+Widget
+create_yes_no(parent, label, func, set_item)
+Widget  parent;
+char    *label;
+void    (*func)();
+int     set_item;
+{
+	Widget pwidget, twidget, exwidget;
+
+        n = 0;
+        XtSetArg (args[n], XtNlayoutType, OL_FIXEDROWS);  n++;
+        XtSetArg (args[n], XtNmeasure, 1);  n++;
+        pwidget = XtCreateManagedWidget("",
+                        controlAreaWidgetClass, parent, args, n);
+        n = 0;
+        XtSetArg (args[n], XtNstring, label);  n++;
+        XtSetArg(args[n], XtNgravity, WestGravity);  n++;
+        XtSetArg (args[n], XtNstrip, FALSE);  n++;
+        XtCreateManagedWidget("label", staticTextWidgetClass,
+                        pwidget, args, n);
+	n = 0;
+	exwidget = XtCreateManagedWidget("", exclusivesWidgetClass, 
+			pwidget, args, n);
+	n = 0;
+	XtSetArg (args[n], XtNlabel, "Yes"); n++;
+	twidget = XtCreateManagedWidget ("", rectButtonWidgetClass,
+			 exwidget, args, n);
+        XtAddCallback(twidget, XtNselect,(XtPointer) func, 1);
+	n = 0;
+	XtSetArg (args[n], XtNlabel, "No"); n++;
+	if (set_item != 0)
+	{
+	    XtSetArg (args[n], XtNset, TRUE); n++;
+	}
+
+	twidget = XtCreateManagedWidget ("", rectButtonWidgetClass,
+			 exwidget, args, n);
+        XtAddCallback(twidget, XtNselect,(XtPointer) func, 0);
+}
+
+
+
+create_info_window(topWidget)
+Widget  topWidget;
+{
+	Widget   tmpWidget;
+
+        n = 0;
+        XtSetArg (args[n], XtNy, winy);  n++;
+        XtSetArg (args[n], XtNlayoutType, OL_FIXEDCOLS);  n++;
+        XtSetArg (args[n], XtNmeasure, 1);  n++;
+        infoWin = XtCreateManagedWidget("",
+                        controlAreaWidgetClass, mainFrame, args, n);
+        n = 0;
+        XtSetArg (args[n], XtNlayoutType, OL_FIXEDROWS);  n++;
+        XtSetArg (args[n], XtNmeasure, 1);  n++;
+        tmpWidget = XtCreateManagedWidget("",
+                        controlAreaWidgetClass, infoWin, args, n);
+	n = 0;
+        XtSetArg (args[n], XtNstring, dest_label);  n++;
+        XtSetArg(args[n], XtNgravity, WestGravity);  n++;
+        XtSetArg (args[n], XtNstrip, FALSE);  n++;
+        XtCreateManagedWidget("label", staticTextWidgetClass,
+                        tmpWidget, args, n);
+        n = 0;
+        XtSetArg (args[n], XtNstring, "/export/home/vnmr");  n++;
+        XtSetArg(args[n], XtNcharsVisible, 19);  n++;
+        dirWidget = XtCreateManagedWidget("", textFieldWidgetClass,
+                        tmpWidget, args, n);
+
+	delete_acq = 1;
+	if (acq_pid >= 0)
+	   create_yes_no(infoWin, acq_label, delete_acq_proc, 0);
+
+	vnmr_link = 1;
+	create_yes_no(infoWin, vnmr_label, vnmr_lk_proc, 0);
+
+	online_link = 0;
+	create_yes_no(infoWin, online_label, online_lk_proc, 1);
+
+	n = 0;
+        XtSetArg (args[n], XtNwidth, &width);  n++;
+        XtSetArg (args[n], XtNheight, &height);  n++;
+        XtSetArg (args[n], XtNy, &posy);  n++;
+	XtGetValues(infoWin, args, n);
+	winy = posy + height;
+}
+
+
+void
+install_proc()
+{
+	create_install_win();
+	n = 0;
+        XtSetArg (args[n], XtNbusy, TRUE);  n++;
+	XtSetValues(installBut, args, n);
+	exec_install();
+}
+
+void
+help_proc()
+{
+	create_help_window();
+}
+
+
+void
+quit_proc()
+{
+	if (install_pid > 0)
+	     popup_confirmer();
+	else
+	{
+             XCloseDisplay(dpy);
+             exit(0);
+	}
+}
+
+
+create_exec_window(topWidget)
+Widget  topWidget;
+{
+	Widget   tmpWidget;
+
+        n = 0;
+        XtSetArg (args[n], XtNy, winy);  n++;
+        XtSetArg (args[n], XtNlayoutType, OL_FIXEDROWS);  n++;
+        XtSetArg (args[n], XtNmeasure, 1);  n++;
+	XtSetArg (args[n], XtNvPad, 10);  n++;
+	XtSetArg (args[n], XtNhPad, 40);  n++;
+        XtSetArg (args[n], XtNhSpace, 20);  n++;
+	if (topWidget != NULL)
+	{
+	   XtSetArg(args[n], XtNyRefWidget, topWidget); n++;
+	}
+        execWin = XtCreateManagedWidget("",
+                        controlAreaWidgetClass, mainFrame, args, n);
+	n = 0;
+        XtSetArg (args[n], XtNlabel, "Install");  n++;
+        installBut = XtCreateManagedWidget("button",
+                        oblongButtonWidgetClass, execWin, args, n);
+        XtAddCallback(installBut, XtNselect,(XtPointer) install_proc, NULL);
+        n = 0;
+        XtSetArg (args[n], XtNlabel, "Help");  n++;
+	helpBut = XtCreateManagedWidget("button",
+                        oblongButtonWidgetClass, execWin, args, n);
+        XtAddCallback(helpBut, XtNselect,(XtPointer) help_proc, NULL);
+        n = 0;
+        XtSetArg (args[n], XtNlabel, "Quit");  n++;
+	quitBut = XtCreateManagedWidget("button",
+                        oblongButtonWidgetClass, execWin, args, n);
+        XtAddCallback(quitBut, XtNselect,(XtPointer) quit_proc, NULL);
+}
+
+
+
+void
+draw_separator(w, client_data, call_data)
+  Widget          w;
+  XtPointer       client_data;
+  XtPointer       call_data;
+{
+        int       index, color, x, y, k;
+        Window    win;
+
+        win = XtWindow(w);
+        XSetForeground (dpy, gc, lightPix);
+        XDrawLine (dpy, win, gc, 0, 0, winWidth-4, 0);
+        XDrawLine (dpy, win, gc, 0, 2, winWidth-4, 2);
+        XSetForeground (dpy, gc, xblack);
+        XDrawLine (dpy, win, gc, 0, 1, winWidth-4, 1);
+}
+
+
+Widget
+create_separator(topWidget)
+Widget  topWidget;
+{
+	Widget		tmpwidget;
+
+	height = 3;
+        n = 0;
+        XtSetArg (args[n], XtNy, winy);  n++;
+        XtSetArg (args[n], XtNx, 0);  n++;
+        XtSetArg (args[n], XtNwidth, 40 * charWidth);  n++;
+        XtSetArg (args[n], XtNheight, height);  n++;
+        tmpwidget = XtCreateManagedWidget("",
+                        drawAreaWidgetClass, mainFrame, args, n);
+        XtAddEventHandler(tmpwidget,StructureNotifyMask, False, draw_separator,
+			 NULL);
+	XtAddCallback(tmpwidget, XtNexposeCallback, draw_separator,
+                (XtPointer)0);
+	winy += 3;
+	return(tmpwidget);
+}
+
+
+get_light_color()
+{
+        int      red, green, blue;
+	int	 red2, green2, blue2, k;
+	int	 df1, df2, df3;
+	XColor	 bcolor;
+
+        bcolor.pixel = winBg;
+        bcolor.flags = DoRed | DoGreen | DoBlue;
+        XQueryColor(dpy, cmap, &bcolor);
+        bcolor.red = bcolor.red >> 8;
+        bcolor.green = bcolor.green >> 8;
+        bcolor.blue = bcolor.blue >> 8;
+        red = bcolor.red + 30;
+        green = bcolor.green + 30;
+        blue = bcolor.blue + 30;
+	if (red > 250)
+	    red = 250;
+	if (green > 250)
+	    green = 250;
+	if (blue > 250)
+	    blue = 250;
+	xcolor.red = red << 8;
+        xcolor.green = green << 8;
+        xcolor.blue = blue << 8;
+        XAllocColor(dpy, cmap, &xcolor);
+	lightPix = xcolor.pixel;
+        red2 = red - 150;
+        green2 = green -150;
+        blue2 = blue - 150;
+	if (red2 < 0)
+	    red2 = 0;
+	if (green2 < 0)
+	    green2 = 0;
+	if (blue2 < 0)
+	    blue2 = 0;
+	xcolor.red = red2 << 8;
+        xcolor.green = green2 << 8;
+        xcolor.blue = blue2 << 8;
+        XAllocColor(dpy, cmap, &xcolor);
+	darkPix = xcolor.pixel;
+
+        red += 20;
+        green += 20;
+        blue += 20;
+        if (red > 250)
+            red = 250;
+        if (green > 250)
+            green = 250;
+        if (blue > 250)
+            blue = 250;
+        df1 = (red - red2) / BARPIX;
+        df2 = (green - green2) / BARPIX;
+        df3 = (blue - blue2) / BARPIX;
+
+        for ( k = 0; k < BARPIX; k++)
+        {
+           red2 = red - df1 * k;
+           green2 = green - df2 * k;
+           blue2 = blue - df3 * k;
+           xcolor.red = red2 << 8;
+           xcolor.green = green2 << 8;
+           xcolor.blue = blue2 << 8;
+           XAllocColor(dpy, cmap, &xcolor);
+           barPix[k] = xcolor.pixel;
+        }
+
+        red = bcolor.red -20;
+        green = bcolor.green -20;
+        blue = bcolor.blue - 20;
+	if (red < 0)
+	    red = 0;
+	if (green < 0)
+	    green = 0;
+	if (blue < 0)
+	    blue = 0;
+	xcolor.red = red << 8;
+        xcolor.green = green << 8;
+        xcolor.blue = blue << 8;
+        XAllocColor(dpy, cmap, &xcolor);
+	grayPix = xcolor.pixel;
+
+	xcolor.red = 240 << 8;
+        xcolor.green = 210 << 8;
+        xcolor.blue = 180 << 8;
+        XAllocColor(dpy, cmap, &xcolor);
+	barBg = xcolor.pixel;
+
+	xcolor.red = 250 << 8 ;
+        xcolor.green = 240 << 8;
+        xcolor.blue = 210 << 8;
+        XAllocColor(dpy, cmap, &xcolor);
+	barLight = xcolor.pixel;
+
+	xcolor.red = 250 << 8;
+        xcolor.green = 30 << 8;
+        xcolor.blue = 30 << 8;
+        XAllocColor(dpy, cmap, &xcolor);
+	textPix = xcolor.pixel;
+}
+
+
+draw_icon(which, set)
+int	which, set;
+{
+        xiconInfo  *iconInfo;
+
+	iconInfo = sysButInfo[which];
+	if (set)
+	XCopyArea(dpy, iconInfo->butMap2, iconInfo->window, gc, 0, 0,
+                iconInfo->width, iconInfo->height, 1, 1);
+	else
+	XCopyArea(dpy, iconInfo->butMap, iconInfo->window, gc, 0, 0,
+                iconInfo->width, iconInfo->height, 1, 1);
+	if (which > 0)
+	{
+	    set_icon_focus(which, set);
+	}
+}
+
+
+sys_but_expose(w, client_data, call_data)
+  Widget          w;
+  XtPointer       client_data;
+  XtPointer       call_data;
+{
+	int	  which;
+	static XImage *iconImage = NULL;
+     	Window       xwin;
+        xiconInfo  *iconInfo;
+
+	which = (int) client_data;
+	iconInfo = sysButInfo[which];
+     	xwin = XtWindow(w);
+	iconInfo->window = xwin;
+	if (iconInfo->butMap == (Pixmap) NULL)
+	{
+	   iconInfo->butMap = XCreatePixmap (dpy, xwin, 64,
+                         64, winDepth);
+	   draw_pixmap(iconInfo->butMap, iconInfo, 0);
+	   iconInfo->butMap2 = XCreatePixmap (dpy, xwin, 64,
+                         64, winDepth);
+	   draw_pixmap(iconInfo->butMap2, iconInfo, 1);
+	}
+	if (which == (sysload + 1))
+	   draw_icon(which, 1);
+	else
+	   draw_icon(which, 0);
+}
+
+void
+sys_but_proc(w, c_data, x_event)
+Widget  w;
+caddr_t c_data;
+XEvent  *x_event;
+{
+	int	  which, select;
+     	Window       xwin;
+        xiconInfo  *iconInfo;
+	static int   enter = 0;
+
+	which = (int) c_data;
+	if (which <= 0)
+		return;
+	if (install_pid >= 0)
+		return;
+	select = which - 1;
+	iconInfo = sysButInfo[which];
+        switch (x_event->type)  {
+          case ButtonRelease:
+          case LeaveNotify:
+                if (!enter)
+                    return;
+                enter = 0;
+                if (x_event->type == ButtonRelease)
+		{
+		     if (select != sysload)
+			set_option(select);
+		}	
+		else
+	        {
+		     if (select != sysload)
+		     {
+		         draw_icon(which, 0);
+		         draw_icon(sysload + 1, 1);
+		     }
+		}
+                break;
+          case ButtonPress:
+                enter = 1;
+	        if (select != sysload)
+		{
+		     draw_icon(sysload + 1, 0);
+		     draw_icon(which, 1);
+		}
+                break;
+        }
+}
+
+set_icon_focus(which, set)
+int	which, set;
+{
+     	Window       xwin, x, y;
+        xiconInfo  *iconInfo;
+
+	iconInfo = sysButInfo[which];
+     	xwin = iconInfo->window;
+	x = iconInfo->width + 1;
+	y = iconInfo->height + 1;
+	if (set)
+            XSetForeground (dpy, gc, darkPix);
+	else
+            XSetForeground (dpy, gc, lightPix);
+        XDrawLine (dpy, xwin, gc, 0, 0, x, 0);
+        XDrawLine (dpy, xwin, gc, 0, 0, 0, y);
+	if (set)
+            XSetForeground (dpy, gc, lightPix);
+	else
+            XSetForeground (dpy, gc, darkPix);
+        XDrawLine (dpy, xwin, gc, x, 0, x, y);
+        XDrawLine (dpy, xwin, gc, 0, y, x, y);
+}
+
+
+draw_pixmap(map, iconInfo, focus)
+ Pixmap  	map;
+ xiconInfo	*iconInfo;
+ int		focus;
+{
+	int    color;
+	int	x, y;
+	Pixel   pix, bg;
+	char   *data, pdata;
+
+	if (focus)
+	   bg = grayPix;
+	else
+	   bg = winBg;
+	for (color = 0; color < iconInfo->colors; color++)
+	{
+	   pdata = iconInfo->colorChs[color];
+	   if (pdata == ' ')
+		pix = bg;
+	   else
+		pix = iconInfo->pixelVals[color];
+           XSetForeground (dpy, gc, pix);
+	   for(y = 0; y < iconInfo->height; y++)
+	   {
+		data = iconInfo->data[y];
+		for(x = 0; x < iconInfo->width; x++)
+		{
+		    if (*data == pdata)
+			XDrawPoint(dpy, map, gc, x, y);
+		    data++;
+		}
+	   }
+	}
+}
+
+	
+
+
+
+
+
+create_graph_icon(fdata, butNum, colors, cname, colorChs, width, height)
+ char  **fdata;
+ int    butNum;
+ int	colors;
+ char	**cname;
+ char	*colorChs;
+ int	width, height;
+{
+        int     k, i, m;
+        char    *pixdata;
+	Position   posx, posy;
+        xiconInfo  *newIcon;
+	EventMask  emask;
+	static  int   old_colors = 0;
+        static  Pixel   *pixelVals = NULL;
+
+        newIcon = (xiconInfo *) XtCalloc (1, sizeof (xiconInfo));
+	sysButInfo[butNum] = newIcon;
+        if (newIcon == NULL)
+            return (NULL);
+        newIcon->width = width;
+        newIcon->height = height;
+        newIcon->data = fdata;
+        newIcon->colors = colors;
+        newIcon->colorChs = colorChs;
+        newIcon->id = butNum;
+	newIcon->butMap = (Pixmap) NULL;
+	newIcon->butMap2 = (Pixmap) NULL;
+        newIcon->usePixmap = 1;
+	    pixelVals = (Pixel *) XtCalloc(colors+2, sizeof(Pixel));
+        newIcon->pixelVals = pixelVals;
+        for (k = 0; k < colors; k++)
+        {
+           XParseColor(dpy, cmap, cname[k], &xcolor);
+           XAllocColor( dpy, cmap, &xcolor);
+           pixelVals[k] = xcolor.pixel;
+	   if (colorChs[k] == ' ')  /* it is background */
+		pixelVals[k] = winBg;
+	}
+	pixelVals[colors] = winBg;
+	emask = ButtonPressMask | ButtonReleaseMask | LeaveWindowMask;
+	posx = (ICONGAP + 66) * butNum + ICONGAP;
+	posy = VGAP;
+     	n = 0;
+     	XtSetArg(args[n], XtNwidth, width + 2);  n++;
+     	XtSetArg(args[n], XtNheight, height + 2);   n++;
+     	XtSetArg(args[n], XtNx, posx);  n++;
+     	XtSetArg(args[n], XtNy, posy);  n++;
+        sysButton[butNum] = XtCreateManagedWidget("icon",
+				 drawAreaWidgetClass, mainWin, args, n);
+     	XtAddCallback(sysButton[butNum], XtNexposeCallback,
+                sys_but_expose, butNum);
+	XtAddEventHandler(sysButton[butNum], emask, False,
+                 sys_but_proc, butNum);
+}
+
+
+
+get_option_data(fname, which)
+char   *fname;
+int    which;
+{
+        FILE    *fin;
+	char    name[22];
+	char    *strs;
+	int	size, total, ret, len;
+	int	found, count;
+	vchoice *tchoice, *nchoice, *pchoice;
+
+	sprintf(tmpstr, "%s%s", prog_dir, fname);
+	total = 0;
+	count = 0;
+	tchoice = NULL;
+        if ((fin = fopen(tmpstr, "r")) != NULL)
+        {
+           while ((strs = fgets(tmpstr, 250, fin)) != NULL)
+           {
+                ret = sscanf(tmpstr, "%s%d", name, &size);
+		if (ret < 2)
+			continue;
+		total = total + size;
+		found = 0;
+	        if (tchoice != NULL)
+		{
+		    nchoice = tchoice;
+		    while (nchoice != NULL)
+		    {
+			if (strcmp(nchoice->info, name) == 0)
+			{
+			    found = 1;
+			    nchoice->subsize = nchoice->subsize + size;
+			    break;
+			}
+			nchoice = nchoice->next;
+		    }
+		}
+		if ( !found )
+		{
+		    nchoice = (vchoice *) malloc(sizeof(vchoice));
+		    nchoice->next = NULL;
+		    len = strlen(name);
+		    if (len > maxLen)
+			maxLen = len;
+		    nchoice->info = (char *) malloc(len + 2);
+		    strcpy(nchoice->info, name);
+		    nchoice->subsize = size;
+		    if (tchoice == NULL)
+			tchoice = nchoice;
+		    else
+			pchoice->next = nchoice;
+		    pchoice = nchoice;
+		    count++;
+		}
+	     }
+	}
+	load_option[which].data = tchoice;
+	load_option[which].num = count;
+	load_option[which].size = total;
+	if (count > maxOption)
+		maxOption = count;
+}
+
+
+convert_raster(ximage, s_width, s_height, source)
+        XImage  *ximage;
+        int      s_width, s_height;
+        char    **source;
+{
+        char  *p_data, *q_data;
+        char  *s_data, *d_data;
+        int    depth, length;
+        int    unit_counter, bit_counter, bit_flag;
+        int    i, k, m, x, bytes;
+        int    width, height;
+        int    hh, dd;
+        int    pix_bit;
+        char   src;
+        char  *r_data;
+        int    flag, bit_pad;
+        int    x1, x2, y1, y2;
+        float  xratio, yratio;
+
+   if (source == NULL)
+            return;
+   depth = ximage->depth;
+   if (depth > 8)
+            depth = 8;   /* the depth of source data is only 8 bits */
+   r_data = ximage->data;
+   length = ximage->bytes_per_line;
+   width = ximage->width;
+   height = ximage->height;
+   xratio = (float) width / (float) s_width;
+   yratio = (float) height / (float) s_height;
+   bit_flag = 0x80;
+   for (dd = 0; dd < depth; dd++)
+   {
+        p_data = (char *) r_data + length * dd * height;
+        y1 = 0;
+        for(hh = 0; hh < s_height; hh++)
+        {
+            y2 = (hh + 1) * yratio;
+            while (y1 < y2)
+            {
+                s_data = source[hh];
+                d_data = p_data + length * y1;
+                unit_counter = 0;
+                bit_counter = 0;
+                pix_bit = 0x80;
+                x1 = 0;
+                for(i = 0; i < s_width; i++)
+                {
+                   x2 = (i + 1) * xratio;
+                   src = *s_data;
+                   while (x1 < x2)
+                   {
+                        if (src & bit_flag)
+                        {
+                            if (ximage->bitmap_bit_order == MSBFirst)
+                                 *d_data = (*d_data << 1) | 0x01;
+                            else
+                                 *d_data = (*d_data >> 1) | 0x80;
+                        }
+                        else
+                        {
+                            if (ximage->bitmap_bit_order == MSBFirst)
+                                 *d_data = *d_data << 1;
+                            else
+                                 *d_data = (*d_data >> 1) & 0x7F;
+                        }
+                        x1++;
+                        bit_counter++;
+                        unit_counter--;
+                        if (bit_counter >= 8)
+                        {
+                           bit_counter = 0;
+                           if (ximage->byte_order == LSBFirst)
+                                d_data = d_data - 1;
+                           else
+                                d_data = d_data + 1;
+                        }
+                   }
+                   s_data++;
+                }
+                y1++;
+            }
+        }
+        bit_flag = bit_flag >> 1;
+    }
+}
+
+
+draw_bar_outline()
+{
+	int	x, y, x1, x2, y1, y2;
+	int	xx1, xx2, yy1, yy2, k, w, w2, w3;
+	int	ang1, ang2, ang3, ang4;
+	float   step, n;
+
+	if (grafWin < 0)
+ 	     return;
+	x1 = 1;
+	x2 = installWidth - 2;
+	w = BARPIX * 2 + BWIDTH;
+	xx1 = x1 + BARPIX;
+	xx2 = x2 - BARPIX;
+	y1 = charHeight + 6;
+	yy1 = y1 + BARPIX;
+	yy2 = yy1 + BWIDTH + 1;
+	y2 = yy2 + BARPIX;
+	barWidth = xx2 - xx1;
+        x1 = xx2 + BARPIX - 1;
+	x = 1;
+	y = y1;
+	w3 = BWIDTH;
+        x2 = xx2 - w3 / 2 + 1;
+	ang1 = 90 * 64;
+        ang2 = 140 * 64;
+        ang3 = 60 * 64;
+        ang4 = -160 * 64;
+        for (k = 0; k < BARPIX; k++)
+        {
+	    w2 = w - k * 2;
+            XSetForeground (dpy, gc, barPix[k]);
+            XDrawArc(dpy, grafWin, gc, x+k, y+k,w2,w2,ang1, ang2);
+            XDrawArc(dpy, grafWin, gc, x2-k, yy1-k,w3+k*2,w3+k*2,ang3, ang4);
+            XDrawLine (dpy, grafWin, gc, xx1, y1+k, xx2+1, y1+k);
+            XDrawLine (dpy, grafWin, gc, xx1-1, yy2+k, x1 - k, yy2+k);
+        }
+
+        XSetForeground (dpy, gc, grayPix);
+	for(y = yy1; y < yy2; y++)
+            XDrawLine (dpy, grafWin, gc, xx1, y, xx2, y);
+
+        XSetForeground (dpy, gc, barPix[BARPIX-1]);
+        XDrawLine (dpy, grafWin, gc, xx1-1, yy1-1, xx1-1, yy2-1);
+        XDrawLine (dpy, grafWin, gc, xx1, yy1, xx1, yy2-1);
+
+/***
+        XSetForeground (dpy, gc, barBg);
+	XFillRectangle(dpy, grafWin, gc, x1, y1, x2-x1, BGAP);
+	XFillRectangle(dpy, grafWin, gc, x1, y2-BGAP, x2-x1, BGAP);
+	XFillRectangle(dpy, grafWin, gc, x1, y1, BGAP, y2-y1);
+	XFillRectangle(dpy, grafWin, gc, x2-BGAP, y1, BGAP, y2-y1);
+        XSetForeground (dpy, gc, barLight);
+        XDrawLine (dpy, grafWin, gc, x1, y1, x2, y1);
+        XDrawLine (dpy, grafWin, gc, x1, y1, x1, y2);
+        XDrawLine (dpy, grafWin, gc, xx1, yy2, xx2, yy2);
+        XDrawLine (dpy, grafWin, gc, xx2, yy1, xx2, yy2);
+        XSetForeground (dpy, gc, darkPix);
+        XDrawLine (dpy, grafWin, gc, x1, y2, x2, y2);
+        XDrawLine (dpy, grafWin, gc, x2, y1, x2, y2);
+        XDrawLine (dpy, grafWin, gc, xx1, yy1, xx2 - 1, yy1);
+        XDrawLine (dpy, grafWin, gc, xx1, yy1, xx1, yy2);
+	step = (x2 - x1 - BSPACE) / 10;
+	xx2 = xx1;
+	n = 1;
+	y1 = y1 + 1;
+	yy1 = y1 + BGAP - 1;
+	yy2 = y2 - BGAP + 1;
+	while (n < 10)
+	{
+	     xx1 = xx2 + step * n;
+	     XDrawLine (dpy, grafWin, gc, xx1, y1, xx1, yy1);
+	     XDrawLine (dpy, grafWin, gc, xx1, y2, xx1, yy2);
+	     n++;
+	}
+***/
+}
+
+
+void
+inc_install_bar()
+{
+        draw_install_bar(0);
+}
+
+
+
+draw_install_bar(todo)
+int  todo;
+{
+        int       gw, tw, x, y, k, df;
+	float     ratio, ratio2;
+	char      info[6];
+	static int old_gw = 0;
+	static float old_ratio = -1;
+
+	if ( barWidth <= 0 || grafWin < 0)
+ 	     return;
+	if (totalSize <= 0)
+		totalSize = 1;
+	ratio = (float)sizeInstalled / (float)totalSize;
+	if (ratio > 1.0)
+	     ratio = 1.0;
+	gw = barWidth * ratio;
+	if (old_gw < gw)
+	{
+	    df = gw - old_gw;
+	    if (df > 5)
+		old_gw += 2;
+	    else
+	        old_gw++;
+	}
+	ratio2 = (float)old_gw / (float)barWidth;
+	if (old_ratio != ratio2 || todo)
+	{
+            XSetForeground (dpy, gc, winBg);
+	    tw = charWidth * 4;
+	    x = barWidth / 2 - charWidth;
+	    XFillRectangle(dpy, grafWin, gc, x, 0, tw, charHeight + 6);
+	    old_ratio = ratio2;
+	    k = 100 * ratio2;
+	    sprintf(info, "%d%%", k);
+	    y = ch_ascent + 4; 
+            XSetForeground (dpy, gc, textPix);
+	    XDrawString(dpy, grafWin, gc, x, y, info, strlen(info));
+	}
+	if (gw <= 0)
+	     return;
+	y = charHeight + BARPIX + 6;
+	x = BARPIX + 2;
+	XFillRectangle(dpy, grafWin, gc, x, y, old_gw, BWIDTH);
+	if (old_gw < gw)
+	{
+	    if (df < 5)
+	       XtAddTimeOut(300, inc_install_bar, NULL);
+	    else
+	       XtAddTimeOut(100, inc_install_bar, NULL);
+	}
+}
+	
+
+void
+expose_graf_win(w, client_data, call_data)
+  Widget          w;
+  XtPointer       client_data;
+  XtPointer       call_data;
+{
+	Dimension	width, height;
+
+        grafWin = XtWindow(w);
+	n = 0;
+        XtSetArg(args[n], XtNwidth, &width);  n++;
+        XtSetArg(args[n], XtNheight, &height);  n++;
+        XtGetValues(w, args, n);
+	installWidth = width;
+	installHeight = height;
+	draw_bar_outline();
+	draw_install_bar(1);
+}
+
+
+create_install_win()
+{
+	Widget newPopup;
+	Window  win;
+        int     x, y;
+
+	sizeInstalled = 0;
+	if (installShell == NULL)
+	{
+   	   XTranslateCoordinates(dpy, topShellId, RootWindow(dpy, 0),
+                        0, 0, &x, &y, &win);
+	   if (x > 10)
+		x -= 10;
+	   sprintf(location, "+%d+0", x);
+	   n = 0;
+	   XtSetArg (args[n], XtNtitle, "Installation Information"); n++;
+     	   XtSetArg (args[n], XtNgeometry, location);  n++;
+           installShell = XtCreateApplicationShell("VNMR",
+				 applicationShellWidgetClass, args, n);
+
+	   n = 0;
+	   XtSetArg (args[n], XtNlayoutType, OL_FIXEDCOLS);  n++;
+           XtSetArg (args[n], XtNmeasure, 1);  n++;
+     	   newPopup = XtCreateManagedWidget("button",
+                     controlAreaWidgetClass, installShell, args, n);
+     	   n = 0;
+     	   XtSetArg (args[n], XtNwidth, 100);  n++;
+     	   XtSetArg (args[n], XtNheight, 200);  n++;
+     	   installFrame = XtCreateManagedWidget("",
+                        formWidgetClass, newPopup, args, n);
+	   create_install_text();
+	   create_install_graf();
+	   create_install_but();
+	   XtRealizeWidget(installShell);
+	}
+}
+
+create_install_text()
+{
+	n = 0;
+        XtSetArg (args[n], XtNxAddWidth, TRUE);  n++;
+        XtSetArg (args[n], XtNyAddHeight, TRUE);  n++;
+        XtSetArg (args[n], XtNxAttachRight, TRUE);  n++;
+        XtSetArg (args[n], XtNxResizable, TRUE);  n++;
+  	XtSetArg(args[n], XtNlinesVisible, 9); n++;
+	XtSetArg(args[n], XtNcharsVisible, 55); n++;
+	XtSetArg(args[n], XtNborderWidth, 1); n++;
+	XtSetArg(args[n], XtNsensitive, TRUE);   n++;
+
+        scrolledWindow = XtCreateManagedWidget("sw",
+                        scrolledWindowWidgetClass, installFrame, NULL, 0);
+   	installText = (TextEditWidget) XtCreateManagedWidget("text",
+                        textEditWidgetClass, scrolledWindow, args, n);
+}
+
+create_install_graf()
+{
+	Dimension  hh;
+
+	hh = charHeight + 16 + BSPACE * 2 + BWIDTH;
+	n = 0;
+        XtSetArg (args[n], XtNxAddWidth, TRUE);  n++;
+        XtSetArg (args[n], XtNyAddHeight, TRUE);  n++;
+        XtSetArg (args[n], XtNxAttachRight, TRUE);  n++;
+        XtSetArg (args[n], XtNxResizable, TRUE);  n++;
+	XtSetArg(args[n], XtNyRefWidget, scrolledWindow); n++;
+	XtSetArg (args[n], XtNwidth, 100); n++;
+	XtSetArg (args[n], XtNheight, hh); n++;
+        installGraf = XtCreateManagedWidget("",
+                        drawAreaWidgetClass, installFrame, args, n);
+	XtAddCallback(installGraf, XtNexposeCallback, expose_graf_win,
+                (XtPointer)0);
+}
+
+
+create_install_but()
+{
+	
+	n = 0;
+        XtSetArg (args[n], XtNxAddWidth, TRUE);  n++;
+        XtSetArg (args[n], XtNyAddHeight, TRUE);  n++;
+        XtSetArg (args[n], XtNxAttachRight, TRUE);  n++;
+        XtSetArg (args[n], XtNxResizable, TRUE);  n++;
+	XtSetArg (args[n], XtNyAttachBottom, TRUE); n++;
+	XtSetArg (args[n], XtNyRefWidget, installGraf); n++;
+	XtSetArg (args[n], XtNlayoutType, OL_FIXEDCOLS);  n++;
+        XtSetArg (args[n], XtNmeasure, 1);  n++;
+	XtSetArg (args[n], XtNvPad, 12);  n++;
+     	disWin = XtCreateManagedWidget("button",
+                     controlAreaWidgetClass, installFrame, args, n);
+	n = 0;
+	XtSetArg (args[n], XtNmappedWhenManaged, FALSE);  n++;
+     	disBut = XtCreateManagedWidget("Dismiss",
+                        oblongButtonWidgetClass, disWin, args, n);
+        XtAddCallback(disBut, XtNselect,(XtPointer) quit_proc, NULL);
+}
+
+void
+install_exit()
+{
+	Dimension   width, height;
+	Position    posx, posy;
+
+	if (install_pid >= 0)
+	{
+	    install_pid = -1;
+	    XBell(dpy, 50);
+	    XtUnmapWidget(topShell);
+	    n = 0;
+            XtSetArg(args[n], XtNwidth, &width);  n++;
+            XtSetArg(args[n], XtNheight, &height);  n++;
+	    XtGetValues(disWin, args, n);
+	    n = 0;
+            XtSetArg(args[n], XtNx, &posx);  n++;
+            XtSetArg(args[n], XtNy, &posy);  n++;
+	    XtGetValues(disBut, args, n);
+	    posx = width / 2 - 40;
+	    if (posx < 0)
+		posx = 0;
+	    XtMoveWidget(disBut, posx, posy);
+	    XtMapWidget(disBut);
+	}
+}
+	
+
+read_install_input()
+{
+	int	num, ival, size, len;
+	char    *ptr;
+	char    mess[160];
+
+	if (grafWin < 0)
+		return;
+	if ((num = read(pipe_1[0], tmpstr, 250)) > 1)
+        {
+	    tmpstr[num] = '\0';
+	    ptr = tmpstr;
+	    size = 0;
+	    while (size < num)
+	    {
+	       if (*ptr != '$')
+		    ptr++;
+	       else
+	       {
+		    *ptr = '\0';
+		    break;
+	       }
+	       size++;
+	    }
+	    if (size >= num)
+		return;
+	    sprintf(mess, "%s\n", tmpstr);
+	    OlTextEditInsert(installText, mess, strlen(mess));
+            ival = sscanf( ptr+1, "%d", &size);
+	    if (ival == 1 && size > 0)
+	    {
+		 sizeInstalled += size;
+		 draw_install_bar(0);
+	    }
+	}
+	else
+	{
+   	    if (install_pid <= 0)
+	    {
+	        XtRemoveInput(install_input);
+	        close(pipe_1[0]);
+	    }
+	}
+}
+
+
+exec_install()
+{
+	char  *i_vnmr;
+	char  *dest_dir;
+	int   pid, num, pick;
+	Boolean set;
+	vchoice *tchoice;
+
+	if (pipe(pipe_1) == -1)
+        {
+	     fprintf(stderr, "ins_sol: pipe failed\n");
+	     return;
+	}
+
+	i_vnmr = (char *) malloc(strlen(prog_dir) + 12);
+	sprintf(i_vnmr, "%si_vnmr.3", prog_dir);
+	
+	nargv[0] = (char *) malloc (20);
+	if (delete_acq)
+	   sprintf(nargv[0], "%d ", acq_pid);
+	else
+	   sprintf(nargv[0], "%d ", -1);
+	nargv[1] = (char *) malloc (strlen(optfile[sysload]) + 2);
+	strcpy(nargv[1], optfile[sysload]);
+	nargv[2] = (char *) malloc(strlen(prog_dir) + 2);
+	strcpy(nargv[2], prog_dir);
+
+	XtSetArg (args[0], XtNstring, &dest_dir);
+	XtGetValues(dirWidget, args, 1);
+	nargv[3] = (char *) malloc(strlen(dest_dir) + 2);
+	strcpy(nargv[3], dest_dir);
+	nargv[4] = (char *) malloc(8);
+	sprintf(nargv[4], "%d", pipe_1[1]);
+	nargv[5] = (char *) malloc(6);
+	if (online_link)
+	   strcpy(nargv[5], "yes");
+	else
+	   strcpy(nargv[5], "no");
+	nargv[6] = (char *) malloc(6);
+	if (vnmr_link)
+	   strcpy(nargv[6], "yes");
+	else
+	   strcpy(nargv[6], "no");
+
+	num = 7;
+
+	pick = 0;
+	tchoice = load_option[sysload].data;
+	while (tchoice != NULL)
+	{
+	     n = 0;
+             XtSetArg (args[n], XtNset, &set);  n++;
+	     XtGetValues(optCheck[pick], args, n);
+	     if (set)
+	     {
+		nargv[num] = (char *) malloc(strlen(tchoice->info) + 2);
+		strcpy(nargv[num], tchoice->info);
+		num++;
+	     }
+	     tchoice = tchoice->next;
+	     pick++;
+	}
+	nargv[num] = (char *)NULL;
+	pid = fork();
+        if (pid == -1)
+        {
+	     fprintf(stderr, "ins_sol: could not execute i_vnmr.3\n");
+	     return;
+        }
+	freopen("/dev/null","r",stdin);
+   	freopen("/dev/console","a",stdout);
+	freopen("/dev/console","a",stderr);
+
+	if (pid == 0)
+	{
+	    for(n = 3; n < 30; n++)
+	    {
+		if (n != pipe_1[1])
+		    close(n);
+	    }
+	    sprintf(tmpstr, "%si_vnmr.3 ", prog_dir);
+	    for (n = 0; n < num; n++)
+	    {
+		strcat(tmpstr, " ");
+	     strcat(tmpstr, nargv[n]);
+	    }
+/* fprintf(stderr, " ins_sol: call %s\n", tmpstr); */
+	   system(tmpstr);
+	    exit(0);
+
+	}
+	else
+	{
+	    struct sigaction         intserv;
+	    sigset_t                 qmask;
+
+	    install_pid = pid;
+	    close(pipe_1[1]);
+	    install_input = XtAddInput(pipe_1[0], XtInputReadMask,
+                                 read_install_input, NULL);
+	    sigemptyset( &qmask );
+            sigaddset( &qmask, SIGCHLD );
+            intserv.sa_handler = install_exit;
+            intserv.sa_mask = qmask;
+            intserv.sa_flags = 0;
+            sigaction( SIGCHLD, &intserv, NULL );
+	}
+
+}
+
+confirm_proc(w, client_data, call_data)
+  Widget          w;
+  XtPointer       client_data;
+  XtPointer       call_data;
+{
+	int	yes, pid;
+
+	yes = (int) client_data;
+        XtPopdown(confirmShell);
+	if (yes)
+	{
+/**
+	    while (1)
+	    {
+	         pid = find_vnmr3();
+		 install_pid = -1;
+	         if (pid > 0)
+	            sprintf(tmpstr, "kill -9 %d", pid);
+	         else
+		    break;
+	         system(tmpstr);
+	     }
+**/
+	     install_pid = -1;
+	     kill(0, SIGKILL);
+             XCloseDisplay(dpy);
+             exit(0);
+	}
+}
+
+
+popup_confirmer()
+{
+     Widget  control, yesbut, nobut;
+     Window  win;
+     int     x, y;
+
+     if (confirmShell == NULL)
+     {
+   	 XTranslateCoordinates(dpy, topShellId, RootWindow(dpy, 0),
+                        0, 0, &x, &y, &win);
+	 sprintf(location, "+%d+%d", x+100, y+200);
+         n = 0;
+         XtSetArg (args[n], XtNtitle, "Installation Warning");  n++;
+     	 XtSetArg (args[n], XtNgeometry, location);  n++;
+         XtSetArg (args[n], XtNresizeCorners, FALSE);  n++;
+         XtSetArg (args[n], XtNpushpin, OL_NONE);  n++;
+         confirmShell = XtCreatePopupShell("", popupWindowShellWidgetClass,
+                                 topShell, args, n);
+        n = 0;
+        XtSetArg(args[n], XtNupperControlArea, &confirmFrame);  n++;
+	XtGetValues (confirmShell, args, n);
+     	n =0;
+     	XtSetArg(args[n], XtNlayoutType, (XtArgVal) OL_FIXEDROWS); n++;
+     	XtSetArg(args[n], XtNmeasure, (XtArgVal) 3);  n++;
+     	XtSetArg(args[n], XtNcenter, (XtArgVal) OL_NONE); n++;
+     	XtSetValues(confirmFrame, args, n);
+     	n =0;
+     	XtSetArg(args[n], XtNstring, "Installation is not done yet,"); n++;
+     	XtSetArg(args[n], XtNrecomputeSize, TRUE);  n++;
+     	XtSetArg(args[n], XtNstrip, False);  n++;
+     	XtSetArg(args[n], XtNalignment, OL_LEFT);  n++;
+     	XtSetArg(args[n], XtNgravity, WestGravity);  n++;
+     	XtCreateManagedWidget ("", staticTextWidgetClass,
+                        confirmFrame, args, n);
+     	n =0;
+     	XtSetArg(args[n], XtNstring, "do you still want to quit?"); n++;
+     	XtSetArg(args[n], XtNrecomputeSize, TRUE);  n++;
+     	XtSetArg(args[n], XtNstrip, False);  n++;
+     	XtSetArg(args[n], XtNalignment, OL_LEFT);  n++;
+     	XtSetArg(args[n], XtNgravity, WestGravity);  n++;
+     	XtCreateManagedWidget ("", staticTextWidgetClass,
+                        confirmFrame, args, n);
+        n =0;
+        XtSetArg(args[n], XtNvSpace, 12); n++;
+     	XtSetValues(confirmFrame, args, n);
+     	n =0;
+     	XtSetArg(args[n], XtNlayoutType, (XtArgVal) OL_FIXEDROWS); n++;
+     	XtSetArg(args[n], XtNmeasure, (XtArgVal) 1);  n++;
+     	XtSetArg(args[n], XtNhPad, charWidth * 7); n++;
+     	XtSetArg(args[n], XtNhSpace, charWidth * 7); n++;
+     	control = XtCreateManagedWidget("button",
+                     controlAreaWidgetClass, confirmFrame, args, n);
+     	n = 0;
+/*
+     	XtSetArg (args[n], XtNinputFocusColor, winFg); n++;
+*/
+     	yesbut = XtCreateManagedWidget("Yes",
+                        oblongButtonWidgetClass, control, args, n);
+     	XtAddCallback(yesbut, XtNselect, confirm_proc, (XtPointer) 1);
+     	nobut = XtCreateManagedWidget("No",
+                        oblongButtonWidgetClass, control, args, 1);
+     	XtAddCallback(nobut, XtNselect, confirm_proc, (XtPointer) 0);
+     	XtRealizeWidget(confirmShell);
+     }
+     XtPopup(confirmShell, XtGrabExclusive);
+     XBell(dpy, 20);
+}
+
+
+void
+close_help(w, client_data, call_data)
+  Widget          w;
+  XtPointer       client_data;
+  XtPointer       call_data;
+{
+        XtPopdown(helpShell);
+}
+
+
+create_help_window()
+{
+     int     x, y;
+     Widget  pwidget, scroll, twidget, cBut;
+     TextEditWidget   helpWidget;
+
+     if (helpShell == NULL)
+     {
+	 sprintf(tmpstr, "%sreadme.txt", help_dir);
+	 sprintf(location, "+%d+%d", 300, 100);
+         n = 0;
+         XtSetArg (args[n], XtNtitle, "Installation Help");  n++;
+     	 XtSetArg (args[n], XtNgeometry, location);  n++;
+         XtSetArg (args[n], XtNresizeCorners, FALSE);  n++;
+/**
+         XtSetArg (args[n], XtNpushpin, OL_NONE);  n++;
+**/
+         helpShell = XtCreatePopupShell("", popupWindowShellWidgetClass,
+                                 topShell, args, n);
+        n = 0;
+        XtSetArg(args[n], XtNupperControlArea, &pwidget);  n++;
+	XtGetValues (helpShell, args, n);
+     	n =0;
+     	XtSetArg(args[n], XtNlayoutType, (XtArgVal) OL_FIXEDCOLS); n++;
+     	XtSetArg(args[n], XtNmeasure, (XtArgVal) 1);  n++;
+     	XtSetValues(pwidget, args, n);
+
+        n = 0;
+/*
+	XtSetArg(args[n], XtNverticalSB, TRUE);   n++;
+	XtSetArg(args[n], XtNhorizontalSB, FALSE);   n++;
+*/
+	XtSetArg(args[n], XtNlinesVisible, 19); n++;
+	XtSetArg(args[n], XtNcharsVisible, 60); n++;
+	XtSetArg(args[n], XtNborderWidth, 1); n++;
+	XtSetArg(args[n], XtNsensitive, TRUE);   n++;
+	XtSetArg(args[n], XtNsourceType, OL_DISK_SOURCE);   n++;
+	XtSetArg(args[n], XtNsource, tmpstr);   n++;
+	scroll = XtCreateManagedWidget("",
+                        scrolledWindowWidgetClass, pwidget, NULL, 0);
+        helpWidget = (TextEditWidget) XtCreateManagedWidget("",
+                        textEditWidgetClass, scroll, args, n);
+	n = 0;
+     	XtSetArg(args[n], XtNlayoutType, (XtArgVal) OL_FIXEDROWS); n++;
+     	XtSetArg(args[n], XtNmeasure, (XtArgVal) 1);  n++;
+	XtSetArg(args[n], XtNborderWidth, 1); n++;
+        twidget = XtCreateManagedWidget("",
+                        controlAreaWidgetClass, pwidget, args, n);
+	n = 0;
+        XtSetArg (args[n], XtNlabel, "Close");  n++;
+        XtSetArg (args[n], XtNx, 128);  n++;
+        cBut = XtCreateManagedWidget("",
+                        oblongButtonWidgetClass, twidget, args, n);
+        XtAddCallback(cBut, XtNselect,(XtPointer) close_help, NULL);
+     	XtRealizeWidget(helpShell);
+    }
+    if (helpShell != NULL)
+        XtPopup(helpShell, XtGrabNone);
+}
+

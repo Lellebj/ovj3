@@ -1,0 +1,233 @@
+#************************************************************************
+#									
+# Copyright (c) Varian Assoc., Inc.  All Rights Reserved.
+#
+#************************************************************************
+# 
+#  Image browser programs needs two process "ib_ui" and "ib_graphics"
+#
+#  make -f makeib           --- build ib_graphics
+#  make -f makeib graphics  --- build ib_graphics
+#  make -f makeib ui        --- build ib_ui
+#  make -f makeib all       --- build ib_ui ib_graphics
+#  make -f makeib debug     --- build DEBUG ib_graphics  version
+#  make -f makeib debug_ui  --- build DEBUG ib_ui  version
+#  make -f makeib profile   --- build PROFILE ib_graphics  version
+#  make -f makeib profile_ui--- build PROFILE ib_ui  version
+#
+#************************************************************************
+
+CHARLY=/home/dent/charly
+
+
+#---------------------------------------------
+# Source files for miscellaneous and its directory
+#---------------------------------------------
+MISC_DIR=
+MISC_SRC=
+MISC_OBJ=$(MISC_SRC:.c=.o)
+
+
+#----------------------
+# Directories for SCCS
+#----------------------
+SCCS_DIR=/home/dent/charly/xview/imbrowser/src
+SCCS_PARAMS_DIR=/home/krik1/dew/Storage
+
+#---------------------------
+# Target files to be built
+#---------------------------
+TARGET_UI=ib_ui
+TARGET_GRAPHICS=ib_graphics
+
+#---------------------------------------------
+# Source files for shared by ui and graphics
+#_--------------------------------------------
+SHARED_SRC=	message.c
+SHARED_INC=	define_ui.h message.h
+
+#---------------------------------------------
+# Source files for ui. 
+#---------------------------------------------
+UI_SRC=		win_ui.c
+UI_INC=	
+
+#---------------------------------------------
+# Source files for graphics
+#---------------------------------------------
+IB_SRC=		common.c \
+		win_graphics.c
+   
+IB_INC=		common.h \
+		filelist_id.h \
+		interrupt.h
+
+GTOOLS_SRC=	box.c \
+		edgelist.c \
+		frame_data.c \
+		gframe.c \
+		gtools.c \
+		line.c \
+		oval.c \
+		polygon.c \
+		roitool.c \
+		vs.c \
+		zoom.c
+
+GTOOLS_INC=	gframe.h \
+		gtools.h \
+		roitool.h \
+		zoom.h
+
+PROCESS_SRC=	arithmetic.c \
+		filter.c \
+		histenhance.c \
+		statistics.c \
+		win_arithmetic.c \
+		win_filter.c \
+		win_histenhance.c \
+		win_stat.c
+
+PROCESS_INC= 	process.h \
+		win_process.h
+
+MOVIE_SRC=	win_movie.c
+
+MOVIE_INC=
+
+SISFILE_SRC=	sisfile.c
+SISFILE_INC=	sisfile.h
+
+CONVERT_SRC=	convert.c
+CONVERT_INC=	convert.h
+
+INPUTWIN_SRC=	inputwin.c
+INPUTWIN_INC=	inputwin.h
+
+PARAMS_INC=	params.h
+
+# All source files for graphics
+GRAPHICS_SRC=$(IB_SRC) \
+	$(GTOOLS_SRC) \
+	$(PROCESS_SRC) \
+	$(MOVIE_SRC) \
+	$(SISFILE_SRC) \
+	$(CONVERT_SRC) \
+	$(INPUTWIN_SRC)
+
+#---------------
+# Object files
+#---------------
+GRAPHICS_OBJ=$(GRAPHICS_SRC:.c=.o)
+UI_OBJ=$(UI_SRC:.c=.o)
+SHARED_OBJ=$(SHARED_SRC:.c=.o)
+
+#---------------------------
+# Extract all include files
+#---------------------------
+.INIT:	$(IB_INC) \
+	$(GTOOLS_INC) \
+	$(PROCESS_INC) \
+	$(MOVIE_SRC) \
+	$(SISFILE_INC) \
+	$(CONVERT_INC) \
+	$(INPUTWIN_INC) \
+	$(PARAMS_INC) \
+	$(SHARED_INC)
+
+#------------------------------
+# Include flags for compilation
+#
+#  WARNING ----- WARNING ------ WARNING ------ WARNING ----- WARNING
+#
+#  The compilation with optimization flag -O will cause the core
+#  dump in 'vsprintf' functinal call for AT&T C++ 2.0 under SunOS 4.1.
+#------------------------------
+CPPFLAGS += -I$(CHARLY)/sis/include -I$(OPENWINHOME)/include
+CCFLAGS= -g
+
+#------------------------------
+# Library flags for compilation
+#------------------------------
+LDFLAGS += -L$(OPENWINHOME)/lib -L/home/dent/charly/sis/lib \
+	-L/home/krik1/dew/Storage
+LDLIBS += -lsis -lparams -lxview -lolgx -lX -lm
+
+.PRECIOUS: $(TARGET_UI) $(TARGET_GRAPHICS)
+.KEEP_STATE:
+
+#------------------------------
+#  User specified targets
+#------------------------------
+# User specific target for 'ib_graphics'
+graphics debug profile: $(TARGET_GRAPHICS)
+
+# User specific target for 'ib_ui'
+ui debug_ui profile_ui: $(TARGET_UI)
+
+# All
+all: $(TARGET_GRAPHICS) $(TARGET_UI)
+
+#------------------------------
+# Flags Changed due to user
+#------------------------------
+debug := CCFLAGS=-g
+profile := CCFLAGS = -pg -Bstatic
+debug_ui := CCFLAGS=-g
+profile_ui := CCFLAGS = -pg -Bstatic
+
+#------------------------------
+# Compilation and Linking
+#------------------------------
+$(TARGET_GRAPHICS): $(GRAPHICS_OBJ) $(SHARED_OBJ)
+	(umask 2; $(LINK.cc) -o $@ $(GRAPHICS_OBJ) $(SHARED_OBJ) $(LDLIBS) )
+	@(chmod -f 666 .nse_depinfo)
+
+$(TARGET_UI): $(UI_OBJ) $(SHARED_OBJ) $(MISC_OBJ)
+	(umask 2; $(LINK.cc) -o $@ $(UI_OBJ) $(SHARED_OBJ) $(MISC_OBJ) $(LDLIBS) )
+	@(chmod -f 666 .nse_depinfo)
+
+$(GRAPHICS_OBJ) $(UI_OBJ) $(SHARED_OBJ) $(MISC_OBJ): $(@:.o=.c)
+	(umask 2; $(COMPILE.cc) $< )
+
+#--------------------
+# SCCS extraction.
+#--------------------
+$(IB_SRC) $(IB_INC) $(UI_SRC) $(UI_INC) $(SHARED_SRC) $(SHARED_INC): \
+	$(SCCS_DIR)/SCCS/s.$$@
+	sccs -d $(SCCS_DIR) get $@
+
+$(GTOOLS_SRC) $(GTOOLS_INC): $(SCCS_DIR)/gtools/SCCS/s.$$@
+	sccs -d $(SCCS_DIR)/gtools get $@
+
+$(PROCESS_SRC) $(PROCESS_INC): $(SCCS_DIR)/process/SCCS/s.$$@
+	sccs -d $(SCCS_DIR)/process get $@
+
+$(MOVIE_SRC) $(MOVIE_INC): $(SCCS_DIR)/movie/SCCS/s.$$@
+	sccs -d $(SCCS_DIR)/movie get $@
+
+$(SISFILE_SRC) $(SISFILE_INC): $(SCCS_DIR)/sisfile/SCCS/s.$$@
+	sccs -d $(SCCS_DIR)/sisfile get $@
+
+$(CONVERT_SRC) $(CONVERT_INC): $(SCCS_DIR)/convert/SCCS/s.$$@
+	sccs -d $(SCCS_DIR)/convert get $@
+
+$(INPUTWIN_SRC) $(INPUTWIN_INC): $(SCCS_DIR)/inputwin/SCCS/s.$$@
+	sccs -d $(SCCS_DIR)/inputwin get $@
+
+$(PARAMS_INC): $(SCCS_PARAMS_DIR)/SCCS/s.$$@
+	sccs -d $(SCCS_PARAMS_DIR) get $@
+
+$(MISC_SRC): $(MISC_DIR)/SCCS/s.$$@
+	sccs -d $(MISC_DIR) get $@
+
+clean:
+	/bin/rm -f $(GRAPHICS_OBJ) $(UI_OBJ) $(SHARED_OBJ); \
+	sccs -d $(SCCS_DIR) clean; \
+	sccs -d $(SCCS_DIR)/gtools clean; \
+	sccs -d $(SCCS_DIR)/process clean; \
+	sccs -d $(SCCS_DIR)/movie clean; \
+	sccs -d $(SCCS_DIR)/sisfile clean; \
+	sccs -d $(SCCS_DIR)/convert clean; \
+	sccs -d $(SCCS_DIR)/inputwin clean; \
+	sccs -d $(SCCS_PARAMS_DIR) clean

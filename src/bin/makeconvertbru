@@ -1,0 +1,45 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+# 
+# makeconvertbru - a make file for 'convertbru'; a program
+#		   used to convert Bruker data into a format
+#		   compatible with Sread; to be used after
+#		   Bruker data have been read from a tape
+#		   with the Readbrutape program
+#
+# make -f makeconvertbru :  creates 'convertbru' for PAID
+#
+
+SCCSDIR=$(sccsdir)
+BSCCS=$(SCCSDIR)/bin/SCCS/s.
+BGET = sccs -d$(SCCSDIR)/bin get
+
+#-- Normal operational compile flags
+CFLAGS= -fsingle -c -O
+
+#-- Debugging with DBXTOOL compile flags
+#CFLAGS= -c -g
+
+#------------------------------------------------------------------------
+#--- objects that are needed for convertbru
+#------------------------------------------------------------------------
+OBJ=                     \
+                convertbru.o
+
+convertbru: $(OBJ)
+	(umask 2; cc -o convertbru $(OBJ) -ll -lm  )
+	rm -f convertbru.o
+ 
+convertbru.o       : convertbru.c
+	(umask 2; cc $(CFLAGS) convertbru.c  )
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+
+convertbru.c : $(BSCCS)convertbru.c
+	$(BGET) convertbru.c

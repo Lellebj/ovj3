@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template name="proc1Dlinelist" element="pages" type="processing" >
+  <group size="800 270"
+    style="Heading2"
+    label="Peaks"
+    bg="transparent"
+    border="None"
+    side="Top"
+    justify="Left"
+    tab="yes"
+    enable="no"
+    reference="proc1Dlinelist"
+    useref="no"
+    subtype="Basic"
+    expanded="yes"
+    >
+    <textfile loc="140 5" size="380 260"
+      style="StdPar"
+      vq="curexp fptmp"
+      set="$fp=curexp+'/fp.out' exists($fp,'file'):$e if $e&lt;0.5 then write('reset',$fp) endif $VALUE=$fp"
+      editable="no"
+      wrap="no"
+      />
+    <button loc="5 30" size="130 20"
+      style="Heading3"
+      label="Pick Peaks"
+      vc="dpf fp exists('fptmp','parameter'):$e if $e&lt;0.5 then create('fptmp','real') else destroy('fptmp') endif"
+      decor1="No"
+      />
+    <button loc="5 5" size="130 20"
+      style="Heading3"
+      label="Auto Threshold"
+      vc="thadj ds ds('thresh')"
+      decor1="No"
+      />
+  </group>
+</template>

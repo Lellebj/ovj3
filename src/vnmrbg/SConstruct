@@ -534,7 +534,6 @@ ncommHdrList = ['sockets.h',
                 'eventQueue.h',
                 'eventQueueP.h',
                 'listObj.h',
-                'sendAsync.h',
                 'shrMLib.h']
 ncommFileList = ['sockets.c',
                  'mfileObj.c',
@@ -548,7 +547,6 @@ ncommFileList = ['sockets.c',
                  'eventHandler.c',
                  'eventQueue.c',
                  'listObj.c',
-                 'sendAsync.c',
                  'fdmask.c',
                  'shrMLib.c']
 
@@ -605,8 +603,9 @@ vnmrBgCEnv = Environment(CCFLAGS    = '-m32 -O2 -Wall -Wno-format-security -DHAV
 
 if (platform=="darwin"):
     vnmrBgCEnv.Append(CPPDEFINES = 'MACOS')
-if (gplsource=="true"):
-    vnmrBgCEnv.Append(CPPDEFINES = 'VNMR_GPL')
+if (opensource=="true"):
+    if (gplsource=="true"):
+        vnmrBgCEnv.Append(CPPDEFINES = 'VNMR_GPL')
 
 if ('interix' in platform):    # Interix
    # print interixgcc
@@ -629,8 +628,9 @@ else:
                                CPPFLAGS   = '-m32 -O2 -Wall -DHAVE_LARGEFILE_SUPPORT -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE',
                                CPPDEFINES = ['LINUX', 'VNMRJ'])
 
-if (gplsource=="true"):
-    vnmrBgCppEnv.Append(CPPDEFINES = 'VNMR_GPL')
+if (opensource=="true"):
+    if (gplsource=="true"):
+        vnmrBgCppEnv.Append(CPPDEFINES = 'VNMR_GPL')
 
 # copy and process the magic.lex.c file
 srcFile    = os.path.join(lexSrcCPath, 'magic.lex.c')
@@ -786,25 +786,22 @@ if ('interix' not in platform):    # Interix
        vnmrbgBuild = vnmrBgCppEnv.Program(target    = vnmrbgTarget,
                                    source    = [unmrAllObjs,
                                                 magicAllObjs],
-                                   LINKFLAGS = '-O2 -rdynamic -m32 -Wl,-rpath /usr/lib',
-                                   LIBPATH   = [cwd,
-                                                os.path.join(os.sep, 'usr', 'lib32', 'i386-linux-gnu')],
+                                   LINKFLAGS = '-O2 -rdynamic -m32',
+                                   LIBPATH   = [cwd],
                                    LIBS      = ['dl'])
    elif (gplsource=="true"):
        vnmrbgBuild = vnmrBgCppEnv.Program(target    = vnmrbgTarget,
                                    source    = [unmrAllObjs,
                                                 magicAllObjs],
-                                   LINKFLAGS = '-O2 -rdynamic -m32 -Wl,-rpath /usr/lib',
-                                   LIBPATH   = [cwd,
-                                                os.path.join(os.sep, 'usr', 'lib32', 'i386-linux-gnu')],
+                                   LINKFLAGS = '-O2 -rdynamic -m32',
+                                   LIBPATH   = [cwd],
                                    LIBS      = ['gsl','gslcblas','dl'])
    else:
        vnmrbgBuild = vnmrBgCppEnv.Program(target    = vnmrbgTarget,
                                    source    = [unmrAllObjs,
                                                 magicAllObjs],
-                                   LINKFLAGS = '-O2 -rdynamic -m32 -Wl,-rpath /usr/lib',
-                                   LIBPATH   = [cwd,
-                                                os.path.join(os.sep, 'usr', 'lib32', 'i386-linux-gnu')],
+                                   LINKFLAGS = '-O2 -rdynamic -m32',
+                                   LIBPATH   = [cwd],
                                    LIBS      = ['dl'])
 else:
    vnmrbgBuild = vnmrBgCppEnv.Program(target    = vnmrbgTarget,

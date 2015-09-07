@@ -1,0 +1,96 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+# send2Vnmr  make file
+#
+#
+
+MAKEFILE= makesend2vnmr.lnx
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+SCCSDIR=$(sccsdir)
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+#--- SCCS Sources ----
+BIN_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+
+BIN_HDR=
+BIN_SRC=	send2Vnmr.c
+BIN_OBJ= $(BIN_SRC:.c=.o)
+
+MAKE_SRC=		\
+	makesend2vnmr.lnx
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= 				\
+	$(MAKE_SRC) 			\
+	send2Vnmr.c
+ 
+ALL_C_SRC = $(BIN_SRC)
+
+#------------  Include Proper Rules for System base on environment variable ruleset ---- 
+
+# set defines acording to system Type
+CC= cc
+CDEFINE= -DLINUX
+LIBS= -Wl,-rpath /vnmr/lib -lm -lnsl 
+OPTIMIZE= -O2
+DEBUGOPT=
+NCOMMDIR= $(lnxobjdir)/proglib/ncomm
+
+CFLAGS= -O2 -m32
+CPPFLAGS=
+LDFLAGS=
+
+LINK.c= $(CC) $(CDEFINE) $(CFLAGS)
+
+BIN_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get $(REV)
+
+std LINUX : Source send2Vnmr
+	@echo send2Vnmr Complete
+
+send2Vnmr : $(BIN_OBJ)
+	(umask 2; $(LINK.c) -o $@  send2Vnmr.c -L$(NCOMMDIR) -lacqcomm $(LIBS))
+	@echo send2Vnmr is complete
+
+#---------------------------------------------------------------------------------------
+ 
+Source src : $(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+depend:
+	makedepend -f $(MAKEFILE) -Y $(CDEFINE) $(ALLSRC) 2>/dev/null
+
+#--- Object Targets ----------------------------------------------
+
+#------ makefile extraction via SCCS allways. -------
+# $(MAKEFILE) : 
+# 	$(BIN_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(BIN_SRC) $(BIN_HDR) $(MAKE_SRC) : % :$(BIN_SCCS_SRC)%
+	$(BIN_SGET) $@
+
+# ---------  Manual dependences ------------- 
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+# DEPENDENCIES MUST END AT END OF FILE
+
+
+# DEPENDENCIES MUST END AT END OF FILE
+# IF YOU PUT STUFF HERE IT WILL GO AWAY
+# see make depend above

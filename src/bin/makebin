@@ -1,0 +1,324 @@
+# 
+# Copyright (c) 1991-1997 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#
+# makebin  make file
+# invoked by Sdelta
+# make -f makebin
+# make -f <program>
+#
+#  To add a new standalone program, add its name to STANDALONE_PRG
+#  and STANDALONE_SRC
+#
+#  To add a new program that uses a makefile, add its name to
+#  MAKEFILE_PRG and MAKEFILE_PRG_MAKEFILES.  This make file will
+#  assume there is a corresponding makefile and take it from there.
+#
+#  A standalone program is one that does not use a makefile.
+#  Currently we assume the C language is always used for such programs.
+#
+#  Future enhancements:
+#	MAKE value of MAKEFILE_PRG_MAKEFILES depend on MAKEFILE_PRG
+#	targets for `all' constructed from STANDALONE_PRG and MAKEFILE_PRG
+#
+# 8/3/89 enhancements  Greg B.
+#	Made value of STANDALONE_SRC depend on STANDALONE_PRG
+#	Automatically update the standalone source files in /common/sysbin
+#       Fixed dependency on SCCS source that was not present before.
+
+MAKEFILE= makebin
+
+#-- Normal operational compile flags
+#CFLAGS= -O -sb
+CFLAGS= -O
+CPPFLAGS=
+LDFLAGS=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) -c
+LINK.c= $(CC) $(CPPFLAGS) $(LDFLAGS) 
+ 
+# sourcedir, sccsdir are environment variables
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+SRC_DIR=$(SRCDIR)/sysbin/
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+
+BIN_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----
+MAKEFILE_SCCS_SRC = $(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+STANDALONE_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+BIN_LN = ln -s $(BIN_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+BIN_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get
+
+#----  default source extraction to links -------
+BIN_GET= $(BIN_LN)
+
+MAKE = make
+
+#----  programs stored as executables in SCCS  -------
+# STANDALONE_EXEC = convert libMagick.so
+STANDALONE_EXEC = libMagick.so	\
+		  expect
+
+STANDALONE_SRC =		\
+		catcheaddr.c	\
+		convertbru.c	\
+		cptoconpar.c	\
+		eatchar.c	\
+		eccsend.c	\
+		expandphase.c	\
+		fileowner.c 	\
+		findedevices.c  \
+		findLinks.c     \
+		fm_shuffle.c	\
+		fpa_test.c	\
+		getchoices.c	\
+		gin_setup.c	\
+		loginvjpassword.c	\
+		makeprintcap.c	\
+		PboxAdapter.c   \
+		psfilter.c	\
+		read_raw_data.c	\
+		readsctables.c	\
+		rmsAddData.c	\
+		setGifAspect.c	\
+		startmekillme.c	\
+		tape.c		\
+		tek_setup.c	\
+		unix_vxr.c	\
+		vn.c		\
+		vxr_unix.c
+
+STANDALONE_PRG = $(STANDALONE_SRC:.c=)
+
+MAKEFILE_PRG =			\
+		banner		\
+		convertcmx	\
+		cpos_cvt	\
+		decomp		\
+		deencode	\
+		diffshims	\
+		diffparams	\
+		dps_ps_gen	\
+		ecc		\
+		eccTool     	\
+		editdevices     \
+		ejectthecdrom	\
+		expfit		\
+		fitspec		\
+		fm_calshim	\
+		fontselect	\
+		gconfig		\
+		gshim		\
+		ihwinfo		\
+                imcalc		\
+                imfit		\
+		inssol		\
+		killroboproc	\
+		logplane	\
+		nvlocki		\
+		p11		\
+		pbox		\
+		portrait	\
+		Probe_edit	\
+		pulsetool	\
+		send2vnmr	\
+		showconsole	\
+		spins		\
+                tabc		\
+		usrwt		\
+		vconfig		\
+		vnmr_confirmer	\
+		vxrTool		\
+		xdcvt
+
+
+MAKEFILE_PRG_MAKEFILES =	\
+		makeexpfit	\
+		makeejectthecdrom	\
+		makedecomp	\
+		makespins	\
+		makesend2vnmr	\
+		makefitspec	\
+		makefm_calshim	\
+		makeeccTool	\
+		makevxrTool	\
+		makeportrait	\
+		makepulsetool	\
+		makexdcvt	\
+		makeeditdevices \
+		makebanner	\
+		makeusrwt	\
+		makediffshims	\
+		makediffparams	\
+		makecpos_cvt	\
+		makelogplane	\
+		makegconfig	\
+		makevconfig	\
+		makedps_ps_gen	\
+		makevnmr_confirmer	\
+		makeinssol	\
+		makeshowconsole	\
+		makedeencode	\
+		makeihwinfo	\
+                makeimcalc	\
+                makeimfit	\
+                maketabc	\
+                makeProbe_edit	\
+                makefontselect	\
+                makeconvertcmx	\
+		makepbox	\
+		makep11		\
+		makeecc		\
+		makenvlocki	\
+		makegshim	\
+		makekillroboproc
+
+# Note: makelogplane makes: log_mag, plane_decode
+# Note: makeecc makes:  beccphase eccdiff eccdisp eccphase feccphase
+
+std:	 Source all
+#	 mv usrwt.o usrwt.oo
+#	 rm -f *.o
+#	 mv usrwt.oo usrwt.o
+	@echo "makebin Complete."
+
+all:	PboxAdapter expandphase expfit ejectthecdrom convertbru 	\
+	dps_ps_gen spins send2vnmr vn fitspec fm_calshim fm_shuffle tape \
+	readsctables makeprintcap startmekillme getchoices \
+	eatchar vxrTool portrait decomp banner vxr_unix unix_vxr fpa_test\
+	gin_setup tek_setup editdevices usrwt diffshims diffparams cpos_cvt xdcvt \
+	vconfig pulsetool psfilter eccsend eccTool vnmr_confirmer rmsAddData \
+	imcalc imfit logplane tabc cptoconpar catcheaddr inssol deencode loginvjpassword \
+	showconsole convert libMagick.so pbox p11 findedevices expect Probe_edit fontselect \
+	setGifAspect convertcmx ecc nvlocki gshim gs
+	@echo NMR_ID bin makes completed
+
+AIX:
+	($(MAKE) -ef $(MAKEFILE) \
+	  "ARCH=AIX"	\
+	  "CPPFLAGS= -DAIX"  \
+	   AIX_OBJ)
+
+AIX_OBJ: expfit convertbru dps_ps_gen spins vn fitspec tape \
+	send2vnmr getchoices \
+	portrait decomp vxr_unix unix_vxr rmsAddData \
+	gin_setup tek_setup editdevices usrwt diffshims cpos_cvt xdcvt \
+	vconfig pulsetool psfilter vxrTool vnmr_confirmer \
+	imcalc imfit logplane tabc inssol deencode pbox PboxAdapter Probe_edit fontselect convertcmx setGifAspect
+	@echo NMR_ID bin makes completed
+
+IRIX:
+	($(MAKE) -e -f $(MAKEFILE) \
+	  "ARCH=IRIX"   \
+	  "CFLAGS= -c -O -cckr" \
+	  "CPPFLAGS= -O -cckr -DIRIX"  \
+	  "SHELL= /bin/sh"  \
+	   IRIX_OBJ)
+
+IRIX_OBJ: expfit convertbru dps_ps_gen spins send2vnmr vn fitspec tape \
+	makeprintcap getchoices portrait decomp vxr_unix unix_vxr \
+	gin_setup tek_setup editdevices usrwt diffshims diffparams cpos_cvt xdcvt \
+	vconfig pulsetool psfilter vxrTool vnmr_confirmer rmsAddData \
+	imcalc imfit logplane tabc inssol deencode pbox PboxAdapter Probe_edit fontselect convertcmx setGifAspect
+	@echo NMR_ID bin makes completed
+
+#  For SOLARIS we need the symbol SOLARIS defined during compilation of
+#  standalone programs (vn.c, for example).  However, if you define CFLAGS
+#  then other programs with their own makefiles don't work (expfit, for
+#  example).  It seems the new make insists on using the value of CFLAGS
+#  defined here, rather than the one in the makefile.  It does not matter
+#  that make is called WITHOUT the -e argument.  In any case, defining
+#  CPPFLAGS here and leaving CFLAGS undefined seems to keep everyone happy.
+#
+#  11/13/93, SCCS version 9.6
+
+SOLARIS: Source
+	$(MAKE) -e -f $(MAKEFILE) "ARCH=SOLARIS" "CPPFLAGS= -DSUN -DUNIX -DSOLARIS" SOLARIS_OBJ
+
+SOLARIS_OBJ:	expandphase expfit ejectthecdrom convertbru  \
+	dps_ps_gen spins send2vnmr vn fitspec fm_calshim fm_shuffle tape \
+	getchoices eatchar decomp vxr_unix unix_vxr gin_setup tek_setup \
+	editdevices usrwt diffshims diffparams cpos_cvt xdcvt gconfig vconfig \
+	fileowner findLinks pulsetool   \
+	psfilter eccsend eccTool portrait imcalc imfit logplane tabc \
+	cptoconpar catcheaddr vnmr_confirmer inssol deencode showconsole loginvjpassword \
+	convert libMagick.so ihwinfo pbox expect p11 PboxAdapter findedevices \
+	Probe_edit fontselect readsctables rmsAddData convertcmx ecc \
+	setGifAspect  read_raw_data killroboproc nvlocki gshim gs
+
+
+Source :
+	( cd $(SRC_DIR); $(MAKE) -ef $(MAKEFILE) \
+	     "BIN_SRC_DIR= $(STANDALONE_SCCS_SRC)" 	\
+	     "BIN_GET= $(BIN_SGET)" \
+	     src)
+
+src : $$(MAKEFILE) $(STANDALONE_SRC) $(MAKEFILE_PRG_MAKEFILES)
+	@echo Standalone Sources up to date...
+
+#---
+# take care of programs dependent on makefiles
+# 2 dollar signs required when called out as a dependency
+# 1 dollar sign required when part of a UNIX command
+#
+# NOTE IT IS UP TO THE MAKEFILE TO CARRY OUT ANY REQUIRED OPERATIONS
+#---
+
+# oops only envokes make if makefile had to be updated.......
+# changed to always envoke makefile
+$(MAKEFILE_PRG): $(MAKE)$$(@) doit
+	- $(MAKE) -f $(MAKE)$(@) $(ARCH)
+
+
+$(MAKEFILE_PRG_MAKEFILES): $$(MAKEFILE_SCCS_SRC)$$(@)
+	$(BIN_SGET) $@
+
+doit:
+
+
+#---
+# standalone programs
+#---
+# make each actual standalone program
+# assumes each executable comes from the corresponding .c file
+# add any flags, libraries for cc (or link) you want,
+# but remember they will apply to all standalone programs
+#---
+
+$(STANDALONE_PRG): $$@.c
+	-(umask 2; $(LINK.c) -o $@ $@.c -lm)
+
+$(STANDALONE_SRC): $$(BIN_SRC_DIR)$$(@)
+	$(BIN_GET) $@
+
+
+$(STANDALONE_EXEC): $$(STANDALONE_SCCS_SRC)$$(@)
+	$(BIN_SGET) $@
+	chmod +x $@
+
+convert: $$(STANDALONE_SCCS_SRC)$$(@).sol
+	$(BIN_SGET) $@.sol
+	mv $@.sol $@
+	chmod +x $@
+
+gs: $$(STANDALONE_SCCS_SRC)$$(@).sol
+	$(BIN_SGET) $@.sol
+	mv $@.sol $@
+	chmod +x $@

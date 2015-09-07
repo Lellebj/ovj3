@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="sems_snr" author="ATP" investigator=""
+    application="imaging" rfcoil="main" anatomy="ATP" time_created="20040519T124841"
+    parfile="sems_snr" apptype="im2D" scans="sems_snr" seqfil="sems">
+  <protocol title="sems_snr" type="protocol">
+    <action  type="LIB" status="Ready" title="sems_snr" exp="sems_snr" time="4 min, 19 sec" macro="sqexp('sems_snr')" data="" />
+  </protocol>
+</template>

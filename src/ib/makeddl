@@ -1,0 +1,162 @@
+# Copyright (c) Varian Assoc., Inc.  All Rights Reserved.
+#
+#	Makefile for ddl file stuff (libddl.a)
+#	make -f makeddl -- decides which system it is on and makes the library
+#			accordingly
+#	make -f makeddl libddl.a -- makes the library for sunos
+#	make -f makeddl libddl_sol.a -- makes the library for solaris
+#	make -f makeddl install -- installs library, include files, and sources
+#
+
+
+#
+# sourcedir, sccsdir & vnmrdir are environment variables
+#
+SRCDIR=$(sourcedir)
+DDL_REV=
+MAKEFILE=makeddl
+
+.KEEP_STATE:
+
+INCLUDE_DIR= ../../include
+LIB_DIR= ../../lib
+SCCS_DIR= $(sccsdir)/ib
+
+OSTYPE=`uname -r | awk '{ print substr($$0,1,1) }'`
+
+#ALL = ex1 ex2 ex3 ex4 ex5 ex6 libddl.a
+ALL = libddl.a
+
+C_SRCS=		ddlnode.c ddlsymtab.c scanner.c parser.c misc.c \
+		action.c crc.c ddl_c_interface.c
+Y_SRCS=		ddl.y
+SRCS=		$(C_SRCS) $(Y_SRCS)
+
+INCS=		crc.h ddl-parser.h ddllib.h ddlnode.h \
+		macrolist.h parser.h scanner.h symbol.h
+
+DEBUG_SRCS=	
+
+OBJS= $(C_SRCS:.c=.o) $(Y_SRCS:.y=.o)
+
+DEBUG_OBJS=$(DEBUG_SRCS:.c=.o)
+
+.INIT:	$(INCS)
+
+#INCDIRS = -I.. -I$(INCLUDE_DIR)
+#INCDIRS = -I..
+#CPLUSPLUS_INCDIRS = -I/usr/local/CenterLine/c++_1.1.0-r1.0/sun4-40/include
+LIBS =   -L$(LIB_DIR) -lm
+
+YOBJS=  y.tab.o
+YFLAGS= -dv
+CFLAGS= -g
+#CC= /usr/local/CC/sun4/CC
+CC=CC
+
+std:		
+		@echo $(OSTYPE)
+		set -x; if [ $(OSTYPE) = "5" ]; then \
+		 ($(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g -DSOLARIS" \
+		   libddl_sol ); \
+		elif [ $(OSTYPE) = "4" ]; then \
+		 ( $(MAKE) -e -f $(MAKEFILE) \
+		   libddl ) ; \
+		fi
+
+libddl:		libddl.a
+
+libddl_sol:	libddl_sol.a
+
+.c.o:
+		(umask 2; $(CC) -c $(CFLAGS) $(INCDIRS) $< )
+
+libddl.a:	ddl.c ddl-tab.h $(OBJS) $(DEBUG_OBJS)
+		-rm libddl.a
+		ar cvlq libddl.a $(OBJS) $(DEBUG_OBJS)
+		(umask 2; /bin/ranlib libddl.a)
+
+libddl_sol.a:	ddl.c ddl-tab.h $(OBJS) $(DEBUG_OBJS)
+		-rm libddl_sol.a
+		(umask 2; ar rv libddl_sol.a `lorder $(OBJS) $(DEBUG_OBJS) | tsort`)
+
+ex1:		example1.o $(OBJS) $(DEBUG_OBJS)
+		$(CC) $(CFLAGS) example1.o $(OBJS) $(DEBUG_OBJS) $(LIBS) -o ex1
+
+ex1s:		example1.o $(OBJS) $(DEBUG_OBJS) 
+		#load $(OBJS) $(LIBS)
+		#load -DOCDEBUG $(INCDIRS) $(DEBUG_SRCS) example1.c 
+		#load -DOCDEBUG $(INCDIRS) $(DEBUG_SRCS) ddlnode.c 
+
+ex2:		example2.o $(OBJS) $(DEBUG_OBJS)
+		$(CC) $(CFLAGS) example2.o $(OBJS) $(DEBUG_OBJS) $(LIBS) -o ex2
+
+ex2s:		example2.o $(OBJS) $(DEBUG_OBJS) 
+		#load $(INCDIRS) $(DEBUG_SRCS) example2.c
+		#load $(OBJS) $(LIBS)
+
+ex3:		example3.o $(OBJS) $(DEBUG_OBJS)
+		$(CC) $(CFLAGS) example3.o $(OBJS) $(DEBUG_OBJS) $(LIBS) -o ex3
+
+ex3s:		example3.o $(OBJS) $(DEBUG_OBJS) 
+		#load $(OBJS) $(LIBS)
+		#load -DOCDEBUG $(INCDIRS) $(DEBUG_SRCS) example3.c
+		#load -DOCDEBUG $(INCDIRS) $(DEBUG_SRCS) ddlsymtab.c
+
+ex4:		example4.o $(OBJS) $(DEBUG_OBJS)
+		$(CC) $(CFLAGS) example4.o $(OBJS) $(DEBUG_OBJS) $(LIBS) -o ex4
+
+ex4s:		example4.o $(OBJS) $(DEBUG_OBJS) 
+		#load $(INCDIRS) $(DEBUG_SRCS) example4.c
+		#load $(OBJS) $(LIBS)
+
+ex5:		example5.o $(OBJS) $(DEBUG_OBJS)
+		$(CC) $(CFLAGS) example5.o $(OBJS) $(DEBUG_OBJS) $(LIBS) -o ex5
+
+ex5s:		example5.o $(OBJS) $(DEBUG_OBJS) 
+		#load $(INCDIRS) $(DEBUG_SRCS) example5.c
+		#load $(OBJS) $(LIBS)
+
+ex6:		example6.o $(OBJS) $(DEBUG_OBJS)
+		$(CC) $(CFLAGS) example6.o $(OBJS) $(DEBUG_OBJS) $(LIBS) -o ex6
+
+ex6s:		example6.o $(OBJS) $(DEBUG_OBJS) 
+		#load $(INCDIRS) $(DEBUG_SRCS) example6.c
+		#load $(OBJS) $(LIBS)
+
+ddl.c ddl-tab.h:	ddl.y parser.h
+		yacc $(YFLAGS) ddl.y
+		mv y.tab.c ddl.c
+		umask 2; mv y.tab.h ddl-tab.h
+
+ddl.o:		ddl.c
+		(umask 2; $(CC) -c $(CFLAGS) $(INCDIRS) ddl.c )
+
+ddl_c_interface.o : $$(@:.o=.c)
+		$(COMPILE.cc) $<
+
+test:
+		@echo OBJS = $(OBJS)
+		@echo DEBUG_OBJS = $(DEBUG_OBJS)
+
+#ddl.y:		parser.h
+
+octalign:	octalign.c
+		-@rm -f octalignAAA*
+		CC -o octalign octalign.c
+
+install:	libddl.a
+		/bin/rm -f $(INCLUDE_DIR)/ddl/*
+		/bin/cp *.h $(INCLUDE_DIR)/ddl
+		/bin/rm -f $(LIB_DIR)/libddl.a
+		/bin/cp libddl.a $(LIB_DIR)
+		/bin/ranlib -t $(LIB_DIR)/libddl.a
+
+clean:
+		/bin/rm -f *.o *~ $(ALL) a.out libddl.a ddl.c a.out foo*
+
+#--------------------
+# SCCS extraction.
+#--------------------
+$(SRCS) $(INCS): $(SCCS_DIR)/SCCS/s.$$@
+	sccs -d $(SCCS_DIR) get $(DDL_REV) $@

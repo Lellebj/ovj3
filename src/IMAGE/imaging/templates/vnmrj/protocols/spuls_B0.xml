@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="spuls_B0" author="ATP" investigator=""
+    application="imaging" rfcoil="main" anatomy="ATP" time_created="20040518T125049"
+    parfile="spuls_B0" apptype="im1Dglobal" scans="spuls_B0" seqfil="spuls">
+  <protocol title="spuls_B0" type="protocol">
+    <action  type="LIB" status="Ready" title="spuls_B0" exp="spuls_B0" time="1 sec" macro="sqexp('spuls_B0')" data="" />
+  </protocol>
+</template>

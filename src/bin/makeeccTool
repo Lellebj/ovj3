@@ -1,0 +1,103 @@
+#
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved.
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+#	Originator: Phil Hornung
+#	Mod:	Greg Brissey 4-8-93
+
+MAKEFILE = makeeccTool
+
+OPENWINHOME=/usr/openwin
+
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+
+BIN_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----  
+BIN_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+BIN_LN = ln -s $(BIN_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+BIN_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)bin get
+ 
+#----  default source extraction to links -------
+BIN_GET= $(BIN_LN)
+
+#-- Normal operational compile flags
+CFLAGS= -O -DSUN -DUNIX -DSOLARIS -DOWTOOLKIT_WARNING_DISABLED
+CPPFLAGS=
+LDFLAGS=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS)
+ 
+BIN_SRC_DIR= $(SRC_DIR)
+LIBS = -ll -lm
+SOLLIBS = -lacqcomm -ll -lm -lsocket -lnsl
+
+#------------------------------------------------------------------------
+#--- fitspec source 
+#------------------------------------------------------------------------
+ECCTOOL_SRC= 			\
+		eccTool.c	\
+		XeccTool.c	\
+		xph.c
+
+ECCTOOL_OBJ= $(ECCTOOL_SRC:.c=.o)
+
+#---  Header files needed by fitspec -------
+ECCTOOL_HDR=			\
+		xph.h
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(ECCTOOL_SRC) $(ECCTOOL_HDR)
+
+std :
+	@( $(MAKE) -ef $(MAKEFILE) "`uname -m`" ; )
+	@echo "eccTool complete"
+
+SOLARIS :
+	$(MAKE) -e -f $(MAKEFILE) "LDFLAGS=-L$(OPENWINHOME)/lib -L. -L$(solobjdir)/proglib/ncomm -R /vnmr/lib:/usr/openwin/lib" Sol_eccTool
+	@echo "Solaris eccTool Complete"
+
+
+sun4 sun4c sun4m : eccTool XeccTool
+	@echo "sun4 eccTool & XeccTool Complete"
+
+sun3 sun3x : eccTool
+	@echo "sun3 eccTool Complete"
+	
+eccTool: eccTool.o
+	$(LINK.c) eccTool.o -o eccTool \
+	-lsuntool -lsunwindow -lpixrect -lm 
+
+# X VERSIONS
+
+XeccTool:	XeccTool.o xph.o 
+	$(LINK.c) -L$(OPENWINHOME)/lib XeccTool.o xph.o -o $@ -lXol -lXt -lX11 $(LIBS)
+
+Sol_eccTool:	XeccTool.o xph.o 
+	$(LINK.c) XeccTool.o xph.o -o eccTool -lXol -lXt -lX11 $(SOLLIBS)
+
+$(ECCTOOL_OBJ) : $$(@:.o=.c)
+	$(COMPILE.c) -I$(OPENWINHOME)/include $(@:.o=.c)
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) :
+	$(BIN_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(ECCTOOL_SRC) $(ECCTOOL_HDR) : $$(BIN_SCCS_SRC)$$(@)
+	$(BIN_SGET) $@
+
+XeccTool.o : xph.h
+xph.o.o : xph.h

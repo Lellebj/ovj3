@@ -1,0 +1,304 @@
+# 
+# Copyright (c) Varian, Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian, Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#
+# pulsetool makefile		
+#
+# make -f makepulsetool
+# make -f makepulsetool dbx
+# make -f makepulsetool fpa
+# etc....
+#
+
+# NOTE: suffixed executables MUST be copied/moved/linked to pulsetool and
+# pulsechild for execution.
+
+MAKEFILE= makepulsetool
+
+# sccsdir & sourcedir are environment variables
+# sccsdir -> SCCS directory
+# sourcedir -> source directory
+REV=
+SCCSDIR=$(sccsdir)
+SRCDIR=$(sourcedir)
+
+OPENWINHOME=/usr/openwin
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+#SRC_DIR=../
+SRC_DIR=$(SRCDIR)/sysbin/
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+CFLAGS= -O -fsingle
+CPPFLAGS=
+LDFLAGS=
+ASMCPP.s= /lib/cpp -P $(CPPFLAGS) $(TARGET_ARCH)
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+ 
+BIN_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----  
+BIN_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+BIN_LN = ln -s $(BIN_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+BIN_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get $(REV)
+ 
+#----  default source extraction to links -------
+BIN_GET= $(BIN_LN)
+
+LIBS = -lsuntool -lsunwindow -lpixrect -ll -lm
+
+XLIBS = -lXol -lXt -lX11 -ll -lm
+
+MLIBS = -lXm -lXt -lX11 -ll -lm
+
+#------------------------------------------------------------------------
+#--- pulsetool source 
+#------------------------------------------------------------------------
+PULSETOOL_SRC= 			\
+		pulsetool.c
+
+PULSETOOL_OBJ= $(PULSETOOL_SRC:.c=.o)
+
+PULSECHILD_SRC=			\
+		pulsechild.c
+
+PULSECHILD_OBJ= $(PULSECHILD_SRC:.c=.o)
+
+PULSETOOL_SV_SRC= 			\
+		pulsetool_sv.c
+
+PULSETOOL_SV_OBJ= $(PULSETOOL_SV_SRC:.c=.o)
+
+PULSECHILD_SV_SRC=			\
+		pulsechild_sv.c
+
+PULSECHILD_SV_OBJ= $(PULSECHILD_SV_SRC:.c=.o)
+
+PULSETOOL_OW_SRC= 			\
+		pulsetool_ow.c
+
+PULSETOOL_OW_OBJ= $(PULSETOOL_OW_SRC:.c=.o)
+
+PULSECHILD_OW_SRC=			\
+		pulsechild_ow.c
+
+PULSECHILD_OW_OBJ= $(PULSECHILD_OW_SRC:.c=.o)
+
+PULSETOOL_MF_SRC= 			\
+		pulsetool_mf.c
+
+PULSETOOL_MF_OBJ= $(PULSETOOL_MF_SRC:.c=.o)
+
+PULSECHILD_MF_SRC=			\
+		pulsechild_mf.c
+
+PULSECHILD_MF_OBJ= $(PULSECHILD_MF_SRC:.c=.o)
+
+#---  Header files needed by pulsetool -------
+PULSETOOL_HDR= pulsetool.h
+
+#---  Header files needed by pulsechild -------
+PULSECHILD_HDR= pulsechild.h
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(PULSETOOL_HDR) $(PULSETOOL_SRC) $(PULSETOOL_OW_SRC) \
+	$(PULSETOOL_SV_SRC) $(PULSETOOL_MF_SRC) $(PULSECHILD_HDR) \
+	$(PULSECHILD_SRC) $(PULSECHILD_OW_SRC) $(PULSECHILD_SV_SRC) \
+	$(PULSECHILD_MF_SRC)
+ 
+#LINTFILES= $(ALLSRC:.c=.ln)
+
+#--- make Targets ----------------------------------------------
+std : $$(MAKEFILE) 
+	@( $(MAKE) -ef $(MAKEFILE) "`uname -m`" ; )
+	@echo "pulsetool pulsechild  complete."
+
+sun4 sun4c sun4m : sv ow
+	@echo "sun4 pulse tool & child Complete"
+
+sun3 sun3x : fpc fpa
+	@echo "sun3 fpc & fpa pulse tool & child Complete"
+	
+sparc : sv ow
+
+
+# 000261453100 is return by rdibm when uname -m invoked 
+000261453100 : AIX
+AIX : mf
+
+sv fpc : $$(MAKEFILE) Source
+	@( $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	   pulsetool pulsechild; )
+	@echo "pulsetool and pulsechild complete"
+
+ow : $$(MAKEFILE) Source
+	@( $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS=  -O -sb -fsingle -I$(OPENWINHOME)/include -I$(OPENWINHOME)/include/X11" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"LDFLAGS= -Bstatic -L$(OPENWINHOME)/lib" \
+	pulsetool_ow pulsechild_ow; )
+	@echo "pulsetool_ow and pulsechild_ow complete"
+ 
+owdyn : $$(MAKEFILE) Source
+	@( $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS=  -O -sb -fsingle -I$(OPENWINHOME)/include -I$(OPENWINHOME)/include/X11" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"LDFLAGS= -L$(OPENWINHOME)/lib" \
+	pulsetool_ow pulsechild_ow; )
+	@echo "pulsetool_ow and pulsechild_ow complete"
+
+IRIX : $$(MAKEFILE) Source
+	@( $(MAKE) -f $(MAKEFILE) \
+	"CFLAGS=  -O -DIRIX -cckr " \
+	"TARGET_ARCH=-DIRIX" \
+	pulsetool_mf pulsechild_mf; )
+	mv pulsetool_mf pulsetool
+	mv pulsechild_mf pulsechild
+	@echo "IRIX pulsetool_mf and pulsechild_mf complete"
+ 
+SOLARIS : $$(MAKEFILE) Source
+	@( $(MAKE) -f $(MAKEFILE) \
+	"CFLAGS=  -O -fsingle " \
+	"LDFLAGS= " \
+	"TARGET_ARCH=-DSOLARIS" \
+	pulsetool_mf pulsechild_mf; )
+	mv pulsetool_mf pulsetool
+	mv pulsechild_mf pulsechild
+	@echo "Solaris pulsetool_mf and pulsechild_mf complete"
+ 
+mf : $$(MAKEFILE) Source
+	@( $(MAKE) -f $(MAKEFILE) \
+	"CFLAGS=  -O -DAIX" \
+	"TARGET_ARCH=-DIBM" \
+	pulsetool_mf pulsechild_mf; )
+	mv pulsetool_mf pulsetool
+	mv pulsechild_mf pulsechild
+	@echo "IBM pulsetool_ow and pulsechild_ow complete"
+
+dbx : Source
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g -DDBX -fsingle" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 pulsetool_dbx pulsechild_dbx && \
+	 rm -f pulsetool && \
+	 ln -s pulsetool_dbx pulsetool && \
+	 rm -f pulsechild && \
+	 ln -s pulsechild_dbx pulsechild )
+	@echo "pulsetool_dbx and pulsechild_dbx complete"
+
+dbxow : Source
+	( $(MAKE) -e -f $(MAKEFILE) 	\
+	"CFLAGS= -g -DDBX -fsingle -I$(OPENWINHOME)/include -I$(OPENWINHOME)/include/X11" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"LDFLAGS= -L$(OPENWINHOME)/lib" \
+	pulsetool_ow_dbx pulsechild_ow_dbx && \
+	rm -f pulsetool_ow && \
+	ln -s pulsetool_ow_dbx pulsetool_ow && \
+	rm -f pulsechild_ow && \
+	ln -s pulsechild_ow_dbx pulsechild_ow )
+	@echo "pulsetool_ow_dbx and pulsechild_ow_dbx complete"
+ 
+
+fpa : $$(MAKEFILE) Source
+	@(export FLOAT_OPTION; FLOAT_OPTION=ffpa; \
+	$(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -fsingle -ffpa -Dfpa -DFPA" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+ 	  pulsetool_fpa pulsechild_fpa)
+	@echo "pulsetool_fpa complete"
+
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	@( cd $(SRC_DIR); $(BIN_SGET) $(MAKEFILE); \
+	     $(MAKE) -e -f $(MAKEFILE) \
+             "BIN_SRC_DIR= $(BIN_SCCS_SRC)"   \
+             "BIN_GET= $(BIN_SGET)" 		\
+               src)
+ 
+#--- Recursive Targets ------------------------------
+
+src : $$(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+pulsetool pulsetool_fpa pulsetool_dbx pulsetool_fpadbx \
+pulsetool_p pulsetool_fpap : rmobj $$(PULSETOOL_OBJ) $$(PULSETOOL_SV_OBJ)
+	-(umask 2; \
+	$(LINK.c) -o $@ $(PULSETOOL_OBJ) $(PULSETOOL_SV_OBJ) $(LIBS)  )
+
+pulsechild pulsechild_fpa pulsechild_dbx pulsechild_fpadbx \
+pulsechild_p pulsechild_fpap : rmobj2 $$(PULSECHILD_OBJ) $$(PULSECHILD_SV_OBJ)
+	-(umask 2; \
+	$(LINK.c) -o $@ $(PULSECHILD_OBJ) $(PULSECHILD_SV_OBJ) $(LIBS)  )
+
+pulsetool_ow  pulsetool_ow_fpa pulsetool_ow_dbx : rmobj $$(PULSETOOL_OBJ) \
+							$$(PULSETOOL_OW_OBJ)
+	-(umask 2; \
+	$(LINK.c) -o $@ $(PULSETOOL_OBJ) $(PULSETOOL_OW_OBJ) $(XLIBS)  )
+
+pulsechild_ow pulsechild_ow_fpa pulsechild_ow_dbx : rmobj2 $$(PULSECHILD_OBJ) \
+							$$(PULSECHILD_OW_OBJ)
+	-(umask 2; \
+	$(LINK.c) -o $@ $(PULSECHILD_OBJ) $(PULSECHILD_OW_OBJ) $(XLIBS)  )
+
+pulsetool_mf : rmobj $$(PULSETOOL_OBJ) $$(PULSETOOL_MF_OBJ)
+	-(umask 2; \
+	$(LINK.c) -o $@ $(PULSETOOL_OBJ) $(PULSETOOL_MF_OBJ) $(MLIBS)  )
+
+pulsechild_mf : rmobj $$(PULSECHILD_OBJ) $$(PULSECHILD_MF_OBJ)
+	-(umask 2; \
+	$(LINK.c) -o $@ $(PULSECHILD_OBJ) $(PULSECHILD_MF_OBJ) $(MLIBS)  )
+
+rmobj :
+	rm -f $(PULSETOOL_OBJ) $(PULSETOOL_OW_OBJ) $(PULSETOOL_SV_OBJ) \
+		$(PULSETOOL_MF_OBJ)
+rmobj2 :
+	rm -f $(PULSECHILD_OBJ) $(PULSECHILD_OW_OBJ) $(PULSECHILD_SV_OBJ) \
+		$(PULSECHILD_MF_OBJ)
+
+#--- Object Targets ---------------------------
+# Need to make dependencies explicit for IBM - it's not too bright....
+#   (None of this "$(@:.o=.c)" stuff)
+
+$(PULSETOOL_OBJ) : $(PULSETOOL_SRC) $(PULSETOOL_HDR)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(PULSECHILD_OBJ) : $(PULSECHILD_SRC) $(PULSECHILD_HDR)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(PULSETOOL_MF_OBJ) : $(PULSETOOL_MF_SRC) $(PULSETOOL_HDR)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(PULSECHILD_MF_OBJ) : $(PULSECHILD_MF_SRC) $(PULSECHILD_HDR)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(PULSETOOL_OW_OBJ) $(PULSETOOL_SV_OBJ) $(PULSECHILD_OW_OBJ)\
+		$(PULSECHILD_SV_OBJ) : $(PULSETOOL_HDR) $(PULSECHILD_HDR) \
+		$(@:.o=.c)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#------ makefile extraction via SCCS always. -------
+$(MAKEFILE) :
+	$(BIN_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+$(PULSETOOL_SRC) $(PULSETOOL_HDR) $(PULSECHILD_SRC) $(PULSECHILD_HDR) \
+$(PULSETOOL_OW_SRC) $(PULSECHILD_OW_SRC) $(PULSETOOL_SV_SRC) \
+$(PULSECHILD_SV_SRC) $(PULSETOOL_MF_SRC) $(PULSECHILD_MF_SRC) : \
+		$$(BIN_SRC_DIR)$$(@)
+	$(BIN_GET) $@

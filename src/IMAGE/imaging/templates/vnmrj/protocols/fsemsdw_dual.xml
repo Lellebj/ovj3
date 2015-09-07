@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="fsemsdw_dual" author="vjtest" investigator=""
+    application="imaging" rfcoil="main" anatomy="" time_created="20080219T152805"
+    parfile="fsemsdw_dual" apptype="im2D" scans="fsemsdw_dual" seqfil="fsemsdw">
+  <protocol title="fsemsdw_dual" type="protocol">
+    <action  type="LIB" status="Ready" title="fsemsdw_dual" exp="fsemsdw_dual" lock="off" time="3 min, 48 sec" macro="sqexp('fsemsdw_dual')" data="" />
+  </protocol>
+</template>

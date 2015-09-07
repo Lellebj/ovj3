@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ! 
+ ! Varian, Inc. All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Varian, Inc. and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<jsmoothproject>
+<skeletonName>Console Wrapper</skeletonName>
+<javaProperties>
+<name>userdir</name>
+<value>%HOMEDRIVE%\%HOMEPATH%\vnmrsys</value>
+</javaProperties>
+<javaProperties>
+<name>sysdir</name>
+<value>%vnmrsystem_win%</value>
+</javaProperties>
+<bundledJVMPath>..\jre</bundledJVMPath>
+<executableName>protune.exe</executableName>
+<embeddedJar>true</embeddedJar>
+<jarLocation>apt.jar</jarLocation>
+<maximumMemoryHeap>-1</maximumMemoryHeap>
+<skeletonProperties>
+<key>Message</key>
+<value>This program needs Java to run.
+Please download it at http://www.java.com</value>
+</skeletonProperties>
+<skeletonProperties>
+<key>PressKey</key>
+<value>0</value>
+</skeletonProperties>
+<skeletonProperties>
+<key>Debug</key>
+<value>1</value>
+</skeletonProperties>
+<minimumVersion>1.4.2</minimumVersion>
+<maximumVersion></maximumVersion>
+<initialMemoryHeap>-1</initialMemoryHeap>
+<mainClassName>vnmr.apt.ProbeTune</mainClassName>
+<JVMSearchPath>registry</JVMSearchPath>
+<JVMSearchPath>javahome</JVMSearchPath>
+<JVMSearchPath>jrepath</JVMSearchPath>
+<JVMSearchPath>jdkpath</JVMSearchPath>
+<JVMSearchPath>exepath</JVMSearchPath>
+<JVMSearchPath>jview</JVMSearchPath>
+</jsmoothproject>

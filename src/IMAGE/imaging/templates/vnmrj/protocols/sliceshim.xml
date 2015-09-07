@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ !
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="sliceshim" author="varian" investigator="varian"
+    application="imaging" rfcoil="main" anatomy="" species="" time_created="20130314T203912"
+    apptype="im1D" scans="sliceshim" seqfil="sliceshim">
+  <protocol title="sliceshim" type="protocol">
+    <action  type="LIB" status="Ready" title="sliceshim" exp="sliceshim" time="1 sec" macro="sqexp('sliceshim')" data="" />
+  </protocol>
+</template>

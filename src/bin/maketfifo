@@ -1,0 +1,24 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+
+SCCSDIR= $(sccsdir)
+
+
+BIN_SGET= sccs -p$(SCCSDIR)/bin/SCCS get
+
+tfifo :	tfifo.c
+	cc -DOLIT -DX11 -o tfifo tfifo.c  -I/usr/openwin/include -L/usr/openwin/lib -lXol -lXt -lXinput -lX11 -ll -lm
+
+tfifodbx :  tfifo.c
+	cc -g -xF -xsb -DOLIT -DX11 -o tfifodbx tfifo.c  -I/usr/openwin/include -L/usr/openwin/lib -lXol -lXt -lXinput -lX11 -ll -lm
+
+tfifo.c :
+	sccs -p$(SCCSDIR)/bin/SCCS get $@
+
+

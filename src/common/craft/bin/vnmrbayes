@@ -1,0 +1,21 @@
+#!/bin/csh
+# 
+# Agilent Technologies All Rights Reserved.
+# This software contains proprietary and confidential
+# information of Agilent Technologies and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+#    theme can be default, ocean, aqua or emerald
+#
+
+setenv PATH /vnmr/craft/Bayes3/bin:${PATH}
+setenv LD_LIBRARY_PATH /vnmr/craft/Bayes3/lib:/vnmr/lib
+
+if ($# == 1) then
+   $1
+else
+   $1 $argv[2-]
+endif
+

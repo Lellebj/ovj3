@@ -1,0 +1,37 @@
+# @(#)makelinks 22.1 03/24/08 Copyright (c) 1991-1996 Agilent Technologies All Rights Reserved
+# 
+# Copyright (c) 1991-1996 Agilent Technologies All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Agilent Technologies and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#
+# link source make file		Author:  Greg Brissey  8/26/88
+#
+#
+#
+
+# sourcedir are environment variables
+# sourcedir -> Source directory
+SRCDIR=$(sourcedir)
+
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+#SRC_DIR=../
+SRC_DIR=$(SRCDIR)/sys$(CAT)/
+
+
+#--- Link Commands for Sources Needed. -------
+SRC_LN = ln -s $(SRC_DIR)$(@)
+
+
+linksrc: $(OBJ) $(OBJS) $(LEXOBJ) $(GRAMOBJ) 
+	@echo links to sources made.
+ 
+#------------  Source Extraction via SCCS or Links ---------------
+$(OBJ) $(OBJS) $(LEXOBJ) $(GRAMOBJ) : $$(SRC_DIR)$$(@)
+	@$(SRC_LN) $@
+	@echo $@
+

@@ -1,0 +1,105 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# pbox make file		
+#	- make executables Pbox, Pxfid, Pxsim, Pxspy
+#
+#
+# make -f makepbox
+#
+
+MAKEFILE= makepbox.lnx
+
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+REV=
+SCCSDIR=$(sccsdir)
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+CFLAGS= -O2 -m32 -DLINUX
+CPPFLAGS=
+LDFLAGS=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+
+#--- SCCS Sources ----  
+BIN_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+BIN_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get $(REV)
+ 
+LIBS = -lm
+
+#------------------------------------------------------------------------
+#--- pbox source 
+#------------------------------------------------------------------------
+PBOX_SRC= 			\
+		Pbox.c		\
+		Pxfid.c		\
+		Pxsim.c		\
+		Pxspy.c
+
+
+PBOX_OBJ= $(PBOX_SRC:.c=.o)
+
+PBOX_PROGS= $(PBOX_SRC:.c=)
+
+#---  Header files needed  -------
+PBOX_HDR=			\
+		Pbox.h		\
+		Pbox_amf.h	\
+		Pbox_def.h	\
+		Pbox_dsp.h	\
+		Pbox_err.h	\
+		Pbox_eqn.h	\
+		Pbox_fmf.h	\
+		Pbox_pro.h	\
+		Pbox_rsh.h	\
+		Pbox_sim.h	\
+		Pbox_utl.h	\
+		Px_util.h
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(PBOX_SRC) $(PBOX_HDR)
+ 
+.KEEP_STATE:
+
+#--- make Targets ----------------------------------------------
+
+
+std LINUX: $(MAKEFILE) Source $(PBOX_PROGS)
+	@echo Pbox Pxfid Pxsim Pxspy complete
+
+# ---- Be sure True Source that we link to are upto date.
+Source : $(ALLSRC)
+	@echo Sources up to date...
+ 
+#--- Recursive Targets ------------------------------
+
+$(PBOX_PROGS) : % : %.o $(PBOX_HDR)
+	-(umask 2; $(LINK.c) -o $@ $<  $(LIBS)  )
+
+$(PBOX_OBJ) : %.o : %.c $(PBOX_HDR)
+	-(umask 2; $(COMPILE.c) $<  )
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) :
+	$(BIN_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(PBOX_SRC) $(PBOX_HDR) : % :$(BIN_SCCS_SRC)%
+	$(BIN_SGET) $@
+

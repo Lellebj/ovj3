@@ -1,0 +1,91 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#---PAID sccs home---
+MAKEFILE=makestatus
+SDIR=$(sccsdir)/bin/SCCS/s.
+BIN_GET=sccs -p$(sccsdir)/bin/SCCS get
+
+SCCSDIR=$(sccsdir)
+SRCDIR=$(sourcedir)
+
+OPENWINHOME=/usr/openwin
+
+LIBS = -lsuntool -lsunwindow -lpixrect -ll -lm
+
+XLIBS = -lxview -lolgx -lXt -lX11 -ll -lm
+
+MLIBS = -lXm -lXt -lX11 -ll -lm
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+CFLAGS=  -O -fsingle
+CCFLAGS= -O -fsingle
+CPPFLAGS=
+LDFLAGS=
+ASMCPP.s= /lib/cpp -P $(CPPFLAGS) $(TARGET_ARCH)
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+
+#---debugging with DBXTOOL compile flags
+#CFLAGS= -c -g
+
+#---object modules nedded for "status"
+STATUS_OBJ=                       \
+		status.o
+
+STATUS_OW_OBJ=                       \
+		status_ow.o
+
+STATUS_MOTIF_OBJ=                       \
+		status_motif.o
+
+sparc : status_ow
+
+status: $(STATUS_OBJ)
+	 (umask 2; $(LINK.c) -o $@ $(STATUS_OBJ) \
+		$(LIBS) )
+
+status_ow : $(STATUS_OW_OBJ)
+	 (umask 2; $(CC) -O -fsingle -I$(OPENWINHOME)/include \
+		    -L$(OPENWINHOME)/lib -o $@ $(STATUS_OW_OBJ) \
+		$(XLIBS) )
+
+status_motif : $(STATUS_MOTIF_OBJ)
+	 (umask 2; $(CC) -o status -cckr $(STATUS_MOTIF_OBJ) \
+		      $(MLIBS) )
+
+IRIX:
+	($(MAKE) -ef $(MAKEFILE) \
+	  "CFLAGS=-O -cckr -DIRIX" \
+	  status_motif)
+	@echo "NMR_ID SGI IRIX Status complete --------------------------"
+
+AIX: $(STATUS_MOTIF_OBJ)
+	 (umask 2; $(CC) -o status $(STATUS_MOTIF_OBJ) \
+		$(MLIBS) )
+	@echo "NMR_ID IBM AIX Status complete --------------------------"
+
+SOLARIS: status_owdyn
+	@echo "NMR_ID Solaris Status complete --------------------------"
+
+status_owdyn : $(STATUS_OW_OBJ)
+	 (umask 2; $(CC) -O -fsingle -I$(OPENWINHOME)/include \
+		    -L$(OPENWINHOME)/lib -R $(OPENWINHOME)/lib -o status $(STATUS_OW_OBJ) \
+		$(XLIBS) )
+
+status.o: $(@:.o=.c)
+	  (umask 2; $(CC) -c $(CFLAGS) status.c)
+
+status_ow.o: $(@:.o=.c) 
+	  (umask 2; $(CC) -c  -fsingle -I$(OPENWINHOME)/include status_ow.c)
+
+status_motif.o: $(@:.o=.c)
+	  (umask 2; $(CC) -c -D_NO_PROTO status_motif.c)
+
+status_ow.c status_motif.c status.c: $(SDIR)$$@
+	  $(BIN_GET) $@

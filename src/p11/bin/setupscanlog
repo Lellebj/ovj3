@@ -1,0 +1,59 @@
+: '@(#)setupscanlog.sh 20.1 07/09/07 Copyright (c) 1999-2002 Agilent Technologies All Rights Reserved'
+# 
+# Agilent Technologies All Rights Reserved.
+# This software contains proprietary and confidential
+# information of Agilent Technologies and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#!/usr/bin/sh
+#
+# setupscanlog.sh
+# Setting up facilities for syslog, run only once
+# This file will be removed from Vnmr system files at the end
+# of the software installation
+
+syslog_conf_file="/etc/syslog.conf"
+authlog_name="authlogp11"
+auth_log=/var/log/$authlog_name
+login_log="/var/log/loginlog"
+
+syslog_conf1="#P11_monitoring"
+syslog_conf2="auth.notice                        $auth_log"
+
+
+if [ ! -r $auth_log ]
+then
+    touch $auth_log
+    chmod 600 $auth_log
+    chown root:sys $auth_log
+fi
+
+if [ ! -r $login_log ]
+then
+    touch $login_log
+    chmod 600 $login_log
+    chown root:sys $login_log
+fi
+
+if [ ! -r $tmp_path ]
+then
+    touch $tmp_path
+    chmod 600 $tmp_path
+    chown root:sys $tmp_path
+fi
+
+
+if [ -r $syslog_conf_file ]
+then
+   grep $authlog_name $syslog_conf_file
+   if [ $? -eq 1 ]
+   then
+       echo $syslog_conf1 >> $syslog_conf_file
+       echo $syslog_conf2 >> $syslog_conf_file
+   fi
+else
+   echo $syslog_conf1 >> $syslog_conf_file
+   echo $syslog_conf2 >> $syslog_conf_file
+fi
+

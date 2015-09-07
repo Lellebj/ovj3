@@ -1,0 +1,43 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#
+# makevn  make file
+# make -f makevn,  creates vn for PAID
+#
+
+ROOT=$(sccsdir)
+JAWS=$(vnmrdir)
+
+JSCCS=$(JAWS)/SCCS/
+
+binSCCS=$(ROOT)/bin/SCCS/s.
+
+BINGET = sccs -d$(ROOT)/bin get
+
+#-- Normal operational compile flags
+CFLAGS= -fsingle -c -O
+
+#-- Debugging with DBXTOOL ccompile flags
+#CFLAGS= -c -g
+
+#------------------------------------------------------------------------
+#--- objects that are needed for expfit
+#------------------------------------------------------------------------
+OBJ= vn.o
+
+vn: $(OBJ)
+	(umask 2; cc -o vn $(OBJ) -ll -lm  )
+ 
+vn.o: vn.c
+	(umask 2; cc $(CFLAGS) vn.c  )
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+
+vn.c : $(binSCCS)vn.c
+	$(BINGET) vn.c

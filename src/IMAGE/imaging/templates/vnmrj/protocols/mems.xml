@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ !
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="mems" author="varian" investigator="varian"
+    application="imaging" rfcoil="main" anatomy="head" time_created="20031126T105235"
+    parfile="mems" apptype="im2D" scans="mems" seqfil="mems">
+  <protocol title="mems" type="protocol">
+    <action  type="LIB" status="Ready" title="mems" exp="mems" time="2 min, 8 sec" macro="sqexp('mems')" data="" />
+  </protocol>
+</template>

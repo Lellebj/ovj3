@@ -1,0 +1,41 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#
+# makebanner  make file
+# make -f makebanner,  creates banner for PAID
+#
+
+# ----- PAID sccs home ----
+SCCSDIR=$(sccsdir)
+JSCCS=$(SCCSDIR)/bin/SCCS/s.
+JGET = sccs -d$(SCCSDIR)/bin get
+
+#-- Normal operational compile flags
+CFLAGS= -c -O
+SCFLAGS= -S -O
+
+#-- Debugging with DBXTOOL ccompile flags
+#CFLAGS= -c -g
+#SCFLAGS= -S -g
+
+#------------------------------------------------------------------------
+#---  object modules needed for "banner"
+#------------------------------------------------------------------------
+BANNER_OBJ=                      \
+                banner.o 
+
+
+banner: $(BANNER_OBJ)
+	(umask 2; cc -o banner $(BANNER_OBJ) \
+		-lcgi -lsuntool -lsunwindow -lpixrect -lm)
+
+banner.o : banner.c
+	(umask 2; cc $(CFLAGS) banner.c  )
+
+banner.c : $(JSCCS)banner.c
+	$(JGET) banner.c

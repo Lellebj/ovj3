@@ -3,13 +3,14 @@ import sys
 sys.path.append(os.path.join(os.getcwd(), os.pardir, os.pardir, 'scripts'))
 import buildMethods
 
+ovjtools=os.getenv('OVJ_TOOLS')
+if not ovjtools:
+    print "OVJ_TOOLS env not found. Use export OVJ_TOOLS=<path>"
+    sys.exit(1)
+
 # we need to specify an absolute path so this SConstruct file
 # can be called from any other SConstruct file
 cwd = os.getcwd()
-
-# needed for rpath 
-if not os.path.exists(os.path.join(os.pardir, 'lib')):
-   Execute('cd ..;ln -s ncomm lib')
 
 # library dependancies
 vnmrPath = os.path.join(cwd, os.pardir, 'vnmr')
@@ -79,10 +80,9 @@ ptStandAloneFileList = ['errLogLib.c',
 # build environment
 roboProcEnv = Environment(CCFLAGS    = '-O2 -m32',
                           CPPDEFINES = ['LINUX', 'DEBUG'],
-                          LINKFLAGS  = '-m32 -Wl,-rpath ../lib',
+                          LINKFLAGS  = '-m32 -Wl,-rpath,/vnmr/lib',
                           CPPPATH    = [cwd,
-                                        os.path.join(cwd, os.pardir, os.pardir,
-                                                     'vcommon', 'tcl', 'srcTcl')])
+                                        os.path.join(ovjtools, 'tcl', 'srcTcl')])
 
 gilAlignEnv = roboProcEnv.Clone(CPPDEFINES = ['LINUX', 'DEBUG', 'GILALIGN' ] )
 gilScriptEnv = roboProcEnv.Clone(CPPDEFINES = ['LINUX', 'DEBUG', 'GILALIGN', 'GILSCRIPT'] )
@@ -100,8 +100,7 @@ roboproc = roboProcEnv.Program(target  = roboprocTarget,
                                           expProcFileList],
                                LIBPATH = [cwd,
                                           ncommPath,
-                                          os.path.join(cwd, os.pardir, os.pardir,
-                                                       'vcommon', 'tcl', 'srcTcl'),
+                                          os.path.join(ovjtools, 'tcl', 'srcTcl'),
                                           os.path.join(os.sep, 'vnmr','lib')],
                                LIBS    = ['tcl8.4', 'acqcomm','m'])
 
@@ -127,8 +126,7 @@ gilscript = gilScriptEnv.Program(target  = 'Gilscript',
                                             gilScriptBuildList],
                                  LIBPATH = [cwd,
                                             ncommPath,
-                                            os.path.join(cwd, os.pardir, os.pardir,
-                                                         'vcommon', 'tcl', 'srcTcl'),
+                                            os.path.join(ovjtools, 'tcl', 'srcTcl'),
                                             os.path.join(os.sep, 'vnmr','lib')],
                                  LIBS    = ['tcl8.4', 'acqcomm','m'])
 
@@ -141,8 +139,7 @@ gilalign = gilAlignEnv.Program(target  = 'gilalign',
                                source  = [roboProcStandAloneFileList,
                                           gilAlignBuildList],
                                LIBPATH = [cwd,
-                                          os.path.join(cwd, os.pardir, os.pardir,
-                                                       'vcommon', 'tcl', 'srcTcl'),
+                                          os.path.join(ovjtools, 'tcl', 'srcTcl'),
                                           os.path.join(os.sep, 'vnmr','lib')],
                                LIBS    = ['m','tcl8.4' ])
 
@@ -153,8 +150,7 @@ nmsalign = roboProcEnv.Program(target  = 'nmsalign',
                                           nmsTermHandlerObj],
                                LIBPATH = [cwd,
                                           os.path.join(cwd, os.pardir, 'ncomm'),
-                                          os.path.join(cwd, os.pardir, os.pardir,
-                                                       'vcommon', 'tcl', 'srcTcl'),
+                                          os.path.join(ovjtools, 'tcl', 'srcTcl'),
                                           os.path.join(os.sep, 'vnmr','lib')],
                                LIBS    = ['tcl8.4', 'acqcomm'])
 
@@ -165,8 +161,7 @@ ptalign = roboProcEnv.Program(target  = 'ptalign',
                                          ptTermHandlerObj],
                               LIBPATH = [cwd,
                                          os.path.join(cwd, os.pardir, 'ncomm'),
-                                         os.path.join(cwd, os.pardir, os.pardir,
-                                                       'vcommon', 'tcl', 'srcTcl'),
+                                         os.path.join(ovjtools, 'tcl', 'srcTcl'),
                                          os.path.join(os.sep, 'vnmr','lib')],
                               LIBS    = ['tcl8.4', 'acqcomm'])
 
@@ -183,20 +178,20 @@ roboProcEnv.AddPostAction(roboproc,
 
 #copy gilalign to the right places
 gilalignInstallPath1 = os.path.join(cwd, os.pardir, os.pardir, os.pardir, 
-		'options','passworded','Gilson','bin')
+		'options','standard','Gilson','bin')
 if not os.path.exists(gilalignInstallPath1):
    os.makedirs(gilalignInstallPath1)
 gilAlignEnv.AddPostAction(gilalign, 
 		Action(Copy(gilalignInstallPath1, os.path.join(cwd, 'gilalign'))))
 
-gilalignInstallPath2 = os.path.join(cwd, os.pardir, os.pardir, os.pardir, 
-		'options','passworded','768AS','bin')
-if not os.path.exists(gilalignInstallPath2):
-   os.makedirs(gilalignInstallPath2)
-gilAlignEnv.AddPostAction(gilalign, 
-	Action(Copy(gilalignInstallPath2, os.path.join(cwd, 'gilalign'))))
-gilScriptEnv.AddPostAction(gilscript, 
-	Action(Copy(gilalignInstallPath2, os.path.join(cwd, 'Gilscript'))))
+# gilalignInstallPath2 = os.path.join(cwd, os.pardir, os.pardir, os.pardir, 
+# 		'options','passworded','768AS','bin')
+# if not os.path.exists(gilalignInstallPath2):
+#    os.makedirs(gilalignInstallPath2)
+# gilAlignEnv.AddPostAction(gilalign, 
+# 	Action(Copy(gilalignInstallPath2, os.path.join(cwd, 'gilalign'))))
+# gilScriptEnv.AddPostAction(gilscript, 
+# 	Action(Copy(gilalignInstallPath2, os.path.join(cwd, 'Gilscript'))))
 
 #
 # TODO: All but Roboproc are password protected

@@ -1,0 +1,197 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+#
+#  To add a new standalone program, add its name to STANDALONE_SRC
+#
+#  To add a new program that uses a makefile, add its name to
+#  MAKEFILE_PRG
+#
+
+MAKEFILE= makebin.win
+
+#-- Normal operational compile flags
+CFLAGS= -O 
+CPPFLAGS= -D_ALL_SOURCE
+LDFLAGS=
+CC= gcc
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) -c
+LINK.c= $(CC) $(CPPFLAGS) $(LDFLAGS) 
+ 
+# sccsdir is an environment variable
+SCCSDIR=$(sccsdir)
+
+PROJCAT=
+
+#--- SCCS Sources ----
+BIN_SCCS_SRC = $(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+BIN_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get
+
+MAKE = make
+
+#----  programs stored as executables in SCCS  -------
+STANDALONE_EXEC = libMagick.so	\
+		  expect	
+
+WIN_STANDALONE_EXEC = logonAsService.exe
+
+# These all compile under LINUX. It is not clear that all are needed.
+STANDALONE_SRC_NOT_CLEAR =		\
+		eatchar.c	\
+		eccsend.c	\
+		fm_shuffle.c	\
+		getchoices.c	\
+		gin_setup.c	\
+		makeprintcap.c	\
+		psfilter.c	\
+		rmsAddData.c	\
+		unix_vxr.c	\
+		vxr_unix.c
+
+# These are needed by LINUX
+STANDALONE_SRC =		\
+		convertbru.c	\
+		fileowner.c	\
+		findLinks.c	\
+		expandphase.c	\
+		loginvjpassword.c	\
+		PboxAdapter.c   \
+		readsctables.c	\
+		setGifAspect.c	\
+		vnmr_exec_asuser.c
+
+STANDALONE_PRG = $(STANDALONE_SRC:.c=)
+
+STANDALONE_MATH_SRC =		\
+		expfit.c	\
+		fitspec.c	\
+		spins.c
+
+STANDALONE_MATH_PRG = $(STANDALONE_MATH_SRC:.c=)
+
+ACQ_STANDALONE_SRC =		\
+		cptoconpar.c	\
+		startmekillme.c
+
+ACQ_STANDALONE_PRG = $(ACQ_STANDALONE_SRC:.c=)
+
+INSTALLER_SRC =	\
+		installvnmrj.iss
+
+INSTALLER_PRG = $(INSTALLER_SRC:.iss=.exe)
+
+WIN_EXEC_SRC = \
+		vnmrj_jsmooth.xml	\
+		vnmrj_adm_jsmooth.xml	\
+		vnmrj_debug_jsmooth.xml
+
+WIN_EXEC_PRG = $(WIN_EXEC_SRC:_jsmooth.xml=.exe)
+
+
+MAKEFILE_LIST_NOT_CLEAR =	\
+		makeejectthecdrom	\
+		makedecomp	\
+		makesend2vnmr	\
+		makefm_calshim	\
+		makeeccTool	\
+		makevxrTool	\
+		makeportrait	\
+		makepulsetool	\
+		makexdcvt	\
+		makeeditdevices \
+		makebanner	\
+		makecpos_cvt	\
+		makelogplane	\
+		makegconfig	\
+		makevconfig	\
+		makevnmr_confirmer	\
+		makeinssol	\
+		makeshowconsole	\
+		makeihwinfo	\
+                makeimcalc	\
+                makeimfit	\
+                maketabc	\
+                makefontselect	\
+                makeconvertcmx	\
+		makep11		\
+		makeecc
+
+#MAKEFILE_PRG =	\
+#		deencode	\
+#		dps_ps_gen	\
+#		diffparams	\
+#		diffshims	\
+#		nvlocki		\
+#		pbox		\
+#		usrwt
+
+MAKEFILE_PRG =	\
+		deencode	\
+		dps_ps_gen	\
+		diffparams	\
+		diffshims	\
+		pbox		\
+		usrwt
+
+MAKEFILE_PRG_WIN = 	\
+		makedeencode.win	\
+		makedps_ps_gen.win	\
+		makediffparams.win	\
+		makediffshims.win		\
+		makepbox.win		\
+		makeusrwt.win
+#ACQ_MAKEFILE_PRG =	\
+#          	Probe_edit	\
+#		showconsole	\
+#		send2vnmr	\
+#		killroboproc
+
+ACQ_MAKEFILE_PRG =	\
+		showconsole	\
+		send2vnmr	\
+		killroboproc
+
+ACQ_MAKEFILE_PRG_WIN = 	\
+		makeshowconsole.win	\
+		makesend2vnmr.win	\
+		makekillroboproc.win
+
+# Nothing for now
+ACQ_MAKEFILE_PRG =
+
+ACQ_MAKEFILE_PRG_WIN =
+
+WINDOWS std : clean $(STANDALONE_PRG) $(STANDALONE_MATH_PRG) $(ACQ_STANDALONE_PRG) $(MAKEFILE_PRG) $(ACQ_MAKEFILE_PRG)
+	@echo "makebin Complete."
+
+Source : $(MAKEFILE) $(STANDALONE_SRC) convert $(INSTALLER_PRG) $(WIN_EXEC_PRG) $(ACQ_STANDALONE_SRC) $(MAKEFILE_PRG_WIN) $(ACQ_MAKEFILE_PRG_WIN)
+	@echo Sources up to date...
+
+clean :
+	rm -f *.o *.os $(STANDALONE_PRG) $(STANDALONE_MATH_PRG) $(ACQ_STANDALONE_PRG) $(MAKEFILE_PRG) $(ACQ_MAKEFILE_PRG)
+
+$(INSTALLER_PRG): $$(INSTALLER_SRC)
+	$(vcommondir)/windows/inno/ISCC.exe /O"." $(@:.exe=.iss)
+
+$(WIN_EXEC_PRG): $$(WIN_EXEC_SRC)
+	$(vcommondir)/windows/jsmooth/jsmoothcmd.exe .\\$(@:.exe=_jsmooth.xml)
+
+$(MAKEFILE_PRG) $(ACQ_MAKEFILE_PRG):
+	make -e -f  make$@.win WINDOWS
+
+$(STANDALONE_MATH_PRG):
+	gcc -O -o $@ -D_ALL_SOURCE $@.c -lm
+
+$(STANDALONE_PRG):
+	gcc -O -o $@ -D_ALL_SOURCE $@.c
+
+$(ACQ_STANDALONE_PRG):
+	gcc -O -o $@ -D_ALL_SOURCE $@.c
+

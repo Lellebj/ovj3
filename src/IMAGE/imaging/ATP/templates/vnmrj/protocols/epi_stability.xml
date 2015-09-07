@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="epi_stability" author="ATP" investigator=""
+    application="imaging" rfcoil="main" anatomy="ATP" time_created="20040601T104401"
+    apptype="imEPI" parfile="epi_stability" scans="epi_stability" seqfil="epi">
+  <protocol title="epi_stability" type="protocol">
+    <action  type="LIB" status="Ready" title="epi_stability" exp="epi_stability" time="17 min, 10 sec" macro="sqexp('epi_stability')" data="" />
+  </protocol>
+</template>

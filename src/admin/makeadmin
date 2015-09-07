@@ -1,0 +1,79 @@
+# 
+# Copyright (c) 1991-1994 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makeadmin  make file
+#
+#
+#  SCCS_PKG_LIST is defined when this make file calls itself
+#  MACLIB_LIST_1 removes `makemaclib' from the list
+#  MACLIB_LIST removes the `s.' prefix, part of each SCCS file name
+#
+#  The TARGET_DIR is normally defined when this file is invoked:
+#    make -ef makejpsg JPSGBASE=/common/jpsg OPS=-g jpsg
+
+SCCSJDIR= $(sccsjdir)
+SCCS_PKG_DIR= $(SCCSJDIR)/$(PACKAGE)/SCCS
+SCCS_PKG_SRC= $(SCCSJDIR)/$(PACKAGE)/SCCS/s.
+
+SCCS_GET= sccs -p$(SCCSJDIR)/$(PACKAGE)/SCCS get
+
+PKG_SRC_LIST_3=$(SCCS_PKG_LIST:.makeadmin=.)
+PKG_SRC_LIST=$(PKG_SRC_LIST_3:s.%=%)
+PKG_OBJ_LIST=$(PKG_SRC_LIST:.java=.class)
+
+
+MAKEFILE= makeadmin
+
+TARGET_DIR="./"
+OPS=-g
+
+JAVAC=javac
+
+JPSGBASE:sh = pwd
+
+PKGS= admin
+
+std:  admin 
+	-(umask 2; $(JAVAC)  -classpath $(JPSGBASE):$(CLASSPATH) SimpleH2Layout.java )
+	-(umask 2; $(JAVAC)  -classpath $(JPSGBASE):$(CLASSPATH) H3Layout.java )
+	-(umask 2; $(JAVAC)  -classpath $(JPSGBASE):$(CLASSPATH) VnmrAdmin.java ) 
+	-(umask 2; $(JAVAC)  -classpath $(JPSGBASE):$(CLASSPATH) SwingWorker.java )
+	-(umask 2; $(JAVAC)  -classpath $(JPSGBASE):$(CLASSPATH) ProgressMonitor.java )
+	-(umask 2; $(JAVAC)  -classpath $(JPSGBASE):$(CLASSPATH) LoadNmr.java )
+	-(umask 2; $(JAVAC)  -classpath $(JPSGBASE):$(CLASSPATH) InstallVJ.java )
+	jar cf VnmrAdmin.jar *class
+	@echo "NMR_ID Package $@ complete {std}----------------------------------"
+
+
+admin:  doit
+	@( cd $(JPSGBASE) ; \
+	$(MAKE) -ef $(JPSGBASE)/$(MAKEFILE) \
+	  "PACKAGE=$@" \
+	  "JPSGBASE=$(JPSGBASE)" \
+	  "SCCS_PKG_LIST=`(cd $(SCCSJDIR)/$@/SCCS ; echo s.*)`" \
+	   build;  )
+	@echo "NMR_ID Package $@ complete {admin}----------------------------------"
+
+doit:
+	@echo "gotta do it"
+
+build : $(PKG_OBJ_LIST)
+
+$(PKG_OBJ_LIST) : $$(@:.class=.java)
+	@echo did it
+#
+#	@-( if [ ! -d $(JPSGBASE)/JSRC ]; then       \
+#	 umask 2; $(JAVAC) $(OPS) -depend -classpath $(CLASSPATH):$(JPSGBASE) $(@:.class=.java) ;  \
+#        fi )
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(PKG_SRC_LIST) : $$(SCCS_PKG_SRC)$$(@)
+	$(SCCS_GET) $@
+
+

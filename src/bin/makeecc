@@ -1,0 +1,169 @@
+# 
+# Copyright (c) 1991-1994 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# make -f makeecc, make  beccphase for running under Vnmr
+# make -f makeecc dbx,  creates dbx versions
+# make -f makeecc prof,  creates profiling versions
+#
+
+MAKEFILE= makeecc
+
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+REV=
+PSG_REV=
+ECC_REV=
+VNMR_REV=
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+VNMRDIR=$(vnmrdir)
+
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+#SRC_DIR=../
+SRC_DIR=$(SRCDIR)/sysbin/
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+CFLAGS= -O
+CPPFLAGS=
+LDFLAGS=
+ASMCPP.s= /lib/cpp -P $(CPPFLAGS) $(TARGET_ARCH)
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+ 
+ECC_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----
+ECC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+ECC_LN = ln -s $(ECC_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+ECC_SGET=sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get  $(ECC_REV) 
+
+#----  default source extraction to links -------
+# ECC_GET= $(ECC_LN)
+
+#----  default source extraction (removed links) -------
+ECC_GET= $(ECC_SGET)
+
+LIBS = -ll -lm
+
+ECC_HDR = 	\
+
+BECCPHASE_SRC = 	 \
+	beccphase.c
+	
+ECCDIFF_SRC = 	 \
+	eccdiff.c	\
+	
+ECCDISP_SRC = 	 \
+	eccdisp.c	\
+	
+ECCPHASE_SRC = 	 \
+	eccphase.c	\
+	
+FECCPHASE_SRC = 	 \
+	feccphase.c
+
+ALL_SRC = $(BECCPHASE_SRC) $(ECCDIFF_SRC) $(ECCDISP_SRC) $(ECCPHASE_SRC) \
+	$(FECCPHASE_SRC)
+
+BECCPHASE_OBJ = $(BECCPHASE_SRC:.c=.o)
+
+ECCDIFF_OBJ = $(ECCDIFF_SRC:.c=.o)
+
+ECCDISP_OBJ = $(ECCDISP_SRC:.c=.o)
+
+ECCPHASE_OBJ = $(ECCPHASE_SRC:.c=.o)
+
+FECCPHASE_OBJ = $(FECCPHASE_SRC:.c=.o)
+
+ECC_OBJ = $(ALL_SRC:.c=.o)
+
+
+.KEEP_STATE:
+
+#--- make Targets ----------------------------------------------
+
+
+std SOLARIS: $$(MAKEFILE)
+	@( $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS= -O" \
+	  beccphase eccdiff eccdisp eccphase feccphase; )
+	@echo beccphase eccdiff eccdisp eccphase feccphase complete
+
+dbx : $$(MAKEFILE)
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 beccphase_dbx eccdiff_dbx eccdisp_dbx eccphase_dbx feccphase_dbx; )
+	@echo beccphase_dbx eccdiff_dbx eccdisp_dbx eccphase_dbx feccphase_dbx complete
+
+prof: $$(MAKEFILE)
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -pg" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	  beccphase_p eccdiff_p eccdisp_p eccphase_p feccphase_p; )
+	@echo beccphase_p eccdiff_p eccdisp_p eccphase_p feccphase_p complete
+
+
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	@( cd $(SRC_DIR); $(ECC_SGET) $(MAKEFILE); \
+	     $(MAKE) -e -f $(MAKEFILE) \
+             "ECC_SRC_DIR= $(ECC_SCCS_SRC)"   \
+             "ECC_GET= $(ECC_SGET)" 		\
+               src)
+ 
+#--- Recursive Targets ------------------------------
+
+src : $(ALLSRC)
+	@echo Sources up to date...
+
+
+debug := CFLAGS = -g
+profile := CFLAGS = -pg -Bstatic
+
+beccphase beccphase_p beccphase_dbx : $(BECCPHASE_OBJ)
+	(umask 2; $(LINK.c) -o $@ $(BECCPHASE_OBJ) $(LIBS) )
+
+eccdiff eccdiff_p eccdiff_dbx : $(ECCDIFF_OBJ)
+	(umask 2; $(LINK.c) -o $@ $(ECCDIFF_OBJ) $(LIBS) )
+
+eccdisp eccdisp_p eccdisp_dbx : $(ECCDISP_OBJ)
+	(umask 2; $(LINK.c) -o $@ $(ECCDISP_OBJ) $(LIBS) )
+
+eccphase eccphase_p eccphase_dbx : $(ECCPHASE_OBJ)
+	(umask 2; $(LINK.c) -o $@ $(ECCPHASE_OBJ) $(LIBS) )
+
+feccphase feccphase_p feccphase_dbx : $(FECCPHASE_OBJ)
+	(umask 2; $(LINK.c) -o $@ $(FECCPHASE_OBJ) $(LIBS) )
+
+
+#--- Object Targets ---------------------------
+
+$(ECC_OBJ): $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c))
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) :
+	$(ECC_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(ALL_SRC) $(ECC_HDR): $(ECC_SCCS_SRC)$$@
+	$(ECC_SGET) $@

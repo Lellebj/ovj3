@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<!-- Testing the SAXParserFactory and SAXParser classes -->
+<!-- Available tools are: ToolPanel, Display -->
+<toolDoc>
+    <tool name="Locator" viewport="all"/>
+    <tool name="XMLToolPanel" label="Layout" file="aipLayout.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="Image" file="aipImage.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="ROI" file="aipROI.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="Math" file="aipMath.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="Movie" file="aipMovie.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="ArrayedSpectra" file="VertPanArray.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="I/O" file="aipIO.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="3D" file="aip3Dvert.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="3Dtools" file="g3dTools.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="Color" file="aipColormap.xml"
+          viewport="all" scrollbar="no" />
+</toolDoc>

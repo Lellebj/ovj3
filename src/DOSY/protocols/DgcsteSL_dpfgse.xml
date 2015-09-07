@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! @(#)DgcsteSL_dpfgse.xml 1.1 02/27/07 Copyright (c) 2003-2005 Agilent Technologies All Rights Reserved
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="DgcsteSL_dpfgse" author="dosy22" investigator=""
+    time_created="20070223T143542" apptype="dosy2D"
+    application="liquids" scans="DgcsteSL_dpfgse" seqfil="DgcsteSL_dpfgse">
+  <protocol title="DgcsteSL_dpfgse" type="protocol">
+    <action  type="LIB" status="Ready" lock="off" title="DgcsteSL_dpfgse" exp="dosy2D" 
+      time="13 min" macro="DgcsteSL_dpfgse" data="" />
+  </protocol>
+</template>

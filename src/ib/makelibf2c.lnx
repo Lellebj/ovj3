@@ -1,0 +1,166 @@
+# Copyright (c) Varian Assoc., Inc.  All Rights Reserved.
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+.SUFFIXES: .c .o
+CC = gcc
+SHELL = /bin/sh
+CFLAGS = -O -m32 -DLINUX -DNON_UNIX_STDIO
+
+# Directories for SCCS
+SCCS_DIR=$(sccsdir)/ib
+
+LIBREV = 1.1
+IB_REV=
+
+# If your system lacks onexit() and you are not using an
+# ANSI C compiler, then you should add -DNO_ONEXIT to CFLAGS,
+# e.g., by changing the above "CFLAGS =" line to
+# CFLAGS = -O -DNO_ONEXIT
+
+# On at least some Sun systems, it is more appropriate to change the
+# "CFLAGS =" line to
+# CFLAGS = -O -Donexit=on_exit
+
+CHDR=	f2c.h fio.h fmt.h fp.h lio.h rawio.h
+
+MISC =	F77_aloc.o Version.o main.o s_rnge.o abort_.o getarg_.o iargc_.o \
+	getenv_.o signal_.o s_stop.o s_paus.o system_.o cabs.o\
+	derf_.o derfc_.o erf_.o erfc_.o sig_die.o exit.o stubmain.o
+POW =	pow_ci.o pow_dd.o pow_di.o pow_hh.o pow_ii.o  pow_ri.o pow_zi.o pow_zz.o
+CX =	c_abs.o c_cos.o c_div.o c_exp.o c_log.o c_sin.o c_sqrt.o
+DCX =	z_abs.o z_cos.o z_div.o z_exp.o z_log.o z_sin.o z_sqrt.o
+REAL =	r_abs.o r_acos.o r_asin.o r_atan.o r_atn2.o r_cnjg.o r_cos.o\
+	r_cosh.o r_dim.o r_exp.o r_imag.o r_int.o\
+	r_lg10.o r_log.o r_mod.o r_nint.o r_sign.o\
+	r_sin.o r_sinh.o r_sqrt.o r_tan.o r_tanh.o
+DBL =	d_abs.o d_acos.o d_asin.o d_atan.o d_atn2.o\
+	d_cnjg.o d_cos.o d_cosh.o d_dim.o d_exp.o\
+	d_imag.o d_int.o d_lg10.o d_log.o d_mod.o\
+	d_nint.o d_prod.o d_sign.o d_sin.o d_sinh.o\
+	d_sqrt.o d_tan.o d_tanh.o
+INT =	i_abs.o i_dim.o i_dnnt.o i_indx.o i_len.o i_mod.o i_nint.o i_sign.o
+HALF =	h_abs.o h_dim.o h_dnnt.o h_indx.o h_len.o h_mod.o  h_nint.o h_sign.o
+CMP =	l_ge.o l_gt.o l_le.o l_lt.o hl_ge.o hl_gt.o hl_le.o hl_lt.o
+EFL =	ef1asc_.o ef1cmc_.o
+CHAR =	s_cat.o s_cmp.o s_copy.o
+F90BIT = lbitbits.o lbitshft.o
+
+OBJ =	backspace.o close.o dfe.o dolio.o due.o endfile.o err.o \
+	fmt.o fmtlib.o ftell_.o iio.o ilnw.o inquire.o lread.o lwrite.o \
+	open.o rdfmt.o rewind.o rsfe.o rsli.o rsne.o sfe.o sue.o typesize.o \
+	uio.o util.o wref.o wrtfmt.o wsfe.o wsle.o wsne.o xwsne.o
+
+CSRC = $(MISC:.o=.c) $(POW:.o=.c) $(CX:.o=.c) $(DCX:.o=.c) $(REAL:.o=.c) \
+	$(DBL:.o=.c) $(INT:.o=.c) $(HALF:.o=.c) $(CMP:.o=.c) $(EFL:.o=.c) \
+	$(CHAR:.o=.c) $(F90BIT:.o=.c) $(OBJ:.o=.c)
+
+default: $(CHDR) libf2c.a libf2c.so
+
+libf2c.a : $(MISC) $(POW) $(CX) $(DCX) $(REAL) $(DBL) $(INT) \
+	$(HALF) $(CMP) $(EFL) $(CHAR) $(F90BIT) $(OBJ)
+	ar r libf2c.a $?
+	-ranlib libf2c.a
+
+libf2c.so: $(MISC) $(POW) $(CX) $(DCX) $(REAL) $(DBL) $(INT) \
+		$(HALF) $(CMP) $(EFL) $(CHAR) $(F90BIT) $(OBJ)
+	$(CC) -shared -m32 -o $@.$(LIBREV) $(MISC) $(POW) $(CX) $(DCX) \
+		$(REAL) $(DBL) $(INT) \
+		$(HALF) $(CMP) $(EFL) $(CHAR) $(F90BIT) $(OBJ)
+	rm -f $@
+	ln -s $@.$(LIBREV) $@
+
+libF77.a : $(MISC) $(POW) $(CX) $(DCX) $(REAL) $(DBL) $(INT) \
+	$(HALF) $(CMP) $(EFL) $(CHAR) $(F90BIT)
+	ar r libF77.a $?
+	-ranlib libF77.a
+
+libI77.a:	$(OBJ)
+		ar r libI77.a $?
+		-ranlib libI77.a
+
+### If your system lacks ranlib, you don't need it; see README.
+
+# compile, then strip unnecessary symbols
+.c.o:
+#	$(CC) -c $(CPPFLAGS) -DSkip_f2c_Undefs $(CFLAGS) $*.c
+#	ld -r -o $*.xxx $*.o
+#	mv $*.xxx $*.o
+#	ld -r -x -o $*.xxx $*.o
+## Under Solaris, omit -x in the ld line above.
+
+Version.o: Version.c
+	$(CC) -m32 -c Version.c
+
+# To compile with C++, first "make f2c.h"
+#f2c.h: f2ch.add
+#	cat /usr/include/f2c.h f2ch.add >f2c.h
+
+install:	libF77.a libI77.a
+	mv libF77.a libI77.a /usr/lib
+	ranlib /usr/lib/libF77.a /usr/lib/libI77.a
+
+clean:
+	rm -f libF77.a libI77.a libf2c.a libf2c.so* *.o
+
+# SCCS extraction.
+$(CSRC) $(CHDR) : \
+	%:$(SCCS_DIR)/SCCS/s.%
+	sccs -d $(SCCS_DIR) get $(IB_REV) $@
+
+backspace.o:	fio.h
+close.o:	fio.h
+dfe.o:		fio.h
+dfe.o:		fmt.h
+due.o:		fio.h
+endfile.o:	fio.h rawio.h
+err.o:		fio.h rawio.h
+fmt.o:		fio.h
+fmt.o:		fmt.h
+ftell_.o:	fio.h
+iio.o:		fio.h
+iio.o:		fmt.h
+ilnw.o:		fio.h
+ilnw.o:		lio.h
+inquire.o:	fio.h
+lread.o:	fio.h
+lread.o:	fmt.h
+lread.o:	lio.h
+lread.o:	fp.h
+lwrite.o:	fio.h
+lwrite.o:	fmt.h
+lwrite.o:	lio.h
+open.o:		fio.h rawio.h
+rdfmt.o:	fio.h
+rdfmt.o:	fmt.h
+rdfmt.o:	fp.h
+rewind.o:	fio.h
+rsfe.o:		fio.h
+rsfe.o:		fmt.h
+rsli.o:		fio.h
+rsli.o:		lio.h
+rsne.o:		fio.h
+rsne.o:		lio.h
+sfe.o:		fio.h
+sue.o:		fio.h
+uio.o:		fio.h
+util.o:		fio.h
+wref.o:		fio.h
+wref.o:		fmt.h
+wref.o:		fp.h
+wrtfmt.o:	fio.h
+wrtfmt.o:	fmt.h
+wsfe.o:		fio.h
+wsfe.o:		fmt.h
+wsle.o:		fio.h
+wsle.o:		fmt.h
+wsle.o:		lio.h
+wsne.o:		fio.h
+wsne.o:		lio.h
+xwsne.o:	fio.h
+xwsne.o:	lio.h
+xwsne.o:	fmt.h

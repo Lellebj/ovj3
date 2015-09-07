@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template type="advanced" element="elements">
+  <shimset size="560 240" font="Heading3"
+    style="Heading3"
+    point="Heading3"
+    fg="Heading3"
+    vq="shimset"
+    vc="setshim('$NAME',$VALUE)"
+    set="$VALUE=shimset"
+    statpar="$NAME"
+    border="LoweredBevel"
+    side="Top"
+    justify="Left"
+    tab="false"
+    savekids="false"
+    />
+</template>

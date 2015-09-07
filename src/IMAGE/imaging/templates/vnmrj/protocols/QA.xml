@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template type="composite" name="QA" author="varian" investigator="varian"
+    application="imaging" apptype="QA" rfcoil="main" anatomy="QA" time_created="20040611T174451"
+    scans="">
+  <protocol title="QA" type="protocol">
+    <action  type="LIB" status="Ready" title="spuls_B0_initial" exp="spuls_B0_initial" lock="off" time="1 sec" data="" macro="sqexp('spuls_B0_initial')" />
+    <action  type="LIB" status="Ready" title="sems_snr" exp="sems_snr" lock="off" time="4 min, 19 sec" data="" macro="sqexp('sems_snr')" />
+    <action  type="LIB" status="Ready" title="gems_stability" exp="gems_stability" lock="off" time="17 min, 10 sec" data="" macro="sqexp('gems_stability')" />
+  </protocol>
+</template>

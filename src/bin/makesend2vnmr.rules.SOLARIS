@@ -1,0 +1,38 @@
+# 
+# Copyright (c) 1994-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#   Rules for send2Vnmr for a SOLARIS system
+#
+
+# set defines acording to system Type
+CC= cc -Xa -DSOLARIS
+LIBS= -R /vnmr/lib -lm -lsocket -lnsl 
+OPTIMIZE= -xO2
+DEBUGOPT= -g -xF -xsb
+NCOMMDIR= /vobj/sol/proglib/ncomm
+
+CFLAGS= -O
+CPPFLAGS=
+LDFLAGS=
+
+LINK.c= $(CC) -xO2
+LINK_DBX.c= $(CC) -g -xF -xsb 
+
+std SOLARIS : send2Vnmr
+	@echo send2Vnmr Complete
+
+dbx : send2Vnmr_dbx
+	@echo send2Vnmr_dbx Complete
+
+send2Vnmr : Source send2Vnmr.c  ipcKeyDbm.h ipcMsgQLib.h shrMLib.h msgQLib.h mfileObj.h semLib.h 
+	(umask 2; $(LINK.c) -o $@  send2Vnmr.c -L$(NCOMMDIR) -lacqcomm $(LIBS))
+	@echo send2Vnmr is complete
+
+send2Vnmr_dbx : Source send2Vnmr.c  ipcKeyDbm.h ipcMsgQLib.h shrMLib.h msgQLib.h mfileObj.h semLib.h
+	(umask 2; $(LINK_DBX.c) -o $@  send2Vnmr.c -L$(NCOMMDIR) -lacqcomm $(LIBS))
+	@echo send2Vnmr_dbx is complete
+

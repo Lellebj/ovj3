@@ -2165,12 +2165,18 @@ int writefile(int argc, char *argv[], int retc, char *retv[])
 	if(fptr != NULL) fclose(fptr);
 	fptr = fopen(argv[2], "w");
 
-        if(retc > 0 && fptr != NULL) retv[0] = (char*)realString((double)1);
-	else if(retc >0) retv[0] = (char*)realString((double)0);
+        if(retc > 0 && fptr != NULL) retv[0] = intString(1);
+	else if(retc >0) retv[0] = intString(0);
+    } else if(strcmp(key,"append") == 0 && argc > 2) {
+	if(fptr != NULL) fclose(fptr);
+	fptr = fopen(argv[2], "a");
+
+        if(retc > 0 && fptr != NULL) retv[0] = intString(1);
+	else if(retc >0) retv[0] = intString(0);
     } else if(strcmp(key,"line") == 0 && argc > 2) {
 	if(fptr != NULL) fprintf(fptr, "%s\n",argv[2]);
     } else {
-	Winfoprintf("Usage: writefile('open',path), writefile('line',str), or writefile('close')");
+	Winfoprintf("Usage: writefile('open',path), writefile('append',path), writefile('line',str), or writefile('close')");
     }
 
     RETURN;

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template macro="RQaction" visiblecolumns="3">
+  <column header="name" class="treetable" style="Plain" font="Dialog" width="100"/>
+  <column header="owner" class="string" style="Plain" font="Dialog" width="60"/>
+  <column header="last_modified" class="string" style="Plain" font="Dialog" width="150"/>
+  <column header="size" class="string" style="Plain" font="Dialog" width="60"/>
+</template>

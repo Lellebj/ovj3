@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="sems_grad_orient" author="ATP" investigator=""
+    application="imaging" rfcoil="main" anatomy="ATP" time_created="20040519T111701"
+    parfile="sems_grad_orient" apptype="im2D" scans="sems_grad_orient" seqfil="sems">
+  <protocol title="sems_grad_orient" type="protocol">
+    <action  type="LIB" status="Ready" title="sems_grad_orient" exp="sems_grad_orient" time="2 min, 11 sec" macro="sqexp('sems_grad_orient')" data="" />
+  </protocol>
+</template>

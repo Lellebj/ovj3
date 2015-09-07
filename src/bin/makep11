@@ -1,0 +1,173 @@
+#
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+#---PAID sccs home---
+SDIR=$(sccsdir)/vnmr/SCCS/s.
+SGET=sccs -p$(sccsdir)/vnmr/SCCS get
+MGET=sccs -p$(sccsdir)/motif/SCCS get
+
+MAKEFILE= makep11
+
+#---normal operational compile flags
+CFLAGS= -c -O -DP11
+
+#---debugging with DBXTOOL compile flags
+#CFLAGS= -c -g
+
+#---normally LDFLAGS is left undefined - symbol included for SOLARIS target
+
+#---object modules nedded for "chchsums"
+
+ALL_PRG= \
+		safecp		\
+		chVJlist	\
+		writeTrash	\
+		vnmrMD5		\
+		chchsums	\
+		writeAaudit	\
+		auditcp
+
+
+SAFECP_OBJ= \
+		safecp.o
+
+CHVJLIST_OBJ= \
+		chVJlist.o	\
+                p11Tools.o	
+
+WRITETRASH_OBJ= \
+		writeTrash.o	\
+                p11Tools.o	
+
+VNMR_MD5_OBJ= \
+                vnmrMD5.o	\
+                md5c.o		\
+                p11Tools.o	
+
+CHCHSUMS_OBJ= \
+                chchsums.o	\
+                md5c.o		\
+                p11Tools.o	
+
+WRITE_A_AUDIT_OBJ= \
+                writeAaudit.o	\
+                p11Tools.o	
+
+AUDITCP_OBJ= \
+                auditcp.o	\
+                p11Tools.o	
+
+
+all: $(ALL_PRG) 
+
+safecp: $(SAFECP_OBJ)
+	(umask 2; cc -o safecp $(LDFLAGS) $(SAFECP_OBJ))
+
+chVJlist: $(CHVJLIST_OBJ)
+	(umask 2; cc -o chVJlist $(LDFLAGS) $(CHVJLIST_OBJ))
+
+writeTrash: $(WRITETRASH_OBJ)
+	(umask 2; cc -o writeTrash $(LDFLAGS) $(WRITETRASH_OBJ))
+
+vnmrMD5: $(VNMR_MD5_OBJ)
+	(umask 2; cc -o vnmrMD5 $(LDFLAGS) $(VNMR_MD5_OBJ))
+
+chchsums: $(CHCHSUMS_OBJ)
+	(umask 2; cc -o chchsums $(LDFLAGS) $(CHCHSUMS_OBJ))
+
+writeAaudit: $(WRITE_A_AUDIT_OBJ)
+	(umask 2; cc -o writeAaudit $(LDFLAGS) $(WRITE_A_AUDIT_OBJ))
+
+auditcp: $(AUDITCP_OBJ)
+	(umask 2; cc -o auditcp $(LDFLAGS) $(AUDITCP_OBJ))
+
+
+
+IRIX:
+	$(MAKE) -ef $(MAKEFILE) \
+	 "CFLAGS=-c -O -cckr -DIRIX" \
+	 chchsums)
+
+AIX: AIXSOURCE
+	(umask 2; cc -o chchsums chchsums.c \
+                -lcur)
+
+SOLARIS:
+	$(MAKE) -e -f $(MAKEFILE)       \
+	"CFLAGS= -c -O -DSOLARIS -DP11"       \
+	"LDFLAGS= -L /usr/ccs/lib"      \
+	all
+
+AIXSOURCE:
+	$(MGET) chchsums.c
+
+
+
+
+safecp.o: safecp.c
+	(umask 2; cc $(CFLAGS) safecp.c)
+
+chVJlist.o: chVJlist.c
+	(umask 2; cc $(CFLAGS) chVJlist.c)
+
+writeTrash.o: writeTrash.c
+	(umask 2; cc $(CFLAGS) writeTrash.c)
+
+vnmrMD5.o: p11Tools.c md5c.c md5.h md5global.h vnmrMD5.c
+	(umask 2; cc $(CFLAGS) vnmrMD5.c)
+
+chchsums.o: md5c.c md5.h md5global.h chchsums.c
+	(umask 2; cc $(CFLAGS) chchsums.c)
+
+writeAaudit.o: p11Tools.c writeAaudit.c
+	(umask 2; cc $(CFLAGS) writeAaudit.c)
+
+auditcp.o: p11Tools.c auditcp.c
+	(umask 2; cc $(CFLAGS) auditcp.c)
+
+md5c.o: md5.h md5global.h md5c.c
+	(umask 2; cc $(CFLAGS) md5c.c)
+
+p11Tools.o: md5.h md5global.h p11Tools.c
+	(umask 2; cc $(CFLAGS) p11Tools.c)
+
+
+
+
+safecp.c: $(SDIR)safecp.c
+	$(SGET) safecp.c
+
+chVJlist.c: $(SDIR)chVJlist.c
+	$(SGET) chVJlist.c
+
+writeTrash.c: $(SDIR)writeTrash.c
+	$(SGET) writeTrash.c
+
+vnmrMD5.c: $(SDIR)vnmrMD5.c
+	$(SGET) vnmrMD5.c
+
+chchsums.c: $(SDIR)chchsums.c
+	$(SGET) chchsums.c
+
+writeAaudit.c: $(SDIR)writeAaudit.c
+	$(SGET) writeAaudit.c
+
+auditcp.c: $(SDIR)auditcp.c
+	$(SGET) auditcp.c
+
+md5c.c: $(SDIR)md5c.c
+	$(SGET) md5c.c
+
+p11Tools.c: $(SDIR)p11Tools.c
+	$(SGET) p11Tools.c
+
+md5.h: $(SDIR)md5.h
+	$(SGET) md5.h
+
+md5global.h: $(SDIR)md5global.h
+	$(SGET) md5global.h

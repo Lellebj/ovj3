@@ -5,6 +5,11 @@ import sys
 sys.path.append(os.path.join(os.getcwd(), os.pardir, os.pardir, 'scripts'))
 import buildMethods
 
+ovjtools=os.getenv('OVJ_TOOLS')
+if not ovjtools:
+    print "OVJ_TOOLS env not found. Use export OVJ_TOOLS <path>"
+    sys.exit(1)
+
 #import variables  and environment from SConstruct
 Import("*")
 
@@ -15,8 +20,7 @@ infoProcTarget = 'Infoproc'
 # can be called from any other SConstruct file
 cwd = os.getcwd()
 
-javaPath = os.path.join(cwd, os.pardir, os.pardir,
-                        '3rdParty', 'java', 'bin')
+javaPath = os.path.join(ovjtools, 'java', 'bin')
 
 ## NDDS include/lib paths
 # get options settings, use parameter to determine NDDS 3x, 4x, 4.2d varients
@@ -33,7 +37,7 @@ print 'nvInfoproc NDDS_VERSION ' + boEnv['NDDS_VERSION']
 nddsdir = 'ndds.' + boEnv['NDDS_VERSION']
 print 'Compiling NDDS ' + boEnv['NDDS_VERSION'] + ' Version, insure that a clean was done prior to this'
 infoProcTarget = 'Infoproc'
-nddsHome = os.path.join(cwd,os.pardir, os.pardir, '3rdParty','NDDS', nddsdir)
+nddsHome = os.path.join(ovjtools, 'NDDS', nddsdir)
 nddsGen = 'cd ' + cwd + ' && ' + os.path.join(nddsHome, 'scripts', 'nddsgen')
 nddsJreBin = os.path.join(nddsHome, 'jre', 'i86Linux','bin')
 

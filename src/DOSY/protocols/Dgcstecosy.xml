@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! @(#)Dgcstecosy.xml 1.3 02/27/07 Copyright (c) 2003-2007 Agilent Technologies All Rights Reserved
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="Dgcstecosy" author="dosy22" investigator=""
+    time_created="20070223T150615" apptype="dosy3D"
+    application="liquids" scans="Dgcstecosy" seqfil="Dgcstecosy">
+  <protocol title="Dgcstecosy" type="protocol">
+    <action  type="LIB" status="Ready" lock="off" title="Dgcstecosy" exp="dosy3D" 
+      required="PROTON" time="2 hr, 35 min" macro="Dgcstecosy" data="" />
+  </protocol>
+</template>

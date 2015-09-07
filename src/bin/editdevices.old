@@ -1,0 +1,2563 @@
+/* 
+* Varian Assoc.,Inc. All Rights Reserved.
+* This software contains proprietary and confidential
+* information of Varian Assoc., Inc. and its contributors.
+* Use, disclosure and reproduction is prohibited without
+* prior consent.
+*/
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <curses.h>
+#include <signal.h>
+#include <string.h>
+#include <ctype.h>
+
+int    o_x, o_y;
+int    x, y;
+int    cols, lines;
+int    cc;
+int    change;
+int    NEW, mess;
+int    VIEW;
+int    cmdindex;
+int    oldindex;
+int    cmdline, attriline;
+int    newline;
+int    empty;
+int    local_host;
+int    no_types;
+int    fd_err;
+
+WINDOW   *helpscr;
+#define  cmdno 9 
+char   *reverse;
+char   *normal;
+char   *bel;
+char   *tgetstr();
+char   *str;
+char   *getenv();
+char   *user;
+char   *termname;
+char   *tokptr;
+char   *strptr;
+char   hostname[30];
+char   *sysdir;
+char   devicefile[60];
+char   typefile[60];
+char   errfile[60];
+void   ddne();
+FILE  *fd;
+char  *func[] = {
+		 "next", "prev", "modify", "save",
+		 "create", "delete", 
+                 "exec", "help", "quit"
+                };
+char  *attr[] = {
+		 "device name:",  
+		 "        Use:",
+		 "device type:",
+		 "       Host:",
+		 "       Port:",
+		 "  Baud Rate:",
+		 "     Shared:"
+	        };
+
+struct  node {
+                char  name[24];
+                char  use[21];
+                char  type[21];
+                char  host[21];
+                char  port[21];
+                char  baud[21];
+                char  shared[21];
+                struct node *prev;
+                struct node *next;
+             };
+
+struct  baud {
+                char  rate[8];
+                struct baud *prev;
+                struct baud *next;
+             };
+
+struct  port {
+                char  num[8];
+                struct port *next;
+             };
+
+struct  host_node {
+                    char  name[32];
+                    struct host_node *next;
+                  };
+struct  devicetype {
+                     char  type[20];
+                     struct devicetype *next;
+                   };
+
+struct node  *first, *cur_node, *new_node;
+struct node  *spare, *last, *spare1, *spare2;
+struct devicetype  *typeptr, *cur_type;
+struct baud  *baud_1;
+struct port  *port_1;
+struct host_node  *host_1;
+int   confirm();
+char  termbuf[1024];
+
+main()
+{
+	int  i;
+        char  *temp;
+        char  term_cap[512]; 
+
+        sysdir = (char *)getenv("vnmrsystem");
+        if (!sysdir)
+             sysdir = "/vnmr";
+        sprintf(devicefile, "%s/devicenames", sysdir);
+        sprintf(typefile, "%s/devicetable", sysdir);
+	sprintf(errfile, "/tmp/err%d", getpid());
+        fd_err = open(errfile, O_RDWR | O_CREAT);
+        if (fd_err > 0)
+                dup2(fd_err, 2);
+        baudTable();
+        sort_baud();
+        portTable();
+        hostTable();
+        typeTable();
+        cols = 70;
+        lines = 18;
+        signal(SIGINT, ddne);
+        termname = (char *)getenv("TERM");
+        if (strcmp(termname, "graphon") == 0)
+        {
+               bel = "\7";
+               reverse = "\033[7m";
+               normal = "\033[0m";
+        }
+        else
+	{
+              if (tgetent(termbuf, getenv("TERM")) == 1)
+              {
+                  temp = term_cap;
+                  if((bel = tgetstr("bl", &temp)) == NULL)
+                        bel = "\7"; 
+                  if ((reverse = tgetstr("mr", &temp)) == NULL)
+                        reverse = "\033[7m";
+	          if ((normal = tgetstr("se", &temp)) == NULL)
+                        normal = "\033[0m";
+                  if (tgetnum("col") < 79 || tgetnum("li") < 24)
+                  {
+                        printf(" Screen size is too small, abort!\n");
+                        Exit();
+                  }
+		  i = 0;
+		  while(*(reverse + i) >= '0' && *(reverse + i) <= '9')
+			i++;
+		  sprintf(reverse, "%s", reverse + i);
+		  i = 0;
+		  while(*(normal + i) >= '0' && *(normal + i) <= '9')
+			i++;
+		  sprintf(normal, "%s", normal + i);
+              }
+              else 
+              {
+                  printf("Unknown terminal type !\n");
+                  Exit();
+              }
+	} 
+ 	if ((gethostname(&hostname[0], 30)) != 0)
+	{
+	      printf("cannot get hostname, abort !\n");
+	      Exit();
+	}
+  	spare = NULL;
+        new_node = NULL;
+        mess = 0;	
+        createList();
+	initscr();
+        cbreak();
+        noecho();
+        o_x = x = 5;
+        o_y = y = 3;
+        drawbox();
+        nonl();
+        initial();
+        if (first == NULL)
+        {
+             move(o_y + 18, 5);
+             printw("%sfile is empty", reverse);
+             printw("%s", normal);
+             printw("%s", bel);
+             refresh();
+             VIEW = 0;
+             mess = 1;
+        }
+        else
+	{
+             cur_node = first;
+             view (first);
+    	}
+        cmdline = 0;
+	oldindex = 0;
+        moveCmd();
+	NEW = 0;
+	change = 0;
+        user = (char *)getenv("LOGNAME");
+	for(;;)
+	{
+		cc = getch();
+                getyx(stdscr, y, x);
+                if (mess)
+                {
+                      move(o_y + 18, 0);
+                      deleteln();
+                      insertln();
+                      move (y, x);
+                      refresh();
+                      mess = 0;
+                }
+                if (cc == 27)
+                {    
+		      escap();
+                      continue;
+                }
+                if (cmdline)
+                {
+                     if (cc == 13)
+                     {
+                           exec_cmd();
+                     }
+                     else
+                     {
+                           if ((cc < 125) && (cc > 32))
+                           {
+                                 oldindex = cmdindex;
+                                 select(&cc);
+                           }
+                     }      
+		     continue;
+                }
+                if (cc == 13)
+                {
+                     newline = 1;
+                     if (!line_check())
+                          continue;
+                     x = o_x + 15;
+                     if (!local_host && y == o_y + 9)
+                           y = o_y + 15;
+                     else
+                     {
+                           if (y == o_y + 15)
+                                y = o_y + 3;
+                           else
+                                y = y + 2;
+                     }
+                     move(y, x);
+                     refresh();
+		     continue;
+                }      
+                if ((cc == 127) || (cc == 8))
+                {
+                     getyx(stdscr, y, x);
+                     delch();
+                     move(y, o_x + 35);
+                     insch(' ');
+                     if (x > o_x + 15)
+                          x--;
+                     move(y, x);
+                     refresh();
+	             continue;
+               }
+               if ((cc >= 32) && (cc <= 125))
+               {
+                     if ( x > o_x + 34)
+                     {
+                           move(o_y + 18, 5);
+                           printw("%stoo long", reverse);
+                           printw("%s", normal);
+                           printw("%s", bel);
+                           refresh();
+                           mess = 1;
+                           move(y, x);
+                           refresh();
+                           continue;
+                     }
+                     if (newline)
+                          eraseLine();
+                     addch(cc);
+                     refresh();
+               }
+        }
+}
+
+
+
+
+
+escap()
+{
+	int  xc;
+        int x2, y2;
+
+	xc = getch();
+	if (xc == 91)
+	{
+		xc = getch();
+                getyx(stdscr, y, x);
+		switch(xc) {
+		case 'A':    /*   move up  */
+                           if (!cmdline)
+                           {
+                                newline = 1;
+                                if (!line_check())
+                                     return;
+                                y2 = y -2;
+                                if (!local_host && y2 == o_y + 13)
+                                    y2 = o_y + 9;
+                                if (y2 <= o_y + 2)
+                                {
+                                    link_node();
+                                    moveCmd();
+                                }
+                                else
+                                {
+                                    x2 = o_x + 15;
+                                }
+                           }
+                           else
+                           {
+                                printf("%s", bel);
+                                refresh();
+                           }
+		           break;
+		          	 	
+		case 'B':    /*   move down  */
+                           if (!cmdline)
+                           {
+                                newline = 1;
+                                if (!line_check())
+                                     return;
+                                if (y == o_y + 15)
+                                      y2 = o_y + 3;
+                                else
+                                {
+                                      if (!local_host && y == o_y + 9)
+                                           y2 = o_y + 15;
+                                      else
+			                   y2 = y + 2;
+                                }
+                                x2 = o_x + 15;
+                           }
+                           else
+                           {
+                                printf("%s", bel);
+                                refresh();
+                           }
+			   break;
+
+		case 'C':    /*   move right   */
+                           if (cmdline)
+                           {
+                                oldindex = cmdindex;
+                                cmdindex++;
+                                if (cmdindex == cmdno)
+                                      cmdindex = 0;
+                                moveCmd();
+                           }
+                           else
+                           {
+                                newline = 1;
+/*
+			        x2 = x + 1;
+			        if (x2 >= o_x + cols -1)
+			            x2 = o_x + cols - 2;
+                                y2 = y;
+                                move(y2, x2);
+                                refresh();
+                                if (inch() == ' ')
+                                {
+                                      x2 = x;
+                                      move(0,0);
+                                      printw("%s", bel);
+                                      refresh();
+                                }
+*/
+                                y2 = y;
+                                if (inch() != ' ')
+                                      x2 = x + 1;
+                                else
+                                {
+                                      move(0,0);
+                                      printw("%s", bel);
+                                      refresh();
+                                      x2 = x;
+                                }
+                           }
+			   break;
+
+		case 'D':    /*   move left   */
+                           if (cmdline)
+                           { 
+                                oldindex = cmdindex;
+                                cmdindex--;
+                                if (cmdindex < 0)
+                                      cmdindex = cmdno - 1;
+                                moveCmd();
+                           }
+                           else
+                           {
+                                newline = 1;
+			        x2 = x - 1;
+			        if (x2 < o_x + 15)
+                                {
+			            x2 = o_x + 15;
+                                    move(0,0);
+                                    printw("%s", bel);
+                                    refresh();
+                                }
+                                y2 = y;
+                           }
+			   break;
+		}
+                if (!cmdline)
+                {
+		     move(y2, x2);
+                     refresh();
+                     x = x2;
+                     y = y2;
+                }
+	}
+}
+
+
+
+
+
+void ddne()
+{
+        nl();
+        echo();
+        clear();
+	refresh();
+        endwin();
+	Exit();
+}
+
+
+Exit()
+{
+        if (fd_err > 0)
+        {
+                close(fd_err);
+                unlink(errfile);
+        }
+        exit(0);
+}
+
+
+initial()
+{
+	int  i;
+	int  x1, y1;
+
+	x1 = o_x + 2;
+	y1 = o_y + 1;
+	for(i = 0; i < cmdno; i++)
+	{
+	    move (y1, x1);
+	    addstr(func[i]);
+            x1 = x1 + strlen(func[i]) + 2;
+	}
+        refresh();
+	x1 = o_x + 1;
+	y1 = o_y + 3;
+        for(i = 0; i < 7; i++)
+	{
+	    move(y1, x1);
+	    addstr(attr[i]);
+	    y1 = y1 + 2;
+	}
+        refresh();
+}
+		
+
+
+
+
+moveCmd()
+{
+	int  i, k;
+	int  x1, y1;
+
+	x1 = o_x + 2;
+	y1 = o_y + 1;
+        move(y1, 0);
+        refresh();
+        x1= o_x + 2;
+        for (i = 0; i < oldindex; i++)
+        {
+              x1 = x1 + strlen(func[i]) + 2;
+        }
+	move(y1, x1);
+	refresh();
+/*
+	addstr(func[oldindex]);
+*/
+        printf("%s", func[oldindex]);
+	refresh();
+        x1= o_x + 2;
+        for (i = 0; i < cmdindex; i++)
+        {
+              x1 = x1 + strlen(func[i]) + 2;
+        }
+	move(y1, 0);
+	refresh();
+	move(y1, x1);
+        refresh();
+        printf("%s%s",reverse, func[cmdindex]);
+        printf("%s", normal);
+        refresh();
+/*
+        move(y1, x1);
+        refresh();
+	addstr(func[cmdindex]);
+        refresh();
+        printf("%s", normal);
+        printw("%s%s", reverse, func[cmdindex]);
+        printw("%s", normal);
+        refresh();
+*/
+        cmdline = 1;
+        return;
+}
+
+
+
+
+
+
+createList()
+{
+	char   *str;
+        char   *sp;
+        char   data[256];
+        char   name[30];
+        char   use[10];
+        char   type[30];
+        char   host[30];
+        char   port[10];
+        char   baud[10];
+        char   shared[5];
+
+        first = NULL;
+        cur_node = NULL;
+	fd = fopen(devicefile, "r");
+        if (fd == NULL)
+        {
+/*
+                printf("cannot open devicenames\n");
+                exit(0);
+*/
+                return;
+        }
+        sp = fgets(data, 256, fd);
+        while (sp)
+        {
+		name[0] = '\0';
+		use[0] = '\0';
+		type[0] = '\0';
+		host[0] = '\0';
+		port[0] = '\0';
+		baud[0] = '\0';
+		shared[0] = '\0';
+	     	if (strncmp(sp, "Name", 4) == 0)
+		{
+		   sscanf(sp, "%*s%s", name);
+                   if (!(sp = fgets(data, 256, fd)))
+                       break;
+	           if (strncmp(sp, "Use", 3) == 0)
+		   {
+		       sscanf(sp, "%*s%s", use);
+                   }
+                   if (!(sp = fgets(data, 256, fd)))
+                       break;
+	     	   if (strncmp(sp, "Type", 4) == 0)
+		   {
+		       sscanf(sp, "%*s%s", type);
+                   }
+                   if (!(sp = fgets(data, 256, fd)))
+                       break;
+	     	   if (strncmp(sp, "Host", 4) == 0)
+		   {
+		       sscanf(sp, "%*s%s", host);
+                   }
+                   if (!(sp = fgets(data, 256, fd)))
+                       break;
+	     	   if (strncmp(sp, "Port", 4) == 0)
+		   {
+		       sscanf(sp, "%*s%s", port);
+                   }
+                   if (!(sp = fgets(data, 256, fd)))
+                       break;
+	     	   if (strncmp(sp, "Baud", 4) == 0)
+		   {
+		       sscanf(sp, "%*s%s", baud);
+                   }
+                   if (!(sp = fgets(data, 256, fd)))
+                       break;
+	     	   if (strncmp(sp, "Shared", 6) == 0)
+		   {
+		       sscanf(sp, "%*s%s", shared);
+                   }
+                   new_node = (struct node *)malloc(sizeof(struct node));
+                   strcpy(new_node->name, name);
+                   strcpy(new_node->type, type);
+                   strcpy(new_node->use, use);
+                   strcpy(new_node->host, host);
+                   strcpy(new_node->port, port);
+                   strcpy(new_node->baud, baud);
+                   strcpy(new_node->shared, shared);
+                   new_node->next = NULL;
+                   new_node->prev = NULL;
+                   if (first == NULL)
+                       first = new_node;
+                   else
+                   {
+                       cur_node->next = new_node;
+                       new_node->prev = cur_node;
+                   }
+                   cur_node = new_node;
+                }
+                sp = fgets(data, 256, fd);
+	}
+        fclose(fd);             
+        new_node = NULL;
+        cur_node = first;
+}
+
+
+
+
+
+
+
+exec_cmd()
+{
+        char  tempname[22];
+
+	switch(cmdindex) {
+	case 0:       /*   show next device     */
+		next();
+                NEW = 0;
+                change = 0;
+		break;
+	case 1:       /*   show previous device     */
+		previous();
+                NEW = 0;
+                change = 0;
+		break;
+        case 2:       /*   modify current device  */
+/*
+                if (!root_user())
+                    break;
+*/
+                if ((VIEW) || (NEW))
+                {
+                    change = 1;
+                    cmdline = 0;
+                    oldindex = cmdindex;
+                    y = o_y + 3;
+                    x = o_x + 15;
+                    move (y, 0);
+                    refresh();
+                    mvaddstr(o_y + 3, o_x + 36, "[lp | name]");
+                    mvaddstr(o_y + 5, o_x + 36, "[Plotter | Printer | Both]");
+                    mvaddstr(o_y + 15, o_x + 36, "[Yes | No]");
+                    refresh();
+                    move(o_y + 3, o_x + 15);
+                    refresh();
+                    newline = 1;
+                }
+                break;
+	case 3:        /*  save devices to file devicenames  */
+                if (!root_user())
+                    break;
+		copy_dump();
+		break;
+	case 4:        /*  create new device   */
+                if (!root_user())
+                    break;
+                newline = 1;
+                oldindex = cmdindex;
+		new();
+                change = 0;
+                VIEW = 0;
+                break;
+	case 5:        /*  delete device   */
+                if (!root_user())
+                    break;
+		if (delete())
+                {
+                     NEW = 0;
+                     VIEW = 0;
+                     change = 0;
+                }
+		break;
+        case 6:         /*  make printcap  */
+                if (!root_user())
+                    break;
+                execute();
+                break;
+	case 7:       /*   create help window   */
+                help();
+                break;
+        case 8:       /*  exit  */
+                ddne();
+                break;
+	}
+        if ((cmdindex != 2) && (cmdindex != 4))
+             moveCmd();
+}
+
+
+
+
+
+
+
+view(Node)
+struct  node  *Node;
+{
+        sweepscr();
+        if (Node == NULL)
+             return;
+	x = o_x + 15;
+	y = o_y + 3;
+        move(y, x);
+        refresh();
+        addstr(Node->name);
+        y = y + 2;
+        mvaddstr(y, x, Node->use);
+        y = y + 2;
+	mvaddstr(y, x, Node->type);
+        y = y + 2;
+	mvaddstr(y, x, Node->host);
+	y = y + 2;
+	mvaddstr(y, x, Node->port);
+	y = y + 2;
+	mvaddstr(y, x, Node->baud);
+	y = y + 2;
+	mvaddstr(y, x, Node->shared);
+        refresh();
+        VIEW = 1;
+}
+
+
+
+
+
+
+
+next()
+{
+        if (cur_node != NULL)
+	{
+            if (cur_node->next != NULL)
+            {
+                  cur_node = cur_node->next;
+                  view(cur_node);
+                  return;
+            }
+    	}
+        move(o_y + 18, 5);
+        printw("%sno more", reverse);
+        printw("%s", normal);
+        printw("%s", bel);
+        mess = 1;
+        refresh();
+}
+
+
+
+
+
+
+previous()
+{
+        if (cur_node != NULL)
+	{
+            if (cur_node->prev != NULL)
+            {
+                    cur_node = cur_node->prev;
+                    view(cur_node);
+                    return;
+            }
+    	}
+        move(o_y + 18, 5);
+        printw("%s no more", reverse);
+        printw("%s", normal);
+        printw("%s", bel);
+        mess = 1;
+        refresh();
+}
+
+
+
+
+
+
+
+sweepscr()
+{
+	int i;
+
+ 	if ((new_node != NULL) && (NEW))
+/*
+        {
+              store(new_node);
+	}
+*/
+        x = o_x;
+	y = o_y + 3;
+	move(y, 0);
+	refresh();
+        for(i = 0; i < 7; i++)
+        {
+              move(y, o_x + 15);
+              refresh();
+              clrtoeol();
+              mvaddch(y, o_x + cols, '|');
+              y = y + 2;
+              refresh();
+        }
+        refresh();
+        change = 0;
+}
+              
+
+
+
+
+
+
+
+new()
+{
+	if (new_node == NULL)
+        {
+              new_node = (struct node *) calloc(1, sizeof(struct node));
+	      new_node->prev = NULL;
+              new_node->next = NULL;
+ 	}
+        sweepscr();
+        NEW = 1;
+        mvaddstr(o_y + 3, o_x + 36, "[lp | name]");
+        mvaddstr(o_y + 5, o_x + 36, "[Plotter | Printer | Both]");
+        mvaddstr(o_y + 15, o_x + 36, "[Yes | No]");
+        refresh();
+        y = o_y + 3;
+        x = o_x + 15;
+        move(y, x);
+        cmdline= 0;
+        refresh();
+}
+
+
+
+
+
+
+/*  link the current displayed node to the tree  */
+link_node()
+{
+
+        if ((NEW) || (change))
+        {
+                 VIEW = 1;
+                 if (spare1 == NULL)
+                 {
+		      spare1 = (struct node *) calloc(1, sizeof(struct node));
+                 }
+                 else
+                 {
+                      spare1->next = NULL;
+                      spare1->prev = NULL;
+                 }
+                 store(spare1);
+                 if (change)
+                 {
+                      if (empty)   /* current display is blank  */
+                      {
+                            if (cur_node->prev != NULL)
+                            {
+                                 if (cur_node->next != NULL)
+                                 {
+                                     cur_node->prev->next = cur_node->next;
+                                     cur_node->next->prev = cur_node->prev;
+                                 }
+                                 else
+                                 {
+                                     cur_node->prev->next = NULL;
+                                 } 
+                            }
+                            else
+                            {
+                                 if (cur_node->next != NULL)
+                                       cur_node->next->prev = NULL;
+                            }
+                            if (first == cur_node)
+                                 first = cur_node->next;
+                            VIEW = 0;
+                      }
+                      else
+                      {
+                            spare1->next = cur_node->next;
+                            spare1->prev = cur_node->prev;
+                            if (cur_node->prev != NULL)
+                                 cur_node->prev->next = spare1;
+	                    if (cur_node->next != NULL)
+	                         cur_node->next->prev = spare1;
+                            if (first == cur_node)
+                                 first = spare1;
+                            free((struct node *) cur_node);
+                            cur_node = spare1;
+                            spare1 = NULL;
+                      }
+                      change = 0;
+                      return;
+                 }
+                 NEW = 0;
+	         if (new_node != NULL)
+	         {
+                      free((struct node *) new_node);
+                      new_node = NULL;
+	         } 
+                 if (empty)
+                 {
+                      free((struct node *) spare1);
+                      spare1 = NULL;
+                      VIEW = 0;
+                      return;
+                 } 
+                 if (first == NULL)
+                 {
+                      first = spare1;
+                      spare1 = NULL;
+                      return;
+                 }
+	         last = first;
+	         for(;;)
+                 {
+		      if (last->next != NULL)
+                            last = last->next;
+                      else
+                            break;
+                 }
+                 last->next = spare1;
+                 spare1->prev = last;
+                 cur_node = spare1;
+                 spare1 = NULL;
+	}
+}
+
+
+
+
+
+
+
+int delete()
+{
+
+        if (VIEW)
+        {
+               if (!confirm())
+                     return(0);
+        }
+        else
+        {
+               move(o_y + 18, 5);
+               printw("%snothing to delete", reverse);
+               printw("%s", normal);
+               printw("%s", bel);
+               mess = 1;
+               refresh();
+               return(1);
+        }
+	sweepscr();
+	if (spare != NULL)
+        {
+             free((struct node *)spare);
+             spare = NULL;
+        }
+        if (cur_node != NULL)
+        {
+             spare = cur_node;
+             if (cur_node->prev != NULL)
+	     {
+                  cur_node->prev->next = cur_node->next;
+                  if (cur_node->next != NULL)
+                  {
+                      cur_node->next->prev = cur_node->prev;
+                  }
+             }
+             else
+             {
+                  if (cur_node->next != NULL)
+                  {
+                       first = cur_node->next;
+                       cur_node->next->prev = NULL;
+                  }
+                  else
+                       cur_node = NULL;
+             }
+	}
+        NEW = 0;
+        VIEW = 0;
+        return(1);
+}
+
+
+
+
+
+
+
+store(Node)
+struct  node  *Node;
+{
+     x = o_x + 15;
+     y = o_y + 3;
+     empty = 1;
+     move(y, x);
+     eatstr(Node->name);
+     x = o_x + 15;
+     y = y + 2;
+     move(y, x);
+     eatstr(Node->use);
+     x = o_x + 15;
+     y = y + 2;
+     move(y, x);
+     eatstr(Node->type);
+     x = o_x + 15;
+     y = y + 2;
+     move(y, x);
+     eatstr(Node->host);
+     x = o_x + 15;
+     y = y + 2;
+     move(y, x);
+     eatstr(Node->port);
+     x = o_x + 15;
+     y = y + 2;
+     move(y, x);
+     eatstr(Node->baud);
+     x = o_x + 15;
+     y = y + 2;
+     move(y, x);
+     eatstr(Node->shared);
+}
+
+
+
+
+
+
+
+
+eatstr(sstr)
+char  *sstr;
+{
+	int i, k;
+        int xn, yn;
+        int start;
+        int cc;
+
+        start = 0;
+        k = 0;
+        getyx(stdscr, yn, xn);
+	for(i = 0; i < 21; i++)
+        {
+              if (inch() != ' ')
+              {
+                   start = 1;
+	           sstr[k++] = inch();
+              }
+	      else
+              {
+                   if (start)
+                   {
+                        empty = 0;
+                        sstr[k] = '\0';
+                        return;
+                   }
+              }
+              xn++;
+              move(yn, xn);
+        }
+        sstr[0] = '\0';
+}
+
+
+
+
+
+
+
+int confirm()
+{
+	int  cur_x, cur_y;
+
+        move(o_y + 18, 5);
+        printw("%sHit RET key to confirm delete, other key to cancel", reverse);
+        printw("%s", normal);
+        printw("%s", bel);
+        refresh();
+        mess = 1;
+	cc = getch();
+        deleteln();
+        insertln();
+	refresh();
+        if (cc == 13)
+            return(1);
+        else
+            return(0);
+}
+
+              
+
+
+
+
+int    h_cols;
+int    h_lines;
+
+help()
+{
+	int    modify;
+        struct  node  *temp;
+
+        temp = (struct node *) calloc(1, sizeof(struct node));
+        if (temp == NULL)
+        {
+            return;
+        }
+	store(temp);
+	h_cols = 72;
+	h_lines = 23;
+	helpscr = newwin(h_lines, h_cols, 1, 7);
+	overlay(helpscr, stdscr);
+        clear();
+        refresh();
+	wmove(helpscr, 0, 0);
+        box(helpscr, '.', '.');
+	wrefresh(helpscr);
+        disp_menu1();
+	wrefresh(helpscr);
+        cc = wgetch(helpscr);
+        if (cc != 13)
+        {
+              wclear(helpscr);
+              wrefresh(helpscr);
+              wmove(helpscr, 0, 0);
+              box(helpscr, '.', '.');
+              wrefresh(helpscr);
+              disp_menu2();
+        }
+        wclear(helpscr);
+	wrefresh(helpscr);
+        delwin(helpscr); 
+        modify = change;
+        drawbox();
+        initial();
+        refresh();
+        view(temp);
+        cmdindex = 7;
+        moveCmd();
+}
+
+
+
+
+
+
+
+drawbox()
+{
+	int  i;
+
+        x = o_x;
+        y = o_y;
+        for(i = 0; i < lines; i++)
+        {
+             move(y, x);
+             addch('|');
+             y++;
+        }
+        x = o_x + cols;
+	y = o_y;
+        for(i = 0; i < lines; i++)
+        {
+             move(y, x);
+             addch('|');
+             y++;
+        }
+        x = o_x + 1;
+        y = o_y;
+        move(y, x);
+        for(i = 0; i < cols - 1; i++)
+        {
+             addch('-');
+        }
+        x = o_x + 1;
+        y = o_y + 2;
+        move(y, x);
+        for(i = 0; i < cols - 1; i++)
+        {
+             addch('-');
+        }
+        x = o_x + 1;
+        y = o_y + lines - 1;
+        move(y, x);
+        for(i = 0; i < cols - 1; i++)
+        {
+             addch('-');
+        }
+        refresh();
+}
+
+
+
+
+
+
+disp_menu1()
+{
+	int nx, ny, count, loop;
+        char  list[30];
+
+	ny = 1;
+	nx = cols / 2 - 6;
+        mvwaddstr(helpscr, ny, nx, "MENU");
+        ny++;
+        nx = 3;
+        mvwaddstr(helpscr, ny, nx, "next -- display the next device attributes");
+        ny++;
+        mvwaddstr(helpscr, ny, nx, "prev -- display the previous device attributes");
+        ny++;
+        mvwaddstr(helpscr, ny, nx, "modify -- enter edit mode to modify current device attributes");
+        ny++;
+        mvwaddstr(helpscr, ny, nx, "save -- save the modified or new device attributes");
+        ny++;
+        mvwaddstr(helpscr, ny, nx, "create -- create a blank table for entering new device attributes");
+        ny++;
+        mvwaddstr(helpscr, ny, nx, "delete -- remove the displayed device from file");
+        ny++;
+        mvwaddstr(helpscr, ny, nx, "exec -- make printcap");
+        ny++;
+        mvwaddstr(helpscr, ny, nx, "quit -- exit");
+        ny = ny + 2;
+        mvwaddstr(helpscr, ny, nx, "  The device type must be one of the following:");
+        ny++;
+        cur_type = typeptr;
+	count = 1;
+        while(cur_type)
+        {
+            nx = 3;
+            for(loop = 1; loop <= 3; loop++)
+            {
+                 if (cur_type != NULL)
+                 {
+                      sprintf(list, "%2d. %s", count, cur_type->type);
+                      mvwaddstr(helpscr, ny, nx, list);
+                      cur_type = cur_type->next;
+                      nx = nx + 22;
+                      count++;
+                 }
+                 else
+                      break;
+            }
+            ny++;
+            if (ny > h_lines - 4)
+            {
+                 if ( !wait_scroll())
+                      return;
+                 ny = ny - 3;
+            }
+        }
+        mvwaddstr(helpscr, h_lines -3, 6, "* Hit any key for more information *");
+        mvwaddstr(helpscr, h_lines -2, 6, "* Hit RET key to return *");
+        wrefresh(helpscr);
+}
+
+
+
+disp_menu2()
+{
+	int  nx, ny;
+        int  i, k;
+        struct  port  *cur_port;
+        struct  baud  *cur_baud;
+        struct  host_node  *cur_host;
+
+	nx = 4;
+      	ny = 1;
+        mvwaddstr(helpscr, ny, nx, "system available baud rates are:");
+        wrefresh(helpscr);
+        cur_baud = baud_1;
+        k = 1;
+        while( cur_baud != NULL)
+	{
+              nx = 6;
+              ny++;
+	      for(i = 0; i < 5; i++)
+              {
+                    wmove (helpscr, ny, nx);
+                    wprintw(helpscr, " %2d. %s", k, cur_baud->rate);
+                    nx = nx + 12;
+                    wrefresh(helpscr);
+                    k++;
+                    cur_baud = cur_baud->next;
+                    if (cur_baud == NULL)
+                          break;
+              }
+    	}
+	nx = 4;
+	ny = ny + 2;
+        mvwaddstr(helpscr, ny, nx, "system available ports are:");
+        wrefresh(helpscr);
+        cur_port = port_1;
+        k = 1;
+        while( cur_port != NULL)
+	{
+               nx = 6;
+               ny = ny + 1;
+               if (ny > h_lines - 5)
+               {
+                   if ( !wait_scroll())
+                        return;
+                   ny = ny - 3;
+               }
+               for(i = 0; i < 5; i++)
+               {
+                    wmove(helpscr, ny, nx);       
+                    wprintw(helpscr, " %2d. %s", k, cur_port->num);
+                    wrefresh(helpscr);
+                    nx = nx + 12;
+                    k++;
+                    cur_port = cur_port->next;
+                    if (cur_port == NULL)
+                          break;
+               }
+	}
+	nx = 4;
+	ny = ny + 2;
+        mvwaddstr(helpscr, ny, nx, "system available hosts are:");
+        wrefresh(helpscr);
+        cur_host = host_1;
+        k = 1;
+        while( cur_host != NULL)
+	{
+               nx = 6;
+               ny = ny + 1;
+               if (ny > h_lines - 5)
+               {
+                    if ( !wait_scroll())
+                        return;
+                    ny = ny -3;
+               }
+               for(i = 0; i < 4; i++)
+               {
+                    wmove(helpscr, ny, nx);       
+                    wprintw(helpscr, " %2d. %s", k, cur_host->name);
+                    wrefresh(helpscr);
+                    nx = nx + 15;
+                    k++;
+                    if (strlen(cur_host->name) > 10)
+		    {
+                          nx = nx + 15;
+                          i++;
+                    }
+                    cur_host = cur_host->next;
+                    if (cur_host == NULL)
+                          break;
+               }
+	}
+        mvwaddstr(helpscr, h_lines -2, 6, "* Hit RET key to return *");
+        wrefresh(helpscr);
+        for(;;)
+        {
+               cc = wgetch(helpscr);
+               if (cc == 13)
+                    return;
+ 	}
+}
+
+
+
+
+
+int wait_scroll()
+{
+	int  kk;
+
+        mvwaddstr(helpscr, h_lines -3, 10, 
+                   "* Hit RET key to return, any key to scroll *");
+        wrefresh(helpscr);
+        wmove(helpscr, h_lines -2, h_cols / 2 - 3);
+        wprintw(helpscr, "%s-more-", reverse);
+        wprintw(helpscr, "%s", normal);
+        wrefresh(helpscr);
+        cc = wgetch(helpscr);
+        if (cc == 13)
+        {	
+               return(0);
+        }
+        wmove(helpscr, h_lines - 3, 0);
+        wdeleteln(helpscr);
+        wdeleteln(helpscr);
+        wdeleteln(helpscr);
+        winsertln(helpscr);
+        winsertln(helpscr);
+        winsertln(helpscr);
+        wrefresh(helpscr);
+        scrollok(helpscr, TRUE);
+        scroll(helpscr);
+        scroll(helpscr);
+        scroll(helpscr);
+        scrollok(helpscr, FALSE);
+        wmove(helpscr, 0, 0);
+        wdeleteln(helpscr);
+        winsertln(helpscr);
+        mvwaddch(helpscr, h_lines -6, h_cols -1, '.');
+        mvwaddch(helpscr, h_lines -6, 0, '.');
+        mvwaddch(helpscr, h_lines -5, h_cols -1, '.');
+        mvwaddch(helpscr, h_lines -5, 0, '.');
+        mvwaddch(helpscr, h_lines -4, h_cols -1, '.');
+        mvwaddch(helpscr, h_lines -4, 0, '.');
+        mvwaddch(helpscr, h_lines -3, h_cols -1, '.');
+        mvwaddch(helpscr, h_lines -3, 0, '.');
+        mvwaddch(helpscr, h_lines -2, h_cols -1, '.');
+        mvwaddch(helpscr, h_lines -2, 0, '.');
+        wmove(helpscr, h_lines - 1, 0);
+        for(kk = 0; kk < h_cols; kk++)
+             waddch(helpscr, '.'); 
+        wmove(helpscr, 0, 0);
+        for(kk = 0; kk < h_cols; kk++)
+             waddch(helpscr, '.'); 
+        wrefresh(helpscr);
+        return(1);
+}
+
+
+
+
+
+
+
+execute()
+{
+	int   lp;
+	int   error;
+        char  *path;
+        char   command[60];
+ 
+        if (!root_user())
+            return;
+	lp = 0;
+        error = 0;
+        last = first;
+        while (last != NULL) 
+	{
+              if (strlen(last->name) < 1)
+              {
+                   error = 1;
+                   break; 
+              }
+              if (strlen(last->use) < 1)
+              {
+                   error = 1;
+                   break; 
+              }
+              if (strlen(last->type) < 1)
+              {
+                   error = 1;
+                   break; 
+              }
+              if (strlen(last->host) < 1)
+              {
+                   error = 1;
+                   break; 
+              }
+              if (strcmp(hostname, last->host) == 0)
+              {
+                   if (strlen(last->port) < 1)
+                   {
+                        error = 1;
+                        break; 
+                   }
+                   if (strlen(last->baud) < 1)
+                   {
+                        error = 1;
+                        break; 
+                   }
+              }
+              if (strlen(last->shared) < 1)
+              {
+                   error = 1;
+                   break; 
+              }
+	      if (strcmp(last->name, "lp") == 0)
+              {
+		  lp++;
+              }
+              last = last->next;
+	}
+        if (error)
+        {
+              cur_node = last;
+              view(cur_node);
+	      move (o_y + 18, o_x);
+              printw("%sThis device attributes is incomplete", reverse);	
+	      printw("%s", normal);
+              printw("%s", bel);
+              refresh();
+              moveCmd();
+              mess = 1;
+              return;
+	}
+        if (lp > 1)
+        {
+	      move (o_y + 18, o_x);
+              printw("%sThere are too many \"lp\" name, only one can be allowed", reverse);	
+	      printw("%s", normal);
+              printw("%s", bel);
+              refresh();
+              mess = 1;
+              moveCmd();
+              return;
+	}
+        if(lp == 0)
+        {
+	      move (o_y + 18, o_x);
+              printw("%sThere is no \"lp\" name for default device", reverse);	
+	      printw("%s", normal);
+              refresh();
+	      move (o_y + 19, o_x);
+              printw("%sdo you want to add one ? [y/n]", reverse);	
+	      printw("%s", normal);
+              printw("%s", bel);
+              refresh();
+              for(;;)
+              {
+                    cc = getch();
+                    if (cc == 'y')
+                    {
+	                  move (o_y + 18, o_x);
+                          deleteln();
+                          deleteln();
+                          refresh();
+                          moveCmd();
+                          return;
+                    }
+                    if (cc == 'n')
+		    {
+	                  move (o_y + 18, o_x);
+                          deleteln();
+                          deleteln();
+                          refresh();
+                          break;
+                    }
+	      }
+	}
+        copy_dump();
+        clear();
+        nl();
+        echo();
+        refresh();
+        endwin();
+        system("/vnmr/bin/makeprintcap /vnmr");
+        Exit();
+}
+
+        
+
+
+
+
+
+copy_dump()
+{
+	FILE  *fdin, *fdout;
+	char  data[256];
+        char  cmd[120];
+        char  *pump;
+        int   oldfile;
+        int   pumpsign;
+
+	if ((fdin = fopen(devicefile, "r")) == NULL)
+        {
+             oldfile = 0;
+             umask(022);
+        }
+        else
+             oldfile = 1;
+        if ((fdout = fopen("/tmp/tempdevice", "w")) == NULL)
+	     return;
+        pump = "##########################";
+	pumpsign = 0;
+	while(oldfile && (fgets(data, 256, fdin) != NULL))
+        {
+             if (data[0] == '#')
+	     {
+                 if (!pumpsign)
+                 {
+                      fputs(data, fdout);
+                      if (strncmp(data, pump, 25) == 0)
+                            pumpsign = 1;
+                 }
+                 else
+                 {
+                      if (strncmp(data, pump, 25) != 0)
+                      {
+                            fputs(data, fdout);
+                            pumpsign = 0;
+                      }
+                 }
+             }        
+	}
+        fclose(fdin);
+        last = first;
+        while(last != NULL)
+        {
+              if (!pumpsign)
+              {
+	            fprintf(fdout, "%s\n", pump); 
+	      }
+              else
+	      {
+                    pumpsign = 0;
+              }
+	      fprintf(fdout, "Name    %s\n", last->name); 
+/*
+          last->use[0] = toupper(last->use[0]);
+*/
+              switch (last->use[0])  {
+              case 'p':  last->use[0] = 'P';
+                         break;
+              case 'b':  last->use[0] = 'B';
+                         break;
+	      }
+	      fprintf(fdout, "Use     %s\n", last->use); 
+	      fprintf(fdout, "Type    %s\n", last->type); 
+	      fprintf(fdout, "Host    %s\n", last->host); 
+	      fprintf(fdout, "Port    %s\n", last->port); 
+	      fprintf(fdout, "Baud    %s\n", last->baud); 
+              switch (last->shared[0])  {
+              case 'y':  last->shared[0] = 'Y';
+                         break;
+              case 'n':  last->shared[0] = 'N';
+                         break;
+	      }
+	      fprintf(fdout, "Shared  %s\n", last->shared); 
+              last = last->next;
+ 	}
+	fclose(fdout);
+        sprintf(cmd, "rm -f %s", devicefile);
+        system(cmd);
+        sprintf(cmd, "cp /tmp/tempdevice %s", devicefile);
+        system(cmd);
+        system("rm -f /tmp/tmpdevice");
+        if (cmdindex == 3)
+	{
+	      move (o_y + 18, o_x);
+              printw("%sFile is saved", reverse);	
+	      printw("%s", normal);
+              printw("%s", bel);
+              refresh();
+              mess = 1;
+              moveCmd();
+	}
+}
+
+
+
+
+
+
+select(ss)
+int  *ss;
+{
+
+	switch(*ss) {
+	case 'n':   /*next  */
+		  cmdindex = 0;
+                  break;
+     	case 'p':   /*  previous  */
+		  cmdindex = 1;
+                  break;
+     	case 'm':   /*  modify  */
+		  cmdindex = 2;
+                  break;
+     	case 's':   /* save  */
+		  cmdindex = 3;
+                  break;
+     	case 'c':   /*  create  */
+		  cmdindex = 4;
+                  break;
+     	case 'd':   /*  delete  */
+		  cmdindex = 5;
+                  break;
+     	case 'e':   /*  execution  */
+		  cmdindex = 6;
+                  break;
+     	case 'h':   /*  help  */
+		  cmdindex = 7;
+                  break;
+     	case 'q':   /*  quit  */
+		  cmdindex = 8;
+                  break;
+      	default:
+                  return;
+	}
+        moveCmd();
+}
+
+
+
+
+
+
+
+
+eraseLine()
+{
+
+        getyx(stdscr, y, x);
+	clrtoeol();
+        mvaddch(y, o_x + cols, '|');
+    	newline = 0;
+        if (y == o_y + 3)
+        {
+               mvaddstr(y, o_x + 36, "[lp | name]");
+        }
+        if (y == o_y + 5)
+        {
+               mvaddstr(y, o_x + 36, "[Plotter | Printer | Both]");
+	}
+	if (y == o_y + 15)
+	{
+	       mvaddstr(y, o_x + 36, "[Yes | No]");
+	}
+        refresh();
+	move(y, x);
+	refresh();
+}
+              
+
+
+
+
+
+
+
+static baudTable()
+{
+	struct  baud  *cur_baud, *new_baud;
+        char  out_from_awk[256];
+	FILE  *pf;
+	char  *value;
+	int   repeat;
+   	int   speed;
+
+
+	pf = popen( "awk '/sp#/ { print $0}'\
+	            < /etc/gettytab", "r");
+
+	while(fgets(out_from_awk, 256, pf) != NULL)
+	{
+	     strptr = &out_from_awk[0];
+	     while((tokptr = strtok(strptr, ":")) != (char *) 0)
+	     {
+		  strptr = (char *) 0;
+		  if (strncmp(tokptr, "sp#", 3) == 0)
+		  {
+                       value = tokptr + 3;
+                       speed = atoi(value);
+                       if (speed <= 0)
+                             break;
+                       new_baud = baud_1;
+                       repeat = 0;
+                       while(new_baud != NULL)
+                       {
+                             if (strcmp(new_baud->rate, value) == 0)
+                             {
+                                   repeat = 1;
+                                   break;
+                             }
+                             new_baud = new_baud->next;
+                       }
+                       if (repeat)
+                             break;
+                       if (baud_1 == NULL)
+		       {
+		          baud_1 = (struct baud *) malloc(sizeof(struct baud)); 
+                          strcpy(baud_1->rate, value);
+                          baud_1->next = NULL;
+                          baud_1->prev = NULL;
+                          cur_baud = baud_1;
+		       }
+		       else
+			{
+			     new_baud = (struct baud *) malloc( 
+                                          sizeof(struct baud));
+                             strcpy(new_baud->rate, value);
+                             new_baud->next = NULL;
+                             new_baud->prev = cur_baud;
+                             cur_baud->next = new_baud;
+                             cur_baud = new_baud;
+			}
+                        break;
+                    }
+              }
+	}
+	pclose(pf);
+}
+	
+
+
+
+
+
+
+
+
+static portTable()
+{
+	struct port  *cur_port, *new_port; 
+        char  out_from_awk[256];
+	FILE  *pf;
+	char  *value;
+
+	system("ls /dev > /tmp/tmpdev");
+	pf = popen( "awk '/tty[a-z0-9]/ {print $0}'\
+		    < /tmp/tmpdev", "r"
+		  );
+	while( fgets(out_from_awk, 256, pf) != NULL)
+	{
+		value = &out_from_awk[0] + 3;
+                if (port_1 == NULL)
+                {
+              	     port_1 = (struct port *) malloc (sizeof(struct port));
+                     strcpy(port_1->num, value);
+                     port_1->num[strlen(port_1->num) -1] = '\0';
+                     cur_port = port_1;
+                     cur_port->next = NULL;
+                }
+                else
+                {
+                     new_port = (struct port *) malloc(sizeof(struct port));
+                     strcpy( new_port->num, value);
+                     new_port->num[strlen(new_port->num) -1] = '\0';
+                     new_port->next = NULL;
+                     cur_port->next = new_port;
+                     cur_port = new_port;
+                }
+     	}
+        pclose(pf);
+        system("rm -f /tmp/tmpdev");
+}
+
+
+
+
+
+
+
+
+static hostTable()
+{
+	struct host_node  *cur_host, *new_host; 
+        char  host_name[256];
+ 	char  data[30];
+	FILE  *fd_hosts;
+
+	host_1 = NULL;
+        fd_hosts = popen ("ypcat hosts", "r");
+        if (fd_hosts == (FILE *) NULL)
+        {
+            if ((fd_hosts = fopen("/etc/hosts", "r")) == NULL)
+	    {
+                printf("cannot open /etc/hosts file\n");
+                Exit();
+            }
+	} 
+        else
+	{
+            if (fgets(host_name, 256, fd_hosts) == NULL)
+            {
+                pclose(fd_hosts);
+                if ((fd_hosts = fopen("/etc/hosts", "r")) == NULL)
+	        {
+                     printf("cannot open /etc/hosts file\n");
+                     Exit();
+                }
+            }
+            else
+            {
+                pclose(fd_hosts);
+                fd_hosts = popen ("ypcat hosts", "r");
+            }
+        }
+      	while( fgets(host_name, 256, fd_hosts) != NULL)
+        {
+/*
+	        if ((host_name[0] == '#') || strlen(host_name) < 5)
+*/
+	        if (host_name[0] < '0' || host_name[0] > '9')
+                     continue;
+                sscanf(host_name, "%*s%s", data);
+                if (data == NULL)
+                     continue;
+                if (strcmp(data, "localhost") == 0)
+                     continue;
+                if (host_1 == NULL)
+                {
+              	     host_1 = (struct host_node *) malloc 
+                               (sizeof(struct host_node));
+		     if (strlen(data) > 30)
+                         strncpy(host_1->name, data, 30);
+		     else
+                         strcpy(host_1->name, data);
+                     cur_host = host_1;
+                     cur_host->next = NULL;
+                }
+                else
+                {
+                     new_host = (struct host_node *) malloc
+                                 (sizeof(struct host_node));
+		     if (strlen(data) > 30)
+                         strncpy(new_host->name, data, 30);
+		     else
+                         strcpy( new_host->name, data);
+                     new_host->next = NULL;
+                     cur_host->next = new_host;
+                     cur_host = new_host;
+                }
+     	}
+        fclose(fd_hosts);
+}
+
+
+
+
+
+
+
+
+sort_baud()
+{
+	int   i;
+        int   loop1, loop2;
+        int   a, b;
+	struct baud  *p, *q;
+
+	p = baud_1;
+        i = 0;
+	while(p != NULL)
+	{
+             i++;
+             p = p->next;
+	}
+  	for(loop1 = 1; loop1 < i; loop1++)
+	{
+	     p = baud_1;
+	     for(loop2 = 1; loop2 < i; loop2++)
+	     {
+                   q = p->next;
+                   a = atoi(p->rate);
+                   b = atoi(q->rate);
+                   if (a > b)
+	           {
+			p->next = q->next;
+			q->next = p;
+                        q->prev = p->prev;
+			p->prev = q;
+			if (p == baud_1)
+			       baud_1 = q;
+                        else
+                               q->prev->next = q;
+                    }
+                    else
+                        p = p->next;
+	      }
+	}
+}
+           
+
+
+
+
+
+
+
+int check_attribute()
+{
+	char   value[22];
+        int    find1, find2, find3, find4, find5;
+ 	int    local, repeat;
+        struct  baud  *baud_node;
+        struct  port  *port_node;
+        struct  host_node  *host_n;
+
+        if (spare2 == NULL)
+        {
+            spare2 = (struct node *) calloc(1, sizeof(struct node));
+            spare2->next = NULL;
+            spare2->prev = NULL;
+	}
+	store(spare2); 
+        if (strcmp(hostname, spare2->host) == 0)
+            local = 1;
+        else
+            local = 0;
+        last = first;
+        move(o_y + 3, o_x + 15);
+        eatstr(value);
+        find5 = 0;
+        while (last != NULL)
+        {
+               if (strcmp(last->name, value) == 0)
+               {
+                     if ((change) && (last == cur_node))
+                     {
+                             last = last->next;
+                             continue;
+                     }
+                     find5 = 1;
+                     repeat = 1;
+                     break;
+               }
+               last = last->next;
+        } 
+        if (find5)
+        {
+             move(o_y + 3, o_x + 15);
+             refresh();
+             eraseLine();
+             move(y, x);
+             printw("%s%s", reverse, value);
+             printw("%s", normal);
+             refresh();
+        }
+        y = o_y + 11;
+        x = o_x + 15;
+	move(y, x);
+        eatstr(value);
+        port_node = port_1;
+        if (local)
+              find1 = 0;
+        else
+              find1 = 1;
+           /*  check port value  */
+        while((port_node != NULL) && local)
+        {
+              if(strcmp(value, port_node->num) == 0)
+              {
+                    find1 = 1;
+                    break;
+	      }
+              port_node = port_node->next;
+	}
+        if (!find1)
+        {
+             move(o_y + 11, o_x + 15);
+             refresh();
+             eraseLine();
+             move(y, x);
+             printw("%s%s", reverse, value);
+             printw("%s", normal);
+             refresh();
+        }
+        y = o_y + 13;
+        x = o_x + 15;
+        move(y, x);
+	eatstr(value);
+        baud_node = baud_1;
+        if (local)
+             find2 = 0;
+	else
+             find2 = 1;
+         /*  check baud rate   */
+	while((baud_node != NULL) && local)
+	{
+	     if (strcmp(value, baud_node->rate) == 0)
+	     {
+		    find2 = 1;
+		    break;
+	     }
+	     baud_node = baud_node->next;
+	}
+	if (!find2)
+	{
+             move(o_y + 13, o_x + 15);
+             eraseLine();
+             move(y, x);
+             refresh();
+             printw("%s%s", reverse, value);
+             printw("%s", normal);
+             refresh();
+        }
+        y = o_y + 9;
+        x = o_x + 15;
+        move(o_y + 9, o_x + 15);
+	eatstr(value);
+        host_n = host_1;
+        find3 = 0;
+	while(host_n != NULL)
+	{
+	     if (strcmp(value, host_n->name) == 0)
+	     {
+		    find3 = 1;
+		    break;
+	     }
+             host_n = host_n->next;
+	}
+	if (!find3)
+	{
+             move(o_y + 9, o_x + 15);
+             eraseLine();
+             move(o_y + 9, o_x + 15);
+             printw("%s%s",reverse, value);
+             printw("%s", normal);
+             refresh();
+        }
+        find4 = check_other();
+        if (!find1 || !find2 || !find3 || !find4 || find5)
+	{
+             y = o_y + 18;
+             move (y, 5);
+	     printw("%sThese attributes may be not available", reverse);
+	     printw("%s", normal);
+             refresh();
+             y++;
+             move (y, 5);
+	     printw("%sDo you want to correct them ? [y/n]", reverse);
+             printw("%s", normal);
+             printw("%s", bel);
+             refresh();
+             for(;;)
+             {
+                 cc = getch();
+                 if ((cc == 'y') || (cc == 'n'))
+                     break;
+             }
+             move(o_y + 18, 0);
+             deleteln();
+             deleteln();
+             refresh();
+/*
+             view(spare2);
+*/
+             if (cc == 'y')
+             {
+                  view(spare2);
+                  mvaddstr(o_y + 3, o_x + 36, "[lp | name]");
+                  mvaddstr(o_y + 5, o_x + 36, "[Plotter | Printer | Both]");
+                  mvaddstr(o_y + 15, o_x + 36, "[Yes | No]");
+                  refresh();
+                  oldindex = cmdindex;
+                  if (NEW)
+                  {
+                        VIEW = 0;
+                        cmdindex = 5;
+                  }
+                  else
+                  {
+                        change = 1;
+                        cmdindex = 3;
+                  }
+                  moveCmd();
+                  cmdline = 0;
+                  move(o_y + 3, o_x + 15);
+                  refresh();   
+                  newline = 1;
+                  return(0);
+             }
+             else
+             {
+                  if (!NEW)
+                       change = 1;
+                  return(1);
+             } 
+	}
+        return(1);
+}
+
+
+
+
+
+
+
+check_other()
+{
+	int   find1, find2, find3, i;
+	char  value[22];
+
+	x = o_x + 15;
+	y = o_y + 5;
+	move(y, x);
+        refresh();
+        eatstr(value);
+        if (strlen(value) <= 0)
+        {
+             sprintf(value, "  ");
+        }
+        find1 = 1;
+      	find2 = 0;
+	find3 = 1;
+	if ((strcmp(value, "Plotter")!= 0) && (strcmp(value, "plotter") != 0))
+        {
+             if ((strcmp(value, "Printer") != 0) && (strcmp(value, "printer") != 0))
+	     {
+                  if ((strcmp(value, "Both") != 0) && (strcmp(value, "both") != 0))
+                        find1 = 0;
+             }
+	}
+        if (!find1)
+        {
+             move(o_y + 5, o_x + 15);
+             eraseLine();
+             move(o_y + 5, o_x + 15);
+             printw("%s%s",reverse, value);
+             printw("%s", normal);
+             refresh();
+       	}
+
+	x = o_x + 15;
+	y = o_y + 7;
+	move(y, x);
+        refresh();
+        eatstr(value);
+      if (strlen(value) <= 0)
+      {
+         sprintf(value, "  ");
+      }
+        cur_type = typeptr;
+        while(cur_type)
+        {
+	     if (strcmp( value, cur_type->type) == 0)
+             {
+                  find2 = 1;
+                  break;
+             }
+             cur_type = cur_type->next;
+	}
+        if (!find2)
+        {
+             move(o_y + 7, o_x + 15);
+             eraseLine();
+             move(o_y + 7, o_x + 15);
+             printw("%s%s",reverse, value);
+             printw("%s", bel);
+             refresh();
+       	}
+
+	x = o_x + 15;
+	y = o_y + 15;
+	move(y, x);
+        refresh();
+        eatstr(value);
+      if (strlen(value) <= 0)
+      {
+         sprintf(value, "  ");
+      }
+        if ((strcmp(value, "No") != 0) && (strcmp(value, "no") != 0))
+	{
+	      if ((strcmp(value, "Yes") != 0) && (strcmp(value, "yes") != 0))
+                   find3 = 0;
+	}
+        if (!find3)
+        {
+             move(o_y + 15, o_x + 15);
+             eraseLine();
+             move(o_y + 15, o_x + 15);
+             refresh();
+             printw("%s%s", reverse, value);
+             printw("%s", normal);
+             refresh();
+       	}
+        if (!find1 || !find2 || !find3)
+        {
+	     return(0);
+	}
+        return(1);
+}
+
+
+
+
+
+
+
+
+
+int line_check()
+{
+	int  error, i;
+        int  repeat;
+	char value[30];
+        struct  baud  *baud_node;
+        struct  port  *port_node;
+        struct  host_node  *host_n;
+
+        getyx(stdscr, y, x);
+/*
+        if (y != o_y + 9)
+        {
+*/
+	       move(o_y + 9, o_x + 15);
+               eatstr(value);
+	       if (strlen(value) <= 0)
+                    local_host = 0;
+	       else
+               {
+                  if (strcmp(hostname, value) != 0)
+                  {
+                        local_host = 0;
+                  }
+                  else
+                  {
+                        local_host = 1;
+                  }     
+              }
+/*
+        }
+*/
+        if (!local_host)
+	{
+              if ((y == o_y + 11) || (y == o_y + 13))
+                     return(1);
+	}
+        error = 0;
+        repeat = 0;
+	move(y, o_x + 15);
+	eatstr(value);
+	if (strlen(value) <= 0)
+	     return(1);
+	switch(y)  {
+        case 6:      /*  name  */
+                      last = first;
+                      while (last != NULL)
+                      {
+                            if (strcmp(last->name, value) == 0)
+                            {
+                                  if ((change) && (last == cur_node))
+                                  {
+                                        last = last->next;
+                                        continue;
+                                  }
+                                  error = 1;
+                                  repeat = 1;
+                                  break;
+                            }
+                            last = last->next;
+                      }
+                      break;
+ 
+	case 8:      /*  use  */
+	              if ((strcmp(value, "Plotter")!= 0) && (strcmp(value,
+                           "plotter")!= 0))
+                      {
+                         if ((strcmp(value, "Printer") != 0) && (strcmp(value,
+                               "printer")!= 0))
+	                 {
+                             if ((strcmp(value, "Both")!= 0) && (strcmp(value,
+                                  "both")!= 0))
+                                     error = 1;
+                         }
+                      }
+                      break;
+			
+	case 10:     /*  type  */
+                      error = 1;
+                      cur_type = typeptr;
+                      while(cur_type)
+                      {
+	                  if (strcmp( value, cur_type->type) == 0)
+                          {
+                                error = 0;
+                                break;
+                          }
+                          cur_type = cur_type->next;
+	              }
+                      break;
+	case 12:     /*  hostname  */
+                      error = 1;
+                      host_n = host_1;
+	              while(host_n != NULL)
+	              {
+	                  if (strcmp(value, host_n->name) == 0)
+	                  {
+                               error = 0;
+		               break;
+	                  }
+                          host_n = host_n->next;
+	              }
+                      break;
+	case 14:     /*  port  */
+                      error = 1;
+                      port_node = port_1;
+                      while(port_node != NULL)
+                      {
+                          if(strcmp(value, port_node->num) == 0)
+                          {
+                               error = 0;
+                               break;
+	                  }
+                          port_node = port_node->next;
+	              }
+                      break;
+	case 16:     /*  baud  */
+                      error = 1;
+                      baud_node = baud_1;
+	              while(baud_node != NULL)
+	              {
+	                   if (strcmp(value, baud_node->rate) == 0)
+	                   {
+                                error = 0;
+		                break;
+	                   }
+	                   baud_node = baud_node->next;
+	              }
+                      break;
+	case 18:     /*  shared  */
+                      if ((strcmp(value, "Yes") != 0) && (strcmp(value, "yes")
+                                      != 0))
+                      {
+                            if ((strcmp(value, "No") != 0) && (strcmp(value,
+                                  "no") != 0))
+                                  error = 1;
+                      }
+       }
+       if (!error)
+           return(1);
+  	move(y, o_x + 15);
+	eraseLine();
+  	move(y, o_x + 15);
+	printw("%s%s", reverse, value);
+	printw("%s", normal);
+ 	refresh();
+	move(o_y + 18, 5);
+        if (repeat)
+        {
+	      printw("%sThis name already exists", reverse);	
+        }
+        else
+        {
+	      printw("%sThis attribute is not available", reverse);	
+        }
+	printw("%s", normal);
+ 	refresh();
+	move(o_y + 19, 5);
+	printw("%sDo you want to correct it ? [y | n]", reverse);	
+	printw("%s", normal);
+	printw("%s", bel);
+ 	refresh();
+	for(;;)
+	{
+	     cc = getch();
+	     if ((cc == 'y') || (cc == 'n'))
+		   break;
+	}
+	move(o_y + 18, 0);
+	deleteln();
+	deleteln();
+	refresh();
+	move (y, o_x + 15);
+	eraseLine();
+	move (y, o_x + 15);
+	addstr(value);
+	refresh();
+        newline = 1;
+        if (cc == 'y')
+        {
+            move(y, o_x + 15);
+            refresh();
+            return(0);
+	}
+	else
+	    return(1);
+}
+
+
+
+
+
+
+
+int  root_user()
+{
+        int uid;
+
+        uid = getuid();
+/*
+	if (strcmp(user, "vnmr1") == 0)
+              return(1);
+*/
+        if (uid != 0)
+        {
+	      move (o_y + 18, o_x);
+              printw("%sSorry, you are not root, permision denied", reverse);	
+	      printw("%s", normal);
+              printw("%s", bel);
+              refresh();
+              mess = 1;
+              return(0);
+        }
+        return(1);
+}
+
+
+
+typeTable()
+{
+	char  data[256];
+	char  name[20];
+	char  *sp;
+        struct  devicetype  *new_type;
+
+	typeptr = NULL;
+        fd = fopen(typefile, "r");
+        if (fd == NULL)
+        {
+            printf("can not open devicetable\n");
+            return;
+        }
+	sp = fgets(data, 256, fd);
+	while(sp)
+	{
+	    if (strncmp(sp, "PrinterType", 11) == 0)
+	    {
+       		sscanf(sp, "%*s%s", name);
+                if (name != NULL) 
+                {
+                     new_type = (struct devicetype *) malloc(sizeof(struct devicetype));
+                     strcpy(new_type->type, name);
+                     new_type->next = NULL;
+                     if (typeptr == NULL)
+                     {
+                         typeptr = new_type;
+                     }
+                     else
+                     {
+                         cur_type->next = new_type;
+                     }
+                     cur_type = new_type;
+                }
+           }
+           sp = fgets(data, 256, fd);
+	}
+        fclose(fd);
+}
+	

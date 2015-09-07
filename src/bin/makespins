@@ -1,0 +1,47 @@
+#
+# makespins  make file
+# make -f makespins,  creates spins for PAID
+#
+MAKEFILE=makespins
+
+ROOT=$(sccsdir)
+JAWS=$(vnmrdir)
+
+JSCCS=$(JAWS)/SCCS/
+
+binSCCS=$(ROOT)/bin/SCCS/s.
+
+BINGET = sccs -p$(ROOT)/bin/SCCS get
+
+#-- Normal operational compile flags
+CFLAGS= -fsingle -c -O
+
+#-- Debugging with DBXTOOL ccompile flags
+#CFLAGS= -c -g
+
+#------------------------------------------------------------------------
+#--- objects that are needed for expfit
+#------------------------------------------------------------------------
+OBJ=                     \
+                spins.o
+
+spins: $(OBJ)
+	(umask 2; cc -o spins $(OBJ) -ll -lm  )
+ 
+IRIX:
+	($(MAKE) -ef $(MAKEFILE)  \
+	  "CFLAGS=-c -O -cckr -DIRIX" \
+	  spins)
+
+AIX:  spins
+
+SOLARIS:  spins
+
+spins.o       : spins.c
+	(umask 2; cc $(CFLAGS) spins.c  )
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+
+spins.c : $(binSCCS)spins.c
+	$(BINGET) spins.c

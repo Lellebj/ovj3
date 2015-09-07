@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='us-ascii'?>
+<!--
+ !
+par
+ ! Agilent Technologies All Rights Reserved.
+par
+ ! This software contains proprietary and confidential
+par
+ ! information of Agilent Technologies and its contributors.
+par
+ ! Use, disclosure and reproduction is prohibited without
+par
+ ! prior consent.
+par
+ !
+par
+ -->
+<template>
+    <mchoice label = "Automation Event List"
+           vc = "eLogAction('infoautodir')"
+           style="Menu1"
+    />
+    <mchoice label = "Show Clipboard"
+           vq = "customflag cppauseflg seqfil TrayClipBoard"
+           vc = "TrayLocAction('clipboard')"
+           show = "$SHOW=(TrayClipBoard[1]&lt;&gt;'')"
+           style="Menu1"
+    />
+    <mchoice label = "Turn On Tooltip"
+           vc = "vnmrjcmd('tray', 'tooltip on')"
+           style="Menu1"
+    />
+    <mchoice label = "Turn Off Tooltip"
+           vc = "vnmrjcmd('tray', 'tooltip off')"
+           style="Menu1"
+    />
+    <mchoice label = "Color Definition"
+           vc = "vnmrjcmd('tray', 'coloreditor open')"
+           style="Menu1"
+    />
+</template>

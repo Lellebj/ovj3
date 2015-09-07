@@ -1,0 +1,95 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makedeencode  make file
+#
+#
+
+MAKEFILE= makedeencode.lnx
+
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory 
+
+SCCSDIR=$(sccsdir)
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+PROJCAT=
+
+CFLAGS= -O -m32 -DLINUX
+CPPFLAGS=
+LDFLAGS=
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+
+#--- SCCS Sources ----
+PROG_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+
+#---  SCCS Extraction Commands for Sources Needed In True Source Dir.  -------
+PROG_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)bin get
+
+#------------------------------------------------------------------------
+#-- common Infoproc sources files 
+#------------------------------------------------------------------------
+PROG_SRC=			\
+		encode.c	\
+		decode.c
+
+PROG_OBJ= $(PROG_SRC:.c=.o)
+
+#---- All Sources and headers required for compilation -----
+
+ALLSRC= $(PROG_SRC)
+
+ALLSRC_PP = $(ALLSRC:=.pp)
+
+LIBS=
+
+#--- PAID Targets ------------------------------------------
+
+LINUX std : Source 
+	$(MAKE) -e -f $(MAKEFILE)  \
+	  decode encode ; mv decode decode.lnx
+	@echo "NMR_ID de-en-code complete -------------------------------"
+
+
+#---- Recursive Targets ------------------------------------------------
+
+Source src : $(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+decode : $(PROG_OBJ)
+	@echo Making $@...
+	( umask 2;  $(LINK.c) -o $@ decode.o  )
+
+encode : $(PROG_OBJ)
+	@echo Making $@...
+	( umask 2;  $(LINK.c) -o $@ encode.o )
+
+
+#--- Object Targets ------------------------------------------------------
+
+
+$(PROG_OBJ) : $(@:.o=.c) 
+	(umask 2; $(COMPILE.c) $(@:.o=.c))
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(PROG_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(PROG_SRC) $(PROG_HDR) : % :$(PROG_SRC_DIR)%
+	$(PROG_SGET) $@
+
+
+decode.o: decode.c
+encode.o: encode.c

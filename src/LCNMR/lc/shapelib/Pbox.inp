@@ -1,0 +1,11 @@
+# 
+# Copyright (c) 1991-1994 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+{seduce 40.0 1080.3 0 0 90}
+{seduce 40.0 0.0 0 0 90}
+    ref_pwr        = 49
+   ref_pw90        = 12.00

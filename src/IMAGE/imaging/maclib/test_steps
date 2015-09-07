@@ -1,0 +1,22 @@
+"macro test_steps"
+"********************************************************************
+" Copyright (c) 1999-2003 Agilent Technologies All Rights Reserved.
+"
+" This software contains proprietary and confidential information of
+" Agilent Technologies and its contributors. Use, disclosure and reproduction
+" is prohibited without prior consent.
+"
+" NAME:
+"    test_steps
+"
+" DESCRIPTION:
+"    Checks the step size entries in coil table
+"
+"********************************************************************
+$max_step = coil_param[3] + (coil_param[4] * (coil_param[5] - 1))
+if ($max_step > fattn[1]) then
+     $message = 'ERROR: - Fine power (steps) exceed limit! - Resetting value!'
+     write('error',$message)
+     coil_param[5] = trunc((fattn[1] - coil_param[3]) / coil_param[4])
+endif
+

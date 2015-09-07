@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="fssfp" author="michaelg" investigator=""
+    application="imaging" rfcoil="rapid72x4" anatomy="" time_created="20080225T141854"
+    parfile="fssfp" apptype="im2D" scans="fssfp" seqfil="fssfp">
+  <protocol title="fssfp" type="protocol">
+    <action  type="LIB" status="Ready" title="fssfp" exp="fssfp" lock="off" time="1 sec" macro="sqexp('fssfp')" data="" />
+  </protocol>
+</template>

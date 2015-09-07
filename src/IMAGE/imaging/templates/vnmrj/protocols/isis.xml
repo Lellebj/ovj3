@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+ <template type="basic" name="isis" author="varian" investigator="varian"
+    rfcoil="main" anatomy="head" time_created="20011211T152014"
+    application="imaging" apptype="im1D" scans="isis" seqfil="isis">
+  <protocol title="isis" type="protocol">
+    <action  type="LIB" status="Ready" title="isis" exp="isis"
+      time="2 sec" macro="sqexp('isis')" data="" />
+  </protocol>
+</template>

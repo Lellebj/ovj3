@@ -1,0 +1,101 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makejaccount  make file
+#
+SCCSJDIR= $(sccsjdir)
+
+SCCS_PKG_SRC= $(SCCSJDIR)/jaccount/SCCS/s.
+
+SCCS_GET= sccs -p$(SCCSJDIR)/jaccount/SCCS get
+PKG_SRC_LIST_3=$(SCCS_PKG_LIST:s.makejaccount=s.)
+PKG_SRC_LIST_2=$(PKG_SRC_LIST_3:.Accounting.dox=.)
+PKG_SRC_LIST_1=$(PKG_SRC_LIST_2:.AccountingDasho.sh=.)
+PKG_SRC_LIST=$(PKG_SRC_LIST_1:s.%=%)
+PKG_OBJ_LIST=$(PKG_SRC_LIST:.java=.class)
+
+MAKEFILE= makejaccount
+
+
+TARGET_DIR="./"
+OPS=-g
+
+JAVAC=/sw/Java/jdk1.5.0/bin/javac -J-mx128m
+
+JPSGBASE:sh = pwd
+
+CLASS_DIR="../lib"
+
+
+std:  src build_jar makelib
+	@echo  "VnmrJ Accounting Jar complete ------------------------------------------"
+
+src:  
+	@echo "Building source files"
+	@( if [ ! -d $(JPSGBASE)/adm ]; then    \
+           mkdir $(JPSGBASE)/adm;               \
+        fi)
+	@( if [ ! -d $(JPSGBASE)/accounting ]; then     \
+           mkdir $(JPSGBASE)/accounting;                \
+        fi)
+	@( cd $(JPSGBASE)/accounting ;	       \
+	   $(MAKE) -ef $(JPSGBASE)/$(MAKEFILE) \
+	      "SCCS_PKG_LIST=`cd $(SCCSJDIR)/jaccount/SCCS ; echo s.*`" \
+	      build_src  )
+	 @( if [ -w adm/Adm.java ]; then	\
+       echo Adm.java is write;			\
+                 rm -f accounting/Adm.java;	\
+              else				\
+       echo Adm.java is readonly;		\
+                 rm -f adm/Adm.java;		\
+	         mv accounting/Adm.java adm;	\
+              fi				\
+	 )
+	@echo "VnmrJ Accounting Package Sources complete -------------------------------"
+
+build_src : $(PKG_SRC_LIST)
+
+
+build_jar: 
+	@( if [ ! -d $(JPSGBASE)/lib ]; then    \
+           mkdir $(JPSGBASE)/lib;              \
+        fi)
+	-@date
+	-(umask 2; /usr/bin/time $(JAVAC) -O -classpath $(JPSGBASE):$(CLASSPATH) -d ./lib adm/Adm.java ; )
+	-@date
+	@echo "VnmrJ Accounting Classes Complete -------------------------------------"
+
+makelib:
+	( cd ./lib; rm -f account.jar.*;  	   \
+	  datetime="`date '+%B %e, %Y %T %Z'`";    \
+	  echo "Implementation-Version: 1.0  $$datetime" > Manifest.mf; \
+	  echo "Main-Class: adm.Adm" >> Manifest.mf;			\
+	  jar -cmf Manifest.mf account.jar.std *;  \
+          mv account.jar.std ../account.jar)
+
+build : $(PKG_OBJ_LIST)
+#	echo $(PKG_OBJ_LIST)
+#	echo $(PKG_SRC_LIST_9)
+#	echo $(PKG_SRC_LIST_2)
+#	echo $(PKG_SRC_LIST_1)
+#	echo $(PKG_SRC_LIST)
+	@echo package is complete
+
+
+#--- Object Targets ----------------------------------------------
+
+$(PKG_OBJ_LIST) : $$(@:.class=.java)
+	@-( if [ ! -d $(JPSGBASE)/JSRC ]; then       \
+	 umask 2; $(JAVAC) $(OPS) -classpath $(CLASSPATH):$(JPSGBASE) $(@:.class=.java) ;  \
+        fi )
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(PKG_SRC_LIST) : $$(SCCS_PKG_SRC)$$(@)
+	$(SCCS_GET) $@
+

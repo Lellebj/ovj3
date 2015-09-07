@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! locator_statements_edit_panel.xml Copyright (c) 1999-2000 Agilent Technologies All Rights Reserved
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<shuffler>
+    <!-- ***panels_n_components Shuffler Statements*** -->
+    <Statement>
+        <ObjectType value="panels_n_components" />
+        <MenuString value="by panel" />
+        <Label value="Show"/>
+        <Attribute-0 value="type" display="false"/>
+        <AttrValue-0 value="basic"/>
+        <Attribute-1 value="element" display="false"/>
+        <AttrValue-1 value="elements"/>
+        <Columns  
+         value="type$element$filename"/>
+        <Sort  value="filename$ASC"/>
+    </Statement>
+</shuffler>

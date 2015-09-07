@@ -1,0 +1,118 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+SDIR=$(sccsdir)/bin/SCCS/s.
+SGET=sccs -p$(sccsdir)/bin/SCCS get
+
+BINARIES = gsregrid gsbin gsphtofield gsvtobin gsft gsphdiff 	\
+	   gsdiff  gshimcalc gsfield gsremap gsmapmask gsreformat   \
+           gsft2d gsadd gscale gsmean gsbinmulti gsign gsphcheck
+NRSRC = fourn.c nrutil.c svdcmp.c svdvar.c svbksb.c 
+USRC = util.c
+ALLSRC = gsregrid.c gsbin.c gsphtofield.c gsvtobin.c gsft.c gsphdiff.c \
+	 gsdiff.c gshimcalc.c gsfield.c gsremap.c gsmapmask.c gsreformat.c \
+	 gsft2d.c gsadd.c gscale.c gsmean.c gsbinmulti.c gsign.c gsphcheck.c
+ALLHDR = gauss.h nr.h nrutil.h util.h
+CFLAGS = -g
+LDLIBS = -lm
+
+NROBJECTS = $(NRSRC:.c=.o)
+OBJECTS =$(USRC:.c=.o) 
+ALLOBJ =$(ALLSRC:.c=.o) 
+
+SOLARIS:	all
+
+all:		$(BINARIES)
+
+clean:		
+		rm -f *.o core
+
+veryclean:	
+		rm -f *.o core $(BINARIES)
+
+
+gsreformat:	gsreformat.o $(OBJECTS)
+		cc -o gsreformat gsreformat.o $(OBJECTS) $(LDLIBS)
+
+gsmapmask:	gsmapmask.o $(OBJECTS)
+		cc -o gsmapmask gsmapmask.o $(OBJECTS)  $(LDLIBS)
+		
+gsremap:	gsremap.o $(OBJECTS)
+		cc -o gsremap gsremap.o $(OBJECTS) $(LDLIBS)
+
+gsregrid:	gsregrid.o $(OBJECTS)
+		cc -o gsregrid gsregrid.o $(OBJECTS) $(LDLIBS)
+	
+gsphtofield:	gsphtofield.o $(OBJECTS)
+		cc -o gsphtofield gsphtofield.o $(OBJECTS) $(LDLIBS)
+		
+gsfield:	gsfield.o $(OBJECTS)
+		cc -o gsfield gsfield.o $(OBJECTS) $(LDLIBS)
+
+gsphdiff:	gsphdiff.o $(OBJECTS)
+		cc -o gsphdiff gsphdiff.o $(OBJECTS) $(LDLIBS)
+
+gsdiff:		gsdiff.o $(OBJECTS)
+		cc -o gsdiff gsdiff.o $(OBJECTS) $(LDLIBS)
+		
+unroll:		unroll.o $(OBJECTS)
+		cc -o unroll unroll.o $(OBJECTS)
+
+gsbin:		data.h gsbin.o $(OBJECTS)
+		cc -o gsbin gsbin.o $(OBJECTS)
+
+gsvtobin:	gsvtobin.o $(OBJECTS)
+		cc -o gsvtobin gsvtobin.o $(OBJECTS)
+		
+gsft:		gsft.o $(OBJECTS) $(NROBJECTS)
+		cc -o gsft gsft.o $(OBJECTS) $(NROBJECTS) $(LDLIBS)
+
+gsft2d:		gsft2d.o $(OBJECTS) $(NROBJECTS)
+		cc -o gsft2d gsft2d.o $(OBJECTS) $(NROBJECTS) $(LDLIBS)
+
+gshimcalc:		gshimcalc.o $(NROBJECTS) $(OBJECTS)
+		cc -o gshimcalc gshimcalc.o $(NROBJECTS) $(OBJECTS) $(LDLIBS)
+
+gsadd:		gsadd.o $(OBJECTS)
+		cc -o gsadd gsadd.o $(OBJECTS) $(LDLIBS) $(CFLAGS)
+
+gsign:		gsign.o $(OBJECTS)
+		cc -o gsign gsign.o $(OBJECTS) $(LDLIBS) $(CFLAGS)
+
+gscale:		gscale.o $(OBJECTS)
+		cc -o gscale gscale.o $(OBJECTS) $(LDLIBS) $(CFLAGS)
+
+gsmean:		gsmean.o $(OBJECTS)
+		cc -o gsmean gsmean.o $(OBJECTS) $(LDLIBS) $(CFLAGS)
+
+gsbinmulti:	gsbinmulti.o $(OBJECTS)
+		cc -o gsbinmulti gsbinmulti.o $(OBJECTS) $(CFLAGS)
+
+gsphcheck:	gsphcheck.o $(OBJECTS)
+		cc -o gsphcheck gsphcheck.o $(OBJECTS) $(CFLAGS)
+
+
+$(OBJECTS):	$(USRC)
+		(umask 2; cc -c $(CFLAGS) $(USRC) )
+
+$(NROBJECTS):	$(NRSRC)
+		(umask 2; cc -c $(CFLAGS) $(NRSRC) )
+
+$(ALLOBJ):	data.h $(ALLSRC) $(ALLHDR) 
+		(umask 2; cc -c $(CFLAGS) $(ALLSRC) )
+
+$(USRC):	$$(SDIR)$$(@)
+		$(SGET) $@
+
+$(NRSRC):	$$(SDIR)$$(@)
+		$(SGET) $@
+
+$(ALLSRC) $(ALLHDR): $$(SDIR)$$(@)
+		$(SGET) $@
+
+data.h:		$(sccsdir)/vnmr/SCCS/s.data.h
+		sccs -p$(sccsdir)/vnmr/SCCS get data.h

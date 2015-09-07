@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! @(#)Dbppste_wg.xml 1.1 02/27/07 Copyright (c) 2003-2005 Agilent Technologies All Rights Reserved
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="Dbppste_wg" author="dosy22" investigator=""
+    time_created="20070223T141251" apptype="dosy2D"
+    application="liquids" scans="Dbppste_wg" seqfil="Dbppste_wg">
+  <protocol title="Dbppste_wg" type="protocol">
+    <action  type="LIB" status="Ready" lock="off" title="Dbppste_wg" exp="dosy2D" 
+      time="17 min" macro="Dbppste_wg" data="" />
+  </protocol>
+</template>

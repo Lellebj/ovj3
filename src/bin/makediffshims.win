@@ -1,0 +1,69 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+#
+# makediffshims.win  make file
+# make -f makediffshims.win,  creates diffshims for PAID
+#
+# At this time the makediffshims file assumes the VNMR libraries are
+# up to date.
+#
+
+MAKEFILE=makediffshims.win
+
+#  SCCSDIR is the root of SCCS
+#  INCDIR is the include directory for VNMR stuff
+
+SCCSDIR=$(sccsdir)
+VNMR_SCCS_SRC=$(SCCSDIR)/vnmr/SCCS/s.
+BIN_SCCS_SRC=$(SCCSDIR)/bin/SCCS/s.
+VNMR_SGET = sccs -p$(SCCSDIR)/vnmr/SCCS get
+BIN_SGET = sccs -p$(SCCSDIR)/bin/SCCS get
+
+SRCROOT=$(sourcedir)
+INCDIR=$(winobjdir)/proglib/vnmrbg
+
+#-- Normal operational compile flags
+
+CFLAGS= -I$(INCDIR) -c -O -D_ALL_SOURCE
+
+LIBS = -ll -lm
+
+#------------------------------------------------------------------------
+#--- objects that are needed for diffshims
+#------------------------------------------------------------------------
+DIFFSHIMS_SRC= diffshims.c
+DIFFSHIMS_HDR=
+DIFFSHIMS_OBJ= $(DIFFSHIMS_SRC:.c=.o)
+
+VNMR_SRC= assign.c	\
+          allocate.c	\
+          pvars.c	\
+          shims.c	\
+          symtab.c	\
+          tools.c	\
+          variables1.c
+VNMR_HDR=
+VNMR_OBJ= $(VNMR_SRC:.c=.o)
+
+ALLSRC   = $(DIFFSHIMS_SRC) $(DIFFSHIMS_HDR) \
+           $(VNMR_SRC) $(VNMR_HDR)
+OBJS= $(DIFFSHIMS_OBJ) $(VNMR_OBJ)
+
+WINDOWS all : diffshims
+	@echo diffshims complete
+
+diffshims : $(OBJS)
+	(umask 2; gcc -o diffshims $(OBJS) \
+		  $(LIBS))
+ 
+$(OBJS) : $(@:.o=.c)
+	-(umask 2; gcc $(CFLAGS) $(@:.o=.c)  )
+
+Source: $(ALLSRC)
+	@echo source files for diffshims up to date

@@ -51,10 +51,6 @@ s2pulTarget        = 's2pul'
 # can be called from any other SConstruct file
 cwd = os.getcwd()
 
-# needed for rpath 
-if not os.path.exists(os.path.join(os.pardir, 'lib')):
-   Execute('cd ..;ln -s ncomm lib')
-
 # library dependancies
 ncommPath = os.path.join(cwd, os.pardir, 'ncomm')
 
@@ -259,7 +255,7 @@ s2pul = cEnv.Program(target  = s2pulTarget,
                      source  = psgSeqFileList,
                      LIBPATH = [cwd,
                                 ncommPath],
-                     LINKFLAGS  = '-m32 -Wl,-rpath ../lib ',
+                     LINKFLAGS  = '-m32 -Wl,-rpath,/vnmr/lib ',
                      LIBS    = ['psglib', 'param', 'acqcomm', 'm'])
 
 buildMethods.makeSymLinks(cEnv, s2pulTarget, cwd, psgSeqPath, psgSeqFileList)

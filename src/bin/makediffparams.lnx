@@ -1,0 +1,81 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makediffparams  make file
+# make -f makediffparams,  creates diffparams for PAID
+#
+# At this time the makediffparams file assumes the VNMR libraries are
+# up to date.
+#
+
+MAKEFILE=makediffparams.lnx
+
+#  SCCSDIR is the root of SCCS
+#  VNMRDIR is the root of VNMR
+#  binSCCS locates the ``bin'' category of SCCS
+#  INCDIR is the include directory for VNMR stuff
+
+SCCSDIR=$(sccsdir)
+VNMR_SCCS_SRC=$(SCCSDIR)/vnmr/SCCS/s.
+BIN_SCCS_SRC=$(SCCSDIR)/bin/SCCS/s.
+VNMR_SGET = sccs -p$(SCCSDIR)/vnmr/SCCS get
+BIN_SGET = sccs -p$(SCCSDIR)/bin/SCCS get
+
+
+
+#-- VNMR libraries
+
+INCDIR=$(lnxobjdir)/proglib/vnmrbg
+
+#-- Normal operational compile flags
+
+CFLAGS= -c -O2 -m32 -DLINUX -I$(INCDIR)
+LDFLAGS= -m32
+LIBS = -lm
+#------------------------------------------------------------------------
+#--- objects that are needed for diffparams
+#------------------------------------------------------------------------
+DIFFPARAMS_SRC= diffparams.c
+DIFFPARAMS_HDR=
+DIFFPARAMS_OBJ= $(DIFFPARAMS_SRC:.c=.o)
+
+VNMR_SRC= assign.c	\
+          allocate.c	\
+          pvars.c	\
+          symtab.c	\
+          tools.c	\
+          variables1.c
+VNMR_HDR=
+VNMR_OBJ= $(VNMR_SRC:.c=.o)
+
+ALLSRC   = $(DIFFPARAMS_SRC) $(DIFFPARAMS_HDR) \
+           $(VNMR_SRC) $(VNMR_HDR)
+OBJS= $(DIFFPARAMS_OBJ) $(VNMR_OBJ)
+
+LINUX all : Source diffparams
+	@echo diffparams complete
+
+# diffparams : $(DIFFPARAMS_OBJ)
+# 	(umask 2; cc -o diffparams $(DIFFPARAMS_OBJ) \
+# 		  $(MAGICLIB) $(UNMRLIB) $(MAGICLIB) $(LIBS))
+
+diffparams : $(OBJS)
+	(umask 2; cc $(LDFLAGS) -o diffparams $(OBJS) \
+		  $(LIBS))
+ 
+$(OBJS) : %.o : %.c
+	(umask 2; cc $(CFLAGS) $<  )
+
+Source: $(ALLSRC)
+	@echo source files for diffparams up to date
+
+$(DIFFPARAMS_SRC) $(DIFFPARAMS_HDR): % : $(BIN_SCCS_SRC)%
+	$(BIN_SGET) $@
+
+$(VNMR_SRC) $(VNMR_HDR): % : $(VNMR_SCCS_SRC)%
+	$(VNMR_SGET) $@

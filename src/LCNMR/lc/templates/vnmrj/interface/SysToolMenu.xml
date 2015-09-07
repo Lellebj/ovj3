@@ -1,0 +1,65 @@
+<mainmenu>
+<!--
+ !
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+    <button  font="Heading3"
+      style="Heading3"
+      vc = "cexpnext"
+      icon="New_24.gif"
+      toolTip="New Workspace"
+      />
+    <button  font="Heading3"
+      style="Heading3"
+      vc = "vnmrjcmd('LOC openDataPanel')"
+      fg="Heading3"
+      icon="folder_open_file_24.gif"
+      toolTip="Open ..."
+      />
+    <button  font="Heading3"
+      style="Heading3"
+      vc = "vnmrjcmd('LOC saveAsPanel')"
+      fg="Heading3"
+      icon="save_24.gif"
+      toolTip="Save As ..."
+      />
+    <button  font="Heading3"
+      style="Heading3"
+      vc = "vnmrjcmd('util','display options', 'help:/vnmr/jhelp/dialog/displayoptions.html')"
+      fg="Heading3"
+      icon="display_colors_24.gif"
+      toolTip="Display Options"
+      />
+    <button  font="Heading3"
+      style="Heading3"
+      vc="M@cancel"
+      enabled="yes"
+      decor1="No"
+      fg="Heading3"
+      icon="forbidden_24.gif"
+      toolTip="Cancel Command"
+      />
+    <button  font="Heading3"
+      style="Heading3"
+      vc="cppause('stop')"
+      enabled="yes"
+      decor1="No"
+      fg="Heading3"
+      icon="Stop_24.gif"
+      toolTip="Stop Acquisition"
+      />
+    <button  font="Heading3"
+      style="Heading3"
+      vc="EndRun"
+      enabled="yes"
+      decor1="No"
+      fg="Heading3"
+      icon="noflow.gif"
+      toolTip="Stop LC Run"
+      />
+</mainmenu>

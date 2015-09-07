@@ -1,0 +1,5766 @@
+: '@(#)cdout.sh.bk 22.1 03/24/08 Copyright (c) 1991-2001 Agilent Technologies All Rights Reserved.'
+: /bin/sh
+#scripts to make a directory with all the data needed for Nessie
+#
+# Default Declarations
+#
+ShowPermResults=-100
+Code="code"
+#Install_dir="/common/sysscripts"
+#
+# Archived acquisition files for VXR,Unity,Unity+ 
+sol53objdir="/vobj/sol53"
+sol53common="/vobj/sol53/vcommon"
+#
+Aix="aix"
+Common="common"
+
+Backproj="backproj"
+CSI="csi"
+Diff="diffuse"
+Encodedir="/sw/vbin"
+vbin="/sw/vbin"
+Gemini="gemini"
+Glide="glide"
+Glidepack="glidepack"
+Gmap="gmap"
+Gnu="gnu"
+Image="imaging"
+Inova="inova"
+Irix="irix"
+Kermit="kermit"
+LCNMR="lcnmr"
+Limnet="limnet"
+Mercury="mercury"
+Mvx="mercvx"
+Pfg="pfg"
+Solaris="solaris"
+STARS="stars"
+# Uimaging="uimaging"
+Unity="unity"
+#
+# Library .so. version definitions
+ACQCOMM_VER="2.0"
+ACQCOMM_VER6="6.0"
+NCOMM_VER=$psg_so_ver
+#
+# Passwords, extremely secret!!
+#
+#Gmap_password="md-grf"
+#LCNMR_password="hc-cpm"
+#Diff_password="pi-blv"
+#Stars_password="lp-phh"
+#IBM_password="ra-agkj"
+#SGI_password="ss-ejct"
+#Backproj_password="bf-tors"
+#CSI_password="fa-lmlk"
+
+# Vnmr 5.3B passwords
+#Gmap_password="gg-lrs"
+#LCNMR_password="dn-fvt"
+#Diff_password="pi-poi"
+#Stars_password="mt-poa"
+#IBM_password="cn-hhw"
+#SGI_password="cs-hrr"
+#Backproj_password="bd-iee"
+#CSI_password="rt-bai"
+#DOSY_password="sg-akm"
+#BIR_password="lt-bjs"
+#VAST_password="wo-cmm"
+
+# Vnmr 6.1B passwords
+#Gmap_password="gg-lrs"
+#LCNMR_password="cp-not"
+#Diff_password="pi-poi"
+#Stars_password="do-wat"
+#IBM_password="cn-hhw"
+#SGI_password="cs-hrr"
+#Backproj_password="bd-iee"
+#CSI_password="rt-bai"
+#DOSY_password="sg-akm"
+#BIR_password="lt-bjs"
+#VAST_password="mm-mfv"
+#FDM_password="hl-zzb"
+
+# Vnmr 6.1C passwords
+Gmap_password="gg-lrs"
+LCNMR_password="mm-zzj"
+Diff_password="pi-poi"
+Stars_password="do-wat"
+IBM_password="cn-hhw"
+SGI_password="cs-hrr"
+Backproj_password="bd-iee"
+CSI_password="rt-bai"
+DOSY_password="hl-bcp"
+BIR_password="lt-bjs"
+VAST_password="vn-otf"
+FDM_password="ka-sgm"
+IMGP_password="gr-rsj"	# new starting 2002-2-28
+
+#
+# files needed for loading from cd
+#
+#
+# subdirectories in destination directory
+# VNMR:    aix, gemini, ibm, inova, unity files are unique to that system
+#          common files are common to all systems (some do not apply to G2000)
+#	   solaris files are common to gemini, inova, unity
+#          unity/inova files are common to both inova, unity
+#          unity/gemini files are common to both unity, gemini
+# options: common files are in the top level
+#          aix, gemini, ibm, files are unique to that system
+#          solaris files are common to gemini, inova, unity
+#	   unity files are for unity and/or inova
+#
+#The below line was removed from SubDirs= , just leave here for awhile
+#until we remove the manual section from cdout.sh
+#		acrobat			\
+
+SubDirs="				\
+		aix			\
+		backproj		\
+		backproj/unity		\
+		common			\
+		csi			\
+		csi/unity		\
+		gemini			\
+		glide			\
+		glide/aix		\
+		glide/irix		\
+		glide/solaris		\
+		glidepack		\
+		diffuse			\
+		gmap			\
+		gnu			\
+		ibm			\
+		imaging			\
+		imaging/unity		\
+		inova			\
+		irix			\
+		java			\
+		lcnmr			\
+		limnet			\
+		limnet/aix		\
+		limnet/solaris		\
+		kermit			\
+		kermit/solaris		\
+                mercury			\
+		mercvx			\
+		pfg			\
+		pfg/common		\
+		pfg/aix			\
+		pfg/gemini		\
+		pfg/inova		\
+		pfg/irix		\
+		pfg/unity		\
+		sgi			\
+		sol			\
+		solaris			\
+		stars			\
+		stars/unity		\
+		tmp			\
+		uimaging		\
+		uimaging/aix		\
+		uimaging/irix		\
+		uimaging/unity		\
+		unity			\
+		unity/gemini		\
+		unity/inova		\
+		"
+RmSubDirs="				\
+		tmp			\
+		"
+RmOptFiles="				\
+		sol/g2000.sol		\
+		sol/g2000.opt		\
+		sol/inova.sol		\
+		sol/inova.opt		\
+		sol/mercury.sol		\
+		sol/mercury.opt		\
+		sol/mercvx.sol		\
+		sol/mercvx.opt		\
+		sol/mercplus.sol	\
+		sol/mercplus.opt	\
+		sol/unity.sol		\
+		sol/unity.opt		\
+		sol/uplus.sol		\
+		sol/uplus.opt		\
+		ibm/ibm.ibm		\
+		ibm/ibm.opt		\
+		sgi/sgi.sgi		\
+		sgi/sgi.opt		\
+		"
+#
+# PART I ---- Common File Definitions
+#
+# -- misc common files tarred into one tar file.
+#  COM.TAR list of file in  com.tar 
+ComTarLst="			\
+	acq/acqi*		\
+	acq/dgs*		\
+	acq/info		\
+	bootup_message		\
+	conpar			\
+	devicenames		\
+	devicetable		\
+	rc.vnmr			\
+	solventlist		\
+	solventppm		\
+	solvents		\
+	varian.xicon		\
+	vnmrmenu		\
+	"
+
+# -- common bin script files to include on tape  
+# --    remember bin is ar so name must 15 chars or less
+# COMBIN.TAR List of file in combin.tar 
+ComBinScripts2Tar="		\
+	bin/Vn			\
+	bin/calcramp		\
+	bin/decctool		\
+	bin/enter		\
+	bin/killft3d		\
+	bin/killstat		\
+	bin/makeuser		\
+	bin/psggen		\
+        bin/patchinstall 	\
+        bin/patchremove 	\
+	bin/readbrutape		\
+	bin/rvnmrj		\
+	bin/rvnmrx		\
+	bin/seqgen		\
+	bin/setuserpsg		\
+	bin/status		\
+	bin/vbg			\
+	bin/vnmr		\
+	bin/vnmr2sc		\
+	bin/jdeluser		\
+	bin/jvnmruser		\
+	bin/jtestgroup		\
+	bin/jtestuser		\
+        bin/chksudocmd		\
+	bin/vnmr_gs		\
+	bin/vnmr_jplot		\
+	bin/vnmr_accounting	\
+	bin/vnmr_cdump		\
+	bin/vnmr_color		\
+	bin/vnmr_ihelp		\
+	bin/vnmr_setgauss	\
+	bin/vnmr_showfit	\
+	bin/vnmr_singleline	\
+	bin/vnmr_textedit	\
+	bin/vnmr_uname		\
+	bin/vnmr_usemark	\
+	bin/vnmr_vi		\
+	bin/vnmredit		\
+	bin/vnmrlp		\
+	bin/vnmrplot		\
+	bin/vnmrprint		\
+	bin/vnmrshell		\
+	bin/wtgen		\
+	bin/vxrTool		\
+	"
+
+ComDirs2Tar="			\
+	asm			\
+	fidlib			\
+	fonts			\
+	help 			\
+	maclib 			\
+	manual 			\
+	menulib 		\
+	nuctables		\
+	probes			\
+	satellites		\
+	shimmethods		\
+	shims			\
+	xvfonts			\
+	"
+
+P11Bin2Tar=" \
+	-C $solobjdir/proglib/bin safecp	\
+	-C $solobjdir/proglib/bin chVJlist	\
+	-C $solobjdir/proglib/bin vnmrMD5	\
+	-C $solobjdir/proglib/bin chchsums	\
+	-C $solobjdir/proglib/bin writeAaudit	\
+	-C $solobjdir/proglib/bin writeTrash	\
+	-C $solobjdir/proglib/bin auditcp	\
+	"
+
+P11BinScripts2Tar="		\
+	bin/auconvert		\
+	bin/aureduce		\
+	bin/auevent		\
+	bin/auinit		\
+	bin/aupurge		\
+	bin/S99scanlog		\
+	bin/setupscanlog	\
+	bin/scanlog		\
+	bin/arAuditing		\
+	"
+
+P11Xml2Tar="	\
+	-C /vcommon/xml     accPolicy		\
+	-C /vcommon/xml     part11Config	\
+	-C /vcommon/xml     AdminMenu.xml.p11	\
+	-C /vcommon/xml     MainMenu.xml.p11	\
+	-C /vcommon/xml     DefaultToolBar.xml.p11	\
+	-C /vcommon/xml     audit.xml		\
+	-C /vcommon/xml     saveas.xml		\
+	-C /vcommon/xml     cmdHis.xml		\
+	"
+
+#
+# PART II ---- Common File Definitions
+#              Common to IBM, INOVA, SGI, UNITY
+#
+# -- par200 par300 par400 par500 par600 parlib, 
+# --- i.e. par* are tarred as one tar file "par.tar".
+# PAR.TAR
+ComPar2Tar="			\
+	upar/par200		\
+	upar/par300		\
+	upar/par400		\
+	upar/par500		\
+	upar/par600		\
+	upar/par700		\
+	upar/par750		\
+	upar/par800		\
+	upar/par900		\
+	upar/parlib		\
+	"
+
+uComDirs2Tar="			\
+	imaging			\
+	shapelib		\
+	tablib 			\
+	"
+
+
+#
+# PART III --- Gemini, Inova, Unity
+#
+# -- binary common to SunView & X-window to include in bin.tar file 
+# --- bin.tar 
+BinFiles2Tar="			\
+	bin/compressfid		\
+        bin/convertbru		\
+        bin/createdicom		\
+        bin/createdcm		\
+        bin/dicomlpr		\
+        bin/nmsalign		\
+        bin/ptalign		\
+        bin/cpos_cvt		\
+        bin/decomp		\
+	bin/diffparams		\
+	bin/diffshims		\
+	bin/dps_ps_gen		\
+        bin/expandphase		\
+        bin/expfit		\
+	bin/fdfgluer		\
+	bin/fdfsplit		\
+	bin/fitspec		\
+	bin/ft3d		\
+	bin/getplane		\
+        bin/gin_setup		\
+	bin/glide		\
+	bin/gs			\
+        bin/readsctables	\
+        bin/showstat		\
+        bin/spins		\
+        bin/tape		\
+        bin/tek_setup		\
+        bin/unix_vxr		\
+	bin/usrwt.o		\
+        bin/vn			\
+	bin/vnmr_confirmer	\
+	bin/vxr_unix		\
+	bin/weight.h		\
+	bin/xdcvt		\
+	bin/fontselect		\
+	bin/convertcmx		\
+	"
+
+TclLibs2Tar="			\
+	lib/libtcl.so		\
+	lib/libtcl*.so		\
+	lib/libtk.so		\
+	lib/libtk*.so		\
+	lib/libBLT*		\
+	lib/libtix.so		\
+	lib/libtix*.so		\
+	lib/libtbcload13.so	\
+	"
+
+PboxBin2Tar="			\
+	bin/Pbox		\
+	bin/Pxfid		\
+	bin/Pxsim		\
+	bin/Pxspy		\
+	bin/PboxAdapter		\
+	"
+
+
+# -- binary X-Windows base programs to include in binx.tar file 
+# --- binx.tar 
+BinX2Tar="			\
+	bin/Vnmr	  	\
+	-C $commondir/tape_sol app-defaults/Vnmr		\
+	-C $commondir/tape_sol app-defaults/XTerm		\
+	bin/pulsetool		\
+	-C $commondir/tape_sol app-defaults/PulseTool	\
+	bin/pulsechild		\
+	-C $commondir/tape_sol app-defaults/Status	\
+	-C $commondir/tape_sol app-defaults/Enter		\
+	-C $commondir/tape_sol app-defaults/Dg	\
+	bin/Acqstat		\
+	bin/Infostat		\
+	bin/Acqmeter		\
+	bin/convert		\
+	"
+
+Gs2Tar="			\
+	gs			\
+	"
+
+
+Tcl2Tar="			\
+	tcl/bin			\
+	tcl/bltlibrary		\
+	tcl/tcllibrary		\
+	tcl/tixlibrary		\
+	tcl/tklibrary		\
+	"
+
+TclMore="			\
+	vnmrwish		\
+	"
+
+# Accouting 
+Acct2Tar="			\
+	-C $commondir adm/bin/acc_vnmr	\
+	-C $commondir adm/bin/console_acct	\
+	-C $commondir adm/bin/update_acctng	\
+	-C $commondir adm/bin/view_acctng	\
+	-C $commondir adm/bin/xcal	\
+	-C $commondir adm/accounting	\
+	-C $commondir adm/log		\
+	-C $commondir adm/tmp		\
+	adm/bin/console_login	\
+	"
+
+SolTemplTar="			\
+	user_templates		\
+	"
+
+GmapText2Tar="			\
+	help			\
+	maclib			\
+	manual			\
+	menulib			\
+	"
+
+GmapPars2Tar="			\
+	parlib			\
+	psglib			\
+	"
+
+#
+# PART IV --- Inova, Unity
+#
+# -- Inova/Unity libraries used by the Pulse Sequencies 
+# --- psg.tar 
+BinPsg2Tar="			\
+	psg/libpsglib.a		\
+        psg/libparam.a          \
+	psg/libpsglib.so.$psg_so_ver	\
+	psg/libparam.so.$psg_so_ver	\
+        psg/libparam.so         \
+        psg/libpsglib.so        \
+        psg/x_ps.o		\
+	"
+
+#---- Inova/Unity seqlib binaries to tar
+#---- List also used by IBM/SGI
+# --- seqlib.tar 
+BinSeq2Tar="			\
+	seqlib/APT		\
+	seqlib/COSY		\
+	seqlib/DEPT		\
+	seqlib/DQCOSY		\
+	seqlib/HETCOR		\
+	seqlib/HMBC		\
+	seqlib/HMQC		\
+	seqlib/HMQC_d2		\
+	seqlib/HMQCTOXY		\
+	seqlib/HMQCTOXY_d2	\
+	seqlib/HOMODEC		\
+	seqlib/HSQC		\
+	seqlib/HSQC_d2		\
+	seqlib/HSQCTOXY		\
+	seqlib/HSQCTOXY_d2	\
+	seqlib/NOESY		\
+	seqlib/NOESY1D		\
+	seqlib/PRESAT		\
+	seqlib/PWXCAL		\
+	seqlib/ROESY		\
+	seqlib/ROESY1D		\
+	seqlib/TOCSY		\
+	seqlib/TOCSY1D		\
+	seqlib/apt		\
+	seqlib/binom		\
+	seqlib/br24		\
+	seqlib/cosyps		\
+	seqlib/cpmgt2		\
+	seqlib/cyclenoe		\
+	seqlib/cylbr24		\
+	seqlib/cylmrev		\
+	seqlib/d2pul		\
+	seqlib/dept		\
+	seqlib/dqcosy		\
+	seqlib/flipflop		\
+	seqlib/gmapz		\
+	seqlib/hcchtocsy	\
+	seqlib/het2dj		\
+	seqlib/hetcor		\
+	seqlib/hetcorcp1	\
+	seqlib/hetcorps		\
+	seqlib/hmqc		\
+	seqlib/hmqcr		\
+	seqlib/hmqctocsy	\
+	seqlib/hmqctoxy3d	\
+	seqlib/hom2dj		\
+	seqlib/hsqc		\
+	seqlib/hsqctoxySE	\
+	seqlib/inadqt		\
+	seqlib/inept		\
+	seqlib/jumpret		\
+	seqlib/mqcosy		\
+	seqlib/mrev8		\
+	seqlib/noesy		\
+	seqlib/ppcal		\
+	seqlib/presat		\
+	seqlib/pwxcal		\
+	seqlib/qtune		\
+	seqlib/redor1		\
+	seqlib/relayh		\
+	seqlib/roesy		\
+	seqlib/s2pul		\
+	seqlib/s2pulq		\
+	seqlib/s2pulr		\
+	seqlib/selexcit		\
+	seqlib/sh2pul		\
+	seqlib/ssecho		\
+	seqlib/ssecho1		\
+	seqlib/tncosyps		\
+	seqlib/tndqcosy		\
+	seqlib/tnmqcosy		\
+	seqlib/tnnoesy		\
+	seqlib/tnroesy		\
+	seqlib/tntocsy		\
+	seqlib/tocsy		\
+	seqlib/troesy		\
+	seqlib/wetdqcosy	\
+	seqlib/wetnoesy		\
+	seqlib/wetpwxcal	\
+	seqlib/wetrelayh	\
+	seqlib/wettntocsy	\
+	seqlib/wfgtest		\
+	seqlib/xnoesysync	\
+	seqlib/xpolar		\
+	seqlib/xpolar1		\
+	"
+
+WobbleText="			\
+	tune			\
+	"
+
+WobbleExec="			\
+	bin/qtune_ui		\
+	bin/autoshim		\
+	-C $commondir/tape_sol app-defaults/Qtune	\
+	"
+
+#
+# PART V --- Gemini, Unity
+#
+# This list also used by SGI
+uLibs2Tar="				\
+	./libacqcomm.a			\
+	./libacqcomm.so			\
+	./libacqcomm.so.$ACQCOMM_VER	\
+	"
+
+#
+# PART VI --- Unity
+#
+#----- kernels to move from /vtape/kernels  
+Kernels2Move="			\
+	sh		\
+	sh.conf		\
+	"
+
+# -- files to include in acqbin tar file
+# --- acqbin.tar 
+#  Note:  Originally many of these files came from ongoing 5.3 SCCS
+#         It was discovered though that most need to come from ongoing
+#         (6.1) SCCS
+
+BinAcq2Tar="			\
+        acqbin/seqgenmake	\
+	-C $solobjdir acqbin/Acqproc		\
+        -C $solobjdir acqbin/Autoproc         \
+        -C $solobjdir acqbin/startacqproc     \
+        -C $solobjdir acqbin/killacqproc      \
+        -C $solobjdir acqbin/acqinfo_svc      \
+        -C $solobjdir bin/iadisplay		\
+        -C $solobjdir bin/send2Vnmr           \
+        -C $solobjdir bin/vconfig		\
+	-C $solobjdir bin/qtune_data		\
+	-C $commondir/tape_sol app-defaults/Acqi	\
+	-C $commondir/tape_sol app-defaults/Config	\
+	-C $commondir          bin/usetacq		\
+	"
+
+# -- acquisition files tarred into one tar file.
+#  list of file in  acq.tar 
+AcqTarLst="			\
+	acq/xrxrh.out		\
+	acq/xrxrp.out		\
+	acq/xrop.out		\
+	acq/rhmon.out		\
+	acq/autshm.out		\
+	acq/xr.conf		\
+	"
+#	acq/xrxrh_img.out	\
+#	acq/xrxrp_img.out	\
+#	acq/autshm_img.out	\
+
+#
+# PART VII --- Gemini
+#
+gPar2Tar="		\
+	gpar/par200	\
+	gpar/par300	\
+	gpar/par400	\
+	gpar/parlib	\
+	"
+
+#  list of file in  gacq.tar 
+gAcqTarLst="			\
+	acq/apmon		\
+	acq/autshm		\
+	acq/lnc			\
+	"
+
+# -- files to include in gemini acqbin tar file
+# --- gacqbin.tar 
+gBinAcq2Tar="acqbin/gAcqproc	\
+        acqbin/acqinfo_svc      \
+        acqbin/Autoproc         \
+        acqbin/startacqproc     \
+        acqbin/killacqproc      \
+        acqbin/seqgenmake	\
+        bin/catcheaddr		\
+        bin/findedevices	\
+        bin/giadisplay		\
+	-C $commondir/tape_sol app-defaults/Acqi	\
+	-C $commondir          bin/gsetacq		\
+        bin/send2Vnmr           \
+	"
+
+# -- Gemini libraries used by the Pulse Sequencies 
+# --- gpsg.tar 
+gBinPsg2Tar="gpsg/libpsglib.a		\
+        gpsg/libparam.a			\
+	gpsg/libpsglib.so.$psg_so_ver	\
+	gpsg/libparam.so.$psg_so_ver	\
+        gpsg/libparam.so		\
+        gpsg/libpsglib.so		\
+        gpsg/x_ps.o			\
+        bin/gconfig			\
+	-C $commondir/tape_sol app-defaults/Config	\
+	"
+
+#---- Standard seqlib binaries to tar
+# --- seqlib.tar
+gBinSeq2Tar="		\
+	gseqlib/APT	\
+	gseqlib/COSY	\
+	gseqlib/DEPT	\
+	gseqlib/DQCOSY	\
+	gseqlib/gCOSY	\
+	gseqlib/gDQCOSY	\
+	gseqlib/gHMBC	\
+	gseqlib/gHMQC	\
+	gseqlib/gHSQC	\
+	gseqlib/gXHCAL	\
+	gseqlib/HETCOR	\
+	gseqlib/HMBC	\
+	gseqlib/HMQC	\
+	gseqlib/HOMODEC	\
+	gseqlib/HSQC	\
+	gseqlib/NOESY	\
+	gseqlib/PWXCAL	\
+	gseqlib/apt	\
+	gseqlib/cpmgt2	\
+	gseqlib/cosyps	\
+	gseqlib/dept	\
+	gseqlib/dqcosy	\
+	gseqlib/gmapz	\
+	gseqlib/het2dj	\
+	gseqlib/hetcor	\
+	gseqlib/hmqc	\
+	gseqlib/hom2dj	\
+	gseqlib/inept	\
+	gseqlib/noedif	\
+	gseqlib/noesy	\
+	gseqlib/ppcal	\
+	gseqlib/relayh	\
+	gseqlib/s2pul	\
+	"
+
+#
+# PART VIIb --- Mercury 
+#
+# -- Mercury libraries used by the Pulse Sequencies 
+# --- kpsg.tar 
+kBinPsg2Tar="kpsg/libpsglib.a		\
+        kpsg/libparam.a			\
+	kpsg/libpsglib.so.$psg_so_ver	\
+	kpsg/libparam.so.$psg_so_ver	\
+        kpsg/libparam.so		\
+        kpsg/libpsglib.so		\
+        kpsg/x_ps.o			\
+        bin/kconfig			\
+	bin/mqtune_data         \
+	-C $commondir/tape_sol app-defaults/Config	\
+	"
+
+#---- Standard seqlib binaries to tar
+# --- seqlib.tar
+kBinSeq2Tar="		\
+	kseqlib/APT     \
+        kseqlib/COSY    \
+        kseqlib/DEPT    \
+        kseqlib/DQCOSY  \
+        kseqlib/HETCOR  \
+        kseqlib/HMBC    \
+        kseqlib/HMQC    \
+        kseqlib/HMQCTOXY        \
+        kseqlib/HOMODEC \
+        kseqlib/HSQC    \
+        kseqlib/HSQCTOXY        \
+        kseqlib/NOESY   \
+        kseqlib/NOESY1D \
+        kseqlib/PRESAT  \
+        kseqlib/PWXCAL  \
+        kseqlib/ROESY   \
+        kseqlib/ROESY1D	\
+        kseqlib/TOCSY  	\
+        kseqlib/TOCSY1D \
+        kseqlib/apt     \
+        kseqlib/cosyps  \
+        kseqlib/cpmgt2  \
+	kseqlib/dept	\
+	kseqlib/dqcosy	\
+	kseqlib/het2dj  \
+        kseqlib/hetcor  \
+	kseqlib/hmqc	\
+	kseqlib/hom2dj  \
+	kseqlib/inadqt	\
+	kseqlib/inadqt  \
+        kseqlib/inept   \
+        kseqlib/noedif  \
+        kseqlib/noesy   \
+        kseqlib/ppcal   \
+	kseqlib/pwxcal	\
+        kseqlib/relayh  \
+        kseqlib/qtune   \
+	kseqlib/roesy	\
+	kseqlib/s2pul	\
+	kseqlib/s2pulq	\
+	kseqlib/selexcit	\
+	kseqlib/tocsy	\
+	kseqlib/xpolar1	\
+	"
+
+kPbox2Tar="			\
+	help		\
+	shapelib	\
+	wavelib		\
+	"
+
+#  list of file in  kacq.tar 
+kAcqTarLst="			\
+	acq/kapmon		\
+	acq/autshm		\
+	acq/lnc			\
+	"
+kVx2Tar="                      	         \
+        acq/vxBoot.big/vxWorks              \
+        acq/vxBoot.big/vxWorks.sym          \
+        acq/kvxBoot.small/vxWorks       \
+        "
+
+kVxObj2Tar="                    \
+        acq/kvwhdobj.o          \
+        acq/kvwlibs.o           \
+        acq/kvwtasks.o          \
+        acq/vxBoot.big/vwcom.o  \
+        "
+kCPMAStemplate="			\
+	-C ktape_sol	user_templates	\
+	"
+
+#
+# PART  --- Inova 
+#
+iBinSeq2Tar="			\
+	seqlib/APT		\
+	seqlib/ATB1profile	\
+	seqlib/ATCNnoesy	\
+	seqlib/ATcancel		\
+	seqlib/ATcpmgt2		\
+	seqlib/ATd2pul		\
+	seqlib/ATdante		\
+	seqlib/ATdsh2pul	\
+	seqlib/ATfsqd		\
+	seqlib/ATg2pul		\
+	seqlib/ATgNhmqc		\
+	seqlib/ATgcancel	\
+	seqlib/ATgecho		\
+	seqlib/ATphswitch	\
+	seqlib/ATphtest		\
+	seqlib/ATprofile	\
+	seqlib/ATrfhomo		\
+	seqlib/COSY		\
+	seqlib/DEPT		\
+	seqlib/DQCOSY		\
+	seqlib/HETCOR		\
+	seqlib/HMBC		\
+	seqlib/HMQC		\
+	seqlib/HMQC_d2		\
+	seqlib/HMQCTOXY		\
+	seqlib/HMQCTOXY_d2	\
+	seqlib/HOMODEC		\
+	seqlib/HSQC		\
+	seqlib/HSQC_d2		\
+	seqlib/HSQCTOXY		\
+	seqlib/HSQCTOXY_d2	\
+	seqlib/NOESY		\
+	seqlib/NOESY1D		\
+	seqlib/PRESAT		\
+	seqlib/PWXCAL		\
+	seqlib/ROESY		\
+	seqlib/TOCSY		\
+	seqlib/TOCSY1D		\
+	seqlib/apt		\
+	seqlib/binom		\
+	seqlib/br24		\
+	seqlib/cosyps		\
+	seqlib/cpmgt2		\
+	seqlib/cyclenoe		\
+	seqlib/cylbr24		\
+	seqlib/cylmrev		\
+	seqlib/d2pul		\
+	seqlib/dept		\
+	seqlib/dqcosy		\
+	seqlib/flipflop		\
+	seqlib/gmapz		\
+	seqlib/hcchtocsy	\
+	seqlib/het2dj		\
+	seqlib/hetcor		\
+	seqlib/hetcorcp1	\
+	seqlib/hetcorps		\
+	seqlib/hmqc		\
+	seqlib/hmqcr		\
+	seqlib/hmqctocsy	\
+	seqlib/hmqctoxy3d	\
+	seqlib/hom2dj		\
+	seqlib/hsqc		\
+	seqlib/hsqctoxySE	\
+	seqlib/inadqt		\
+	seqlib/inept		\
+	seqlib/jumpret		\
+	seqlib/mqcosy		\
+	seqlib/mrev8		\
+	seqlib/noesy		\
+	seqlib/ppcal		\
+	seqlib/presat		\
+	seqlib/pwxcal		\
+	seqlib/qtune		\
+	seqlib/redor1		\
+	seqlib/relayh		\
+	seqlib/roesy		\
+	seqlib/s2pul		\
+	seqlib/s2pulq		\
+	seqlib/s2pulr		\
+	seqlib/selexcit		\
+	seqlib/sh2pul		\
+	seqlib/ssecho		\
+	seqlib/ssecho1		\
+	seqlib/tncosyps		\
+	seqlib/tndqcosy		\
+	seqlib/tnmqcosy		\
+	seqlib/tnnoesy		\
+	seqlib/tnroesy		\
+	seqlib/tntocsy		\
+	seqlib/tocsy		\
+	seqlib/troesy		\
+	seqlib/wetdqcosy	\
+	seqlib/wetnoesy		\
+	seqlib/wetpwxcal	\
+	seqlib/wetrelayh	\
+	seqlib/wettntocsy	\
+	seqlib/wfgtest		\
+	seqlib/xnoesysync	\
+	seqlib/xpolar		\
+	seqlib/xpolar1		\
+	"
+
+ProcFam="			\
+	acqbin/nAutoproc	\
+	acqbin/Expproc		\
+	acqbin/Infoproc		\
+	acqbin/Procproc		\
+	acqbin/Recvproc		\
+	acqbin/Roboproc		\
+	acqbin/Sendproc		\
+        acqbin/seqgenmake	\
+	acqbin/bootpd		\
+	acq/bootptab		\
+	acq/vwScript		\
+	acq/vwScriptPPC		\
+        bin/catcheaddr		\
+        bin/findedevices	\
+        bin/iiadisplay		\
+	-C $commondir/tape_sol app-defaults/Acqi	\
+	bin/send2Vnmr		\
+	"
+
+iProcFam="			\
+	acq/tms320dsp.ram       \
+	acq/vwAutoScript        \
+	bin/iqtune_data         \
+	bin/ihwinfo             \
+	bin/vconfig             \
+        -C $commondir/tape_sol app-defaults/Config\
+	-C $commondir spincad	\
+        "
+
+Pbox2Tar="			\
+	help		\
+	wavelib		\
+	"
+
+iLibs2Tar="				\
+	ncomm/libacqcomm.a		\
+	ncomm/libacqcomm.so		\
+	ncomm/libacqcomm.so.$ACQCOMM_VER6	\
+	ncomm/libncomm.a			\
+	ncomm/libncomm.so			\
+	ncomm/libncomm.so.$NCOMM_VER	\
+	dicom/dicom.dic			\
+	"
+
+iVxAuto2Tar="				\
+	acq/vxBoot.auto/vxWorks.auto		\
+	"
+
+iVx2Tar="				\
+        acq/vxBoot.small/vxWorks	\
+	acq/vxBoot.big/vxWorks		\
+	acq/vxBoot.big/vxWorks.sym		\
+	"
+
+iVxObj2Tar="			\
+	acq/vxBoot.big/vwhdobj.o		\
+	acq/vxBoot.big/vwlibs.o		\
+	acq/vxBoot.big/vwtasks.o		\
+	acq/vxBoot.big/vwcom.o		\
+	"
+
+iVxPpc2Tar="				\
+        acq/vxBootPPC.small/vxWorks	\
+	acq/vxBootPPC.big/vxWorks		\
+	acq/vxBootPPC.big/vxWorks.sym		\
+	"
+
+iVxPpcObj2Tar="			\
+	acq/vxBootPPC.big/vwhdobj.o		\
+	acq/vxBootPPC.big/vwlibs.o		\
+	acq/vxBootPPC.big/vwtasks.o		\
+	acq/vxBootPPC.big/vwcom.o		\
+	"
+
+Java2Tar="				\
+	java/jplot.jar			\
+	"
+
+Jpsg2Tar=" \
+	-C $sourcedir/sysjpsg Jpsg			\
+	-C $sourcedir/sysjpsg PSGGo.cps		\
+	-C $sourcedir/sysjpsg PSGSetup.cps		\
+	-C $sourcedir/sysjpsg PSGscan.cps		\
+	-C $sourcedir/sysjpsg PSGerrors.properties	\
+	-C $sourcedir/sysjpsg lib/Jpsg.jar		\
+	"
+
+VnmrJJar2Tar=" \
+        -C $sourcedir/sysvnmrj              vnmrj.jar			\
+        -C $sourcedir/sysvnmrj              vnmrj.jar.dasho		\
+        -C $sourcedir/sysvnmrj              libvnmrj.so			\
+        -C $commondir/vnmrj                 libSolarisSerialParallel.so \
+	"
+
+VnmrJAdm2Tar=" \
+        -C $commondir/xml              grouplist.xml		\
+        -C $commondir/xml              userlist.xml		\
+        -C $commondir/xml              userDefaults		\
+	"
+
+VnmrJAdmJar2Tar=" \
+        -C $sourcedir/sysadmin              VnmrAdmin.jar		\
+        -C $sourcedir/sysmanagedb           managedb.jar		\
+        -C $sourcedir/sysmanagedb           managedb.jar.dasho		\
+	"
+
+VnmrJBin2Tar=" \
+        -C $sourcedir/sysvnmrbg   Vnmrbg		\
+        -C $sourcedir/sysscripts  S99pgsql      	\
+        -C $sourcedir/sysscripts  vnmrj         	\
+        -C $commondir/bin         managedb		\
+        -C $commondir/bin         dbinstall		\
+        -C $commondir/bin         dbsetup		\
+        "
+
+VnmrJPGsql2Tar=" \
+        -C $commondir           pgsql/bin		\
+        -C $commondir           pgsql/lib		\
+        -C $commondir           pgsql/share		\
+	-C $commondir/bin	create_pgsql_user	\
+	-C $sourcedir		sysshuffler		\
+	"
+
+VnmrJ2Tar=" \
+        -C $commondir/vnmrj                 maclib			\
+        -C $commondir                       menujlib			\
+	"
+
+VnmrJTempl2Tar=" \
+        -C $commondir                       templates/layout		\
+        -C $commondir                       templates/vnmrj		\
+	"
+VnmrJProperties2Tar=" \
+        -C /vcommon/xml     cmdResources.properties          \
+        -C /vcommon/xml     paramResources.properties        \
+        "
+
+#
+# PART IX --- IBM 
+#
+IbmBinFiles2Tar="			\
+	bin/compressfid		\
+        bin/convertbru		\
+        bin/cpos_cvt		\
+        bin/decomp		\
+	bin/diffshims		\
+	bin/dps_ps_gen		\
+        bin/expandphase		\
+        bin/expfit		\
+	bin/fitspec		\
+	bin/ft3d		\
+	bin/getplane		\
+        bin/gin_setup		\
+	bin/gs			\
+        bin/readsctables	\
+        bin/showstat		\
+        bin/spins		\
+        bin/tape		\
+        bin/tek_setup		\
+        bin/unix_vxr		\
+	bin/usrwt.o		\
+        bin/vn			\
+	bin/vnmr_confirmer	\
+	bin/vxr_unix		\
+	bin/weight.h		\
+	bin/xdcvt		\
+	bin/fontselect		\
+	bin/convertcmx		\
+	"
+
+IbmTclLibs2Tar="  \
+	lib/libtcl.a		\
+	lib/libtcl*.a		\
+	lib/libtk.a		\
+	lib/libtk*.a		\
+	"
+
+UniBinScripts2Tar="		\
+	bin/adddevices		\
+	bin/execkillacqproc	\
+	bin/fixpsg		\
+	bin/makesuacqproc	\
+	bin/setether		\
+	bin/setnoether		\
+	bin/vnmr_spinner	\
+	bin/vnmr_temp		\
+	bin/loadkernel		\
+	bin/rmipcs		\
+        "
+
+IbmTemplTar="			\
+	user_templates		\
+	"
+
+# --- binx.tar 
+IbmBinX2Tar="			\
+	bin/Vnmr	  	\
+	-C $commondir/tape_ibm app-defaults/Vnmr		\
+	bin/pulsetool		\
+	-C $commondir/tape_ibm app-defaults/PulseTool	\
+	bin/pulsechild		\
+	-C $commondir/tape_ibm app-defaults/Status	\
+	-C $commondir/tape_ibm app-defaults/Enter		\
+	bin/Acqstat		\
+	bin/Acqmeter		\
+	"
+
+IbmBinAcq2Tar="			\
+	acqbin/acqinfo_svc      \
+	acqbin/seqgenmake       \
+	bin/vconfig             \
+	bin/editdevices		\
+        -C $commondir/tape_ibm app-defaults/Config      \
+	bin/send2Vnmr           \
+	"
+#  removed from above list
+#	bin/editdevices	
+#	bin/portrait
+#	bin/psfilter
+
+# --- No runtime psg libs for IBM, only lib*.a
+# --- psg.tar 
+IbmBinPsg2Tar="psg/libpsglib.a     \
+        psg/libparam.a          \
+        psg/x_ps.o
+	"
+
+IbmLibs2Tar="		\
+	./libacqcomm.a	\
+	"
+#
+# PART X --- SGI 
+#
+SgiTemplTar="			\
+	user_templates		\
+	"
+
+# -- binary X-Windows base programs to include in binx.tar file 
+# --- binx.tar 
+# --- app-defaults/Dg included here, could be with tcl instead
+SgiBinX2Tar="			\
+	bin/Vnmr	  	\
+	-C $commondir/tape_sgi app-defaults/Vnmr		\
+	bin/pulsetool		\
+	-C $commondir/tape_sgi app-defaults/PulseTool	\
+	bin/pulsechild		\
+	-C $commondir/tape_sgi app-defaults/Status	\
+	-C $commondir/tape_sgi app-defaults/Enter		\
+	-C $commondir/tape_sgi app-defaults/Dg		\
+	bin/Acqstat		\
+	bin/Acqmeter		\
+	bin/makeprintcap	\
+	"
+
+SgiBinAcq2Tar="			\
+	acqbin/acqinfo_svc      \
+	acqbin/seqgenmake       \
+	bin/vconfig             \
+	bin/editdevices		\
+        -C $commondir/tape_sgi app-defaults/Config      \
+	bin/send2Vnmr           \
+	"
+#  removed from above list
+#	bin/editdevices	
+#	bin/portrait
+#	bin/psfilter
+
+
+# -- Shared libraries used by the Pulse Sequencies 
+# --- psg.tar 
+SgiBinPsg2Tar="			\
+	psg/libpsglib.a		\
+        psg/libparam.a          \
+        psg/libparam.so         \
+        psg/libpsglib.so        \
+        psg/x_ps.o		\
+	"
+
+# -- binary X-Windows base programs to include in binx.tar file 
+SgiBinScripts2Tar="		\
+	bin/vnmr_ihelp		\
+	"
+
+#
+# PART XI --- Options 
+#
+# -- Glide files to tar
+
+GlideText2Tar="			\
+	glide/vnmrmenu		\
+	glide/adm		\
+	glide/def		\
+	glide/exp		\
+	glide/templates		\
+	"
+
+# --- glide.tar 
+GlideBin2Tar="
+	bin/gadm		\
+	"
+Dialog2Tar="		\
+	dialoglib	\
+	"
+
+GlidepackText2Tar="                 \
+        glidepack/vnmrmenu          \
+        glidepack/adm               \
+        glidepack/def               \
+        glidepack/cp_uninstall      \
+        glidepack/exp               \
+        glidepack/templates         \
+        "
+
+GlidepackBin2Tar="
+        bin/glide               \
+        bin/gadm                \
+        bin/Probe_edit          \
+        "
+
+#--- directories from PFG common to ibm, inova, sgi. unity go into tar file
+# pfg.tar
+ComPFG2Tar="			\
+	parlib			\
+	maclib			\
+	manual			\
+	psglib			\
+	"
+
+#---- PFG binaries to tar, the list is used by ibm, sgi and unity/inova
+#                          although three tar-files are created.
+# --- pfg.tar 
+BinPFG2Tar="seqlib/g2pul	\
+	seqlib/gCOSY		\
+	seqlib/gDQCOSY		\
+	seqlib/gHETCOR		\
+	seqlib/gHMBC		\
+	seqlib/gHMQC		\
+	seqlib/gHMQC_d2		\
+	seqlib/gHMQCTOXY	\
+	seqlib/gHSQC		\
+	seqlib/gHSQC_d2		\
+	seqlib/gHSQCTOXY	\
+	seqlib/gXHCAL		\
+	seqlib/gcosy		\
+	seqlib/ghmqc		\
+	seqlib/ghmqcps		\
+	seqlib/ghsqc		\
+	seqlib/gmqcosy		\
+	seqlib/gnoesy		\
+	seqlib/gtnnoesy		\
+	seqlib/gtnroesy		\
+	seqlib/p2pul		\
+	seqlib/profile		\
+	seqlib/wetgcosy		\
+	seqlib/wetghmqc		\
+	seqlib/wetghmqcps	\
+	seqlib/wetghsqc		\
+	seqlib/wetgmqcosyps	\
+	"
+
+#---- PFG binaries to tar for new Chempack seqeuences, the list is used unity/inova
+#----    not currently used by ibm, sgi
+BinPFGCP2Tar="seqlib/wet1D	\
+	seqlib/wetNOESY		\
+	seqlib/wetROESY		\
+	seqlib/wetTOCSY		\
+	seqlib/wetgCOSY		\
+	seqlib/wetgDQCOSY	\
+	seqlib/wetgHMBC		\
+	seqlib/wetgHMQC		\
+	seqlib/wetgHSQC		\
+	"
+
+#--- directories from PFG common to go into tar file
+# pfg.tar
+gComPFG2Tar="			\
+	parlib			\
+	maclib			\
+	manual			\
+	"
+
+#---- PFG binaries to tar
+# --- pfg.tar 
+gBinPFG2Tar="gseqlib/g2pul	\
+	gseqlib/gcosy		\
+	gseqlib/ghmqc		\
+	gseqlib/gmqcosy		\
+	gseqlib/gnoesy		\
+	gseqlib/profile		\
+	"
+
+kBinPFG2Tar="                   \
+        kseqlib/gCOSY           \
+        kseqlib/gDQCOSY         \
+	kseqlib/gHETCOR		\
+        kseqlib/gHMBC           \
+        kseqlib/gHMQC           \
+        kseqlib/gHMQCTOXY       \
+        kseqlib/gHSQC           \
+        kseqlib/gHSQCTOXY       \
+        kseqlib/gXHCAL          \
+        kseqlib/g2pul           \
+        kseqlib/gcosy           \
+        kseqlib/ghmqc           \
+        kseqlib/glrinept        \
+	kseqlib/gmapz		\
+        kseqlib/gmqcosy         \
+        kseqlib/gnoesy          \
+        kseqlib/p2pul		\
+        kseqlib/profile         \
+        "
+
+#--- directories from kermit common to go into tar file
+# kermit.tar
+ComKermit2Tar="			\
+	kermit/kermit.doc	\
+	"
+
+Bin4Kermit2Tar="		\
+	kermit/kermit_sol	\
+	"
+
+# ------ GNU C Compiler Files files  ---------------
+# gnu.tar 
+#               gnu/cygnus-sol2-2.0
+GNU4Solaris2Tar="		\
+        gnu			\
+	"
+
+#--- directories from Image common to go into tar file
+# uimage.tar
+#ComImage2Tar="			\
+#	imaging			\
+#	parlib			\
+#	maclib			\
+#	manual			\
+#	psglib			\
+#	"
+
+#---- Image binaries for unity/inova
+# --- uimage.tar 
+#uBinImage2Tar="bin/eccsend	\
+#	bin/eccTool		\
+#	-C $commondir/tape_sol app-defaults/EccTool	\
+#	seqlib/center		\
+#	seqlib/cssibn		\
+#	seqlib/cssish		\
+#	seqlib/ecc		\
+#	seqlib/gsh2Dpul		\
+#	seqlib/gsh2pul		\
+#	seqlib/mslicer		\
+#	seqlib/zap		\
+#	"
+
+# -- This list is used by ibm and sgi
+#ibmBinImage2Tar="bin/eccsend	\
+#	seqlib/center		\
+#	seqlib/cssibn		\
+#	seqlib/cssish		\
+#	seqlib/ecc		\
+#	seqlib/gsh2Dpul		\
+#	seqlib/gsh2pul		\
+#	seqlib/mslicer		\
+#	seqlib/zap		\
+#	"
+
+#--- directories from IMAGE common to go into tar file
+# image.tar
+ComIMAGE2Tar="			\
+	fidlib			\
+	help			\
+	maclib			\
+	menulib			\
+	nuctables		\
+	parlib			\
+	psglib			\
+	tablib			\
+	vnmrmenu		\
+	imaging			\
+	bin			\
+	-C tape_sol user_templates	\
+	-C $commondir/tape_sol app-defaults/EccTool	\
+	"
+
+#---- IMAGE binaries to tar
+# --- image.tar 
+BinIMAGE2Tar="			\
+	bin/cptoconpar		\
+	bin/beccphase		\
+	bin/eccdiff		\
+	bin/eccdisp		\
+	bin/eccphase		\
+	bin/eccsend		\
+	bin/eccTool		\
+	bin/feccphase		\
+	bin/fm_calshim		\
+	bin/fm_shuffle		\
+	bin/ib_ui		\
+	bin/ib_graphics		\
+	bin/imcalc		\
+	bin/imfit		\
+	bin/log_mag		\
+	bin/plane_decode	\
+	bin/rmsAddData		\
+	bin/tabc		\
+	bin/disp3d		\
+	lib/libddl.a		\
+	lib/libddl.so		\
+	lib/libddl.so.*		\
+	lib/libf2c.a		\
+	lib/libf2c.so		\
+	lib/libf2c.so.*		\
+	lib/libmagical.so	\
+	lib/libmagical.so.*	\
+	lib/libport3.a		\
+	lib/libport3.so		\
+	lib/libport3.so.*	\
+	"
+SeqIMAGE2Tar="			\
+	bin/browser		\
+	seqlib/GDACtest		\
+	seqlib/ct3d		\
+	seqlib/ecc1		\
+	seqlib/epidw		\
+	seqlib/epims		\
+	seqlib/epimss		\
+	seqlib/epimssn		\
+	seqlib/episs		\
+	seqlib/fastestmap	\
+	seqlib/fse3d		\
+	seqlib/fsems		\
+	seqlib/ge3d		\
+	seqlib/gsh2pul		\
+	seqlib/isis		\
+	seqlib/mems		\
+	seqlib/press		\
+	seqlib/pressi		\
+	seqlib/sems		\
+	seqlib/semsdw		\
+	seqlib/se3d		\
+	seqlib/spuls		\
+	"
+
+#removed because of patent issues
+#	seqlib/gems		\
+#	seqlib/steam		\
+#	seqlib/steami		\
+
+
+UserLib2Tar="			\
+	userlib			\
+	"
+
+#
+# PART XII --- Passworded options 
+#
+Diffus2Tar="			\
+	maclib			\
+	manual			\
+	parlib			\
+	psglib			\
+	"
+
+DiffusSeq2Tar="			\
+	seqlib/g2pulramp	\
+	seqlib/pge		\
+	seqlib/pgeramp		\
+	"
+
+LCNMR2Tar="			\
+	maclib			\
+	manual			\
+	menulib			\
+	parlib			\
+	psglib			\
+	shapelib		\
+	tablib			\
+	user_templates		\
+	"
+
+LCNMRSeq2Tar="			\
+	seqlib/lc1d		\
+	"
+
+GILSONSeq2Tar="			\
+	seqlib/vast1d		\
+	"
+
+BinSTARSSol2Tar="		\
+	-C $commondir/STARS/tape_sol	bin	\
+	"
+
+TextSTARS2Tar="			\
+	maclib			\
+	menulib			\
+	"
+
+ComBackproj2Tar="		\
+	parlib			\
+	maclib			\
+	psglib			\
+	"
+
+BinBackproj2Tar="		\
+	bin/bp_2d		\
+	bin/bp_3d		\
+	bin/bp_ball		\
+	bin/bp_mc		\
+	bin/bp_sort		\
+	seqlib/bp_image		\
+	seqlib/bp2d		\
+	seqlib/bp3d		\
+	"
+
+ComCSI2Tar="		\
+	manual		\
+	parlib			\
+	maclib			\
+	psglib			\
+	-C tape_sol user_templates	\
+	"
+
+BinCSI2Tar="		\
+	bin/csi		\
+	seqlib/csi2d	\
+	bin/P_csi	\
+	"
+
+FdmBin2Tar="		\
+	bin/fdm1	\
+	bin/fdm2	\
+	"
+
+#--- directories from IMAGE_patent. Passworded.
+ImagePatentFiles="		\
+	imaging			\
+	maclib			\
+	parlib			\
+	psglib			\
+	seqlib			\
+	"
+
+#
+# PART XV --- ChemMagnets acc (accessory control software)
+#
+ChemAcc="				\
+	acc				\
+	chemagnetics_acc_V3.5.2.README	\
+	"
+
+#
+# PART XVI --- Installation files and scripts
+#
+LoadFiles="				\
+		loadcd			\
+		setup			\
+		i_vnmr4			\
+		readme.txt		\
+		"
+
+LoadDecodeBin="				\
+		ejectthecdrom		\
+		decode.sol		\
+		decode.ibm		\
+		decode.sgi		\
+		"
+
+LoadSolFilesBin="			\
+		decode.sol		\
+		ins.sol			\
+		send.sol		\
+		"
+
+LoadIbmFilesBin="			\
+		decode.ibm		\
+		ins.ibm			\
+		send.ibm		\
+		"
+
+LoadSgiFilesBin="			\
+		decode.sgi		\
+		ins.sgi			\
+		send.sgi		\
+		"
+#---------------------------------------------------------------------------
+
+setperms()
+{
+   if [ $# -lt 4 ]
+   then
+     echo 'Usage - setperms "directory name" "dir permissions" "file permissions" "executable permissions"'
+     echo ' E.g. "setperms /sw2/cdimage/code/tmp/wavelib 775 655 755" or "setperms /common/wavelib g+rx g+r g+x" '
+     exit 0
+   fi
+   dirperm=$2
+   fileperm=$3
+   execperm=$4
+   
+   
+   if [ $# -lt 5 ]
+   then
+      if [ $ShowPermResults -gt 0 ]
+      then
+         echo "" 
+      fi
+      indent=0
+   else
+      indent=$5
+   fi
+   
+   pars=`(cd $1; ls)`
+   for setpermfile in $pars
+   do
+#  indent to proper place
+      if [ $ShowPermResults -gt 0 ]
+      then
+         spaces=$indent
+         pp=""
+         while [ $spaces -gt 0 ]
+         do
+           pp='.'$pp
+           spaces=`expr $spaces - 1`
+         done
+      fi
+   
+# test for director, file, executable file
+     if [ -d $1/$setpermfile ]
+     then
+       if [ $ShowPermResults -gt 0 ]
+       then
+          echo "${pp}chmod $dirperm $setpermfile/"
+       fi
+       chmod $dirperm $1/$setpermfile
+       if [ $ShowPermResults -gt 0 ]
+       then
+          indent=`expr $indent + 4`
+       fi
+       setperms $1/$setpermfile $dirperm $fileperm $execperm $indent
+       indent=`expr $indent - 4`
+     elif [ -f $1/$setpermfile ]
+     then
+       if [ -x $1/$setpermfile ]
+       then
+         if [ $ShowPermResults -gt 0 ]
+         then
+           echo "${pp}chmod $execperm $setpermfile*"
+         fi
+         chmod $execperm $1/$setpermfile
+       else
+         if [ $ShowPermResults -gt 0 ]
+         then
+            echo "${pp}chmod $fileperm $setpermfile"
+         fi
+         chmod $fileperm $1/$setpermfile
+       fi
+     else
+      echo file:  $1/$setpermfile not modified
+     fi
+   done
+}
+
+#---------------------------------------------------------------------------
+set_size_name()
+{
+   cd $dest_dir_code/$1
+   if [ x$ostype = 'xSOLARIS' ]
+   then
+      size_name=`du -k -L -s $2`
+   else
+      size_name=`du -s $2`
+   fi
+   tarFileSize=`echo $size_name | awk 'BEGIN { FS = " " } { print $1 }'`
+   tarFileName=`echo $size_name | awk 'BEGIN { FS = " " } { print $2 }'`
+}
+
+#---------------------------------------------------------------------------
+make_toc()
+{
+   (cd $dest_dir_code/$1
+   echo "$2	$tarFileSize	$Code/$1/$tarFileName" >> $dest_dir_code/$3
+   systemname=`basename $3 .sol`
+   systemname=`basename $systemname .ibm`
+   systemname=`basename $systemname .sgi`
+   nnl_echo "`basename $systemname` "  | tee -a $log_fln)
+}
+
+
+#---------------------------------------------------------------------------
+nnl_echo() {
+    if [ x$ostype = "x" ]
+    then
+        echo "error in echo-no-new-line: ostype not defined"
+        exit 1
+    fi
+
+    if [ x$ostype = "xSOLARIS" ]
+    then
+        if [ $# -lt 1 ]
+        then
+            echo
+        else
+            echo "$*\c"
+        fi
+    else
+        if [ $# -lt 1 ]
+        then
+            echo
+        else
+            echo -n $*
+        fi
+    fi
+}
+
+#---------------------------------------------------------------------------
+# Routine to remove core files
+findcore() {
+   find . -name core -exec rm {} \;
+}
+#-- MAIN Main main----------------------------------------------------------
+# Greetings and Salutations
+#
+
+LoadVnmrJ="n"
+LoadP11="n"
+if [ $# = 1 ]
+then
+   case x$1 in
+	xVJ | xvj )
+
+   		LoadFilesDir="/vnmrcd/cdimageVJ/cdrom"
+   		DefaultDestDir="/vnmrcd/cdimageVJ"
+   		DefaultFiniDir=`date '+/rdvnmr/.cdromVJ%m.%d'`
+   		DefaultLogFln="/vnmrcd/cdoutlogVJ"
+   		RevFileName="vnmrj"
+   		VnmrRevId=$VNMRJ_REV_ID
+		LoadVnmrJ="y"
+		VnmrSelect="VnmrJ"
+	;;
+
+	xP11 | xp11 ) 
+ 
+   		LoadFilesDir="/vnmrcd/cdimageP11/cdrom"
+   		DefaultDestDir="/vnmrcd/cdimageP11"
+   		DefaultFiniDir=`date '+/rdvnmr/.cdromP11%m.%d'`
+   		DefaultLogFln="/vnmrcd/cdoutlogP11"
+   		RevFileName="vnmrp11"
+   		VnmrRevId=$VNMRJ_REV_ID
+
+		LoadP11="y"
+		LoadVnmrJ="y"
+	;;
+
+	* )
+   		LoadFilesDir="/vnmrcd/cdimage/cdrom"
+   		DefaultDestDir="/vnmrcd/cdimage"
+   		DefaultFiniDir=`date '+/rdvnmr/.cdrom%m.%d'`
+   		DefaultLogFln="/vnmrcd/cdoutlog"
+   		RevFileName="vnmr6.1"
+   		VnmrRevId=$VNMR_REV_ID
+		VnmrSelect="VNMR"
+	;;
+   esac
+fi
+
+
+DefaultDasho="y"
+DefaultMail="n"
+
+x=`uname -r`
+if [ $x -ge 5.0 ]
+then
+   ostype="SOLARIS"
+else
+   ostype="SUNOS"
+fi
+
+echo "" 
+echo "M a k i n g   V n m r   C D R O M   F i l e s" 
+echo "" 
+#
+# ask for log filename
+#
+   umask 2
+   echo "Use an absolute path for log !!"
+   echo "This script changed directory many times"
+   echo "And will write the log in that directory"
+   nnl_echo "Enter destination for log   [$DefaultLogFln]: "
+   read answer
+   if [ x$answer = "x" ]
+   then
+      log_fln=$DefaultLogFln
+   else
+      log_fln=$answer
+   fi
+   if test -f $log_fln
+   then
+      nnl_echo "'$log_fln' exists, overwrite? [y]: "
+      read answer
+      if [ x$answer = "x" ]
+      then
+         answer="y"
+      fi
+      if [ x$answer != "xy" ]
+      then
+         exit
+      fi
+      rm -rf $log_fln
+   fi
+   echo "Writing log to '$log_fln'"
+   echo ""
+#
+# Make nice heading in log file
+#
+echo ""  > $log_fln
+echo "L o g   F o r   M a k i n g   C D R O M - I m a g e   F o r   V N M R"  >> $log_fln
+echo ""  >> $log_fln
+#
+#
+# ask for destination  directory
+#
+   nnl_echo "enter destination directory [$DefaultDestDir]:"
+   read answer
+   if [ x$answer = "x" ]
+   then
+      dest_dir=$DefaultDestDir
+   else
+      dest_dir=$answer
+   fi
+   if  test -d $dest_dir
+   then
+      nnl_echo "'$dest_dir' exists, overwite? [y]:"
+      read answer
+      if [ x$answer = "x" ]
+      then
+         answer="y"
+      fi
+      if [ x$answer != "xy" ]
+      then
+         abort
+      fi
+   else
+      mkdir -p $dest_dir
+   fi
+   echo ""
+   echo "Writing files to '$dest_dir'" | tee -a $log_fln
+   dest_dir_code=$dest_dir/$Code
+
+
+
+   nnl_echo "enter Finial directory [$DefaultFiniDir]:"
+   read answer
+   if [ x$answer = "x" ]
+   then
+      fini_dir=$DefaultFiniDir
+   else
+      fini_dir=$answer
+   fi
+
+   if [ x$fini_dir = "xnone" ]
+   then
+      echo ""
+      echo "No Write to Finial Directory will be made. " | tee -a $log_fln
+      echo ""
+   else
+   
+      if  test  -d $fini_dir
+      then
+         echo "'$fini_dir' exists, overwite? [y]:"
+         read answer
+         if [ x$answer = "x" ]
+         then
+            answer="y"
+         fi
+         if [ x$answer != "xy" ]
+         then
+            abort
+         fi
+      else
+         mkdir -p $fini_dir
+         if  [ ! -d $fini_dir ]
+         then
+	    echo "Could not create Final Directory: $fini_dir, Aborting. " | tee -a $log_fln
+	    exit 1
+         fi
+      fi
+      echo ""
+      echo "Writing results to Final Directory: $fini_dir "| tee -a $log_fln
+ fi
+
+
+   echo ""
+   nnl_echo "Use Dasho Jars as Defaults (y or n) [$DefaultDasho]:"
+   read answer
+   if [ x$answer = "x" ]
+   then
+      useDasho=$DefaultDasho
+   else
+      useDasho=$answer
+   fi
+
+   echo ""
+   nnl_echo "Mail SW Group when CD Image for $fini_dir is complete?  (y or n) [$DefaultMail]:"
+   read answer
+   if [ x$answer = "x" ]
+   then
+      notifySW=$DefaultMail
+   else
+      notifySW=$answer
+   fi
+
+# Ask about rebuilding tar files that don't change often
+
+   echo ""
+   echo ""
+  nnl_echo "Rebuild tar files for '$ComDirs2Tar' [y]: "
+  read com_answer
+  if [ x$com_answer = "x" ]
+  then
+      com_answer="y"
+  fi
+  nnl_echo "Rebuild tar file for parxxx, etc [y]: "
+  read par_answer
+  if [ x$par_answer = "x" ]
+  then
+      par_answer="y"
+  fi
+  nnl_echo "Rebuild tar file for gparxxx, etc [y]: "
+  read gpar_answer
+  if [ x$gpar_answer = "x" ]
+  then
+      gpar_answer="y"
+  fi
+
+#  nnl_echo "Rebuild tar files for acrobat [y]: "
+#  read acro_answer
+#  if [ x$acro_answer = "x" ]
+#  then
+#      acro_answer="y"
+#  fi
+
+  nnl_echo "Rebuild jre files for Java [y]: "
+  read jre_answer
+  if [ x$jre_answer = "x" ]
+  then
+      jre_answer="y"
+  fi
+
+  nnl_echo "Rebuild tar files for GNU [y]: "
+  read gnu_answer
+  if [ x$gnu_answer = "x" ]
+  then
+      gnu_answer="y"
+  fi
+  nnl_echo "Rebuild tar files for UserLib [y]: "
+  read user_answer
+  if [ x$user_answer = "x" ]
+  then
+      user_answer="y"
+  fi
+
+  nnl_echo "Rebuild tar files for Passworded Files [y]: "
+  read password_answer
+  if [ x$password_answer = "x" ]
+  then
+      password_answer="y"
+  fi
+
+
+  nnl_echo "Rebuild IBM tar files [y]: "
+  read ibm_answer
+  if [ x$ibm_answer = "x" ]
+  then
+      ibm_answer="y"
+  fi
+
+  nnl_echo "Rebuild SGI tar files [y]: "
+  read sgi_answer
+  if [ x$sgi_answer = "x" ]
+  then
+      sgi_answer="y"
+  fi
+
+  nnl_echo "Rebuild Gemini 2000 tar files [y]: "
+  read gem_answer
+  if [ x$gem_answer = "x" ]
+  then
+      gem_answer="y"
+  fi
+
+
+
+
+   
+   echo "" | tee -a $log_fln
+   echo "Creating needed subdirectories:" | tee -a $log_fln
+   cd $dest_dir
+   nnl_echo "$Code " | tee -a $log_fln
+   if [ ! -d $Code ]
+   then
+      mkdir $Code
+   fi
+   cd $Code
+   for file in $SubDirs
+   do
+      nnl_echo "$file " | tee -a $log_fln
+      if [ ! -d $file ]
+      then
+         mkdir $file
+      fi
+   done
+   echo "" | tee -a $log_fln
+   echo "" | tee -a $log_fln
+   echo "Clearing *.opt files and tmp:" | tee -a $log_fln
+   cd $dest_dir_code
+   for file in $RmOptFiles
+   do
+      nnl_echo "$file " | tee -a $log_fln
+      rm -rf $file
+   done
+   cd $dest_dir_code/tmp
+   rm -rf *
+   echo "" | tee -a $log_fln
+   echo "" | tee -a $log_fln
+#============== COMMON FILES =============================================
+nnl_echo  "PART I -- COMMON FILES -- $dest_dir_code/$Common" | tee -a $log_fln
+# Let's copy and tar the Common files and log it.
+#
+#-----------------------------------------------------
+# tar some common text files into one tar file
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring com.tar	  for " | tee -a $log_fln
+   tar -cf - $ComTarLst | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 644 ./*
+   chmod 755 ./rc.vnmr
+   chmod 755 ./acq
+   setperms ./acq 755 644 755
+#   chmod 644 ./acq/*
+   chmod 666 ./acq/info
+   cd $dest_dir_code/tmp
+   tar cf $dest_dir_code/$Common/com.tar *
+   set_size_name $Common com.tar
+   make_toc $Common $VnmrSelect sol/unity.sol
+   make_toc $Common $VnmrSelect sol/uplus.sol
+   make_toc $Common $VnmrSelect sol/g2000.sol
+   make_toc $Common $VnmrSelect sol/mercury.sol
+   make_toc $Common $VnmrSelect sol/mercvx.sol
+   make_toc $Common $VnmrSelect sol/mercplus.sol
+   make_toc $Common $VnmrSelect sol/inova.sol
+   make_toc $Common $VnmrSelect ibm/ibm.ibm
+   make_toc $Common $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+#
+#-----------------------------------------------------
+# tar the common bin scripts into bin tar file
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring combin.tar	  for " | tee -a $log_fln
+
+   if [ x$LoadP11 = "xy" ]
+   then
+       ComBinScripts2Tar=$ComBinScripts2Tar" "$P11BinScripts2Tar" "$P11Bin2Tar
+   fi
+
+   tar -cf - $ComBinScripts2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+
+   if [ x$LoadP11 = "xy" ]
+   then
+	cp safecp bin
+	mkdir -p p11/bin
+	mv -f safecp writeTrash writeAaudit p11/bin
+	chmod +s p11/bin/*
+	mv -f chVJlist vnmrMD5 chchsums auditcp bin
+   fi
+
+   chmod -R 755 ./bin
+   tar cf $dest_dir_code/$Common/combin.tar *
+   set_size_name $Common combin.tar
+   make_toc $Common $VnmrSelect sol/unity.sol
+   make_toc $Common $VnmrSelect sol/uplus.sol
+   make_toc $Common $VnmrSelect sol/g2000.sol
+   make_toc $Common $VnmrSelect sol/mercury.sol
+   make_toc $Common $VnmrSelect sol/mercvx.sol
+   make_toc $Common $VnmrSelect sol/mercplus.sol
+   make_toc $Common $VnmrSelect sol/inova.sol
+   make_toc $Common $VnmrSelect ibm/ibm.ibm
+   make_toc $Common $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar some common directories straight from source
+
+   for file in $ComDirs2Tar
+   do
+
+      if [ x$file = "xshimmethods" ]
+      then
+         tarfile="shimmeth"
+      else
+          if [ x$file = "xnuctables" ]
+         then
+            tarfile="nuctabs"
+         else
+            if [ x$file = "xsatellites" ]
+            then
+               tarfile="satlite"
+            else
+               tarfile=$file
+            fi
+         fi
+      fi
+
+     if [ x$com_answer = "xy" ]
+     then
+
+      cd $commondir
+      echo "" | tee -a $log_fln
+      nnl_echo " Tarring $file	  for " | tee -a $log_fln
+      tar -cf - $file | (cd $dest_dir_code/tmp; tar xfBp -)
+      cd $dest_dir_code/tmp
+      chmod 755 ./$file
+      setperms ./$file 755 644 755
+
+      tar cf $dest_dir_code/$Common/$tarfile.tar $file
+
+      set_size_name $Common $tarfile.tar
+      make_toc $Common $VnmrSelect sol/unity.sol
+      make_toc $Common $VnmrSelect sol/uplus.sol
+      make_toc $Common $VnmrSelect sol/g2000.sol
+      make_toc $Common $VnmrSelect sol/mercury.sol
+      make_toc $Common $VnmrSelect sol/mercvx.sol
+      make_toc $Common $VnmrSelect sol/mercplus.sol
+      make_toc $Common $VnmrSelect sol/inova.sol
+      make_toc $Common $VnmrSelect ibm/ibm.ibm
+      make_toc $Common $VnmrSelect sgi/sgi.sgi
+
+      rm -rf $dest_dir_code/tmp/$file
+    else
+
+      echo "" | tee -a $log_fln
+      nnl_echo " Skipping $file		  for " | tee -a $log_fln
+      set_size_name $Common $tarfile.tar
+      make_toc $Common $VnmrSelect sol/unity.sol
+      make_toc $Common $VnmrSelect sol/uplus.sol
+      make_toc $Common $VnmrSelect sol/g2000.sol
+      make_toc $Common $VnmrSelect sol/mercury.sol
+      make_toc $Common $VnmrSelect sol/mercvx.sol
+      make_toc $Common $VnmrSelect sol/mercplus.sol
+      make_toc $Common $VnmrSelect sol/inova.sol
+      make_toc $Common $VnmrSelect ibm/ibm.ibm
+      make_toc $Common $VnmrSelect sgi/sgi.sgi
+
+    fi
+   done
+
+   rm -rf $dest_dir_code/tmp/*
+
+#
+#---------------------------------------------------------------------------
+#
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Gs files	  for " | tee -a $log_fln
+   tar -cf - $Gs2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755 gs
+   setperms ./gs 755 644 755
+   tar -cf $dest_dir_code/$Common/gs.tar *
+   set_size_name $Common gs.tar
+   make_toc $Common $VnmrSelect sol/unity.sol
+   make_toc $Common $VnmrSelect sol/uplus.sol
+   make_toc $Common $VnmrSelect sol/g2000.sol
+   make_toc $Common $VnmrSelect sol/mercury.sol
+   make_toc $Common $VnmrSelect sol/mercvx.sol
+   make_toc $Common $VnmrSelect sol/mercplus.sol
+   make_toc $Common $VnmrSelect sol/inova.sol
+   make_toc $Common $VnmrSelect ibm/ibm.ibm
+   make_toc $Common $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# Dialoglib files
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring dialoglib        for " | tee -a $log_fln
+   tar -cf - $Dialog2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./dialoglib
+   tar -cf $dest_dir_code/$Common/dialog.tar *
+   set_size_name $Common dialog.tar
+   make_toc $Common $VnmrSelect sol/unity.sol
+   make_toc $Common $VnmrSelect sol/uplus.sol
+   make_toc $Common $VnmrSelect sol/g2000.sol
+   make_toc $Common $VnmrSelect sol/mercury.sol
+   make_toc $Common $VnmrSelect sol/mercvx.sol
+   make_toc $Common $VnmrSelect sol/mercplus.sol
+   make_toc $Common $VnmrSelect sol/inova.sol
+   make_toc $Common $VnmrSelect ibm/ibm.ibm
+   make_toc $Common $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+#
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Tcl files	  for " | tee -a $log_fln
+   tar -cf - $Tcl2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755 tcl
+#     would replace down to the tar
+   setperms ./tcl 755 644 755
+   chmod 755 tcl/bin/*
+   chmod 755 tcl/*library
+   tar -cf $dest_dir_code/$Common/tcl.tar *
+   set_size_name $Common tcl.tar
+   make_toc $Common $VnmrSelect sol/unity.sol
+   make_toc $Common $VnmrSelect sol/uplus.sol
+   make_toc $Common $VnmrSelect sol/g2000.sol
+   make_toc $Common $VnmrSelect sol/mercury.sol
+   make_toc $Common $VnmrSelect sol/mercvx.sol
+   make_toc $Common $VnmrSelect sol/mercplus.sol
+   make_toc $Common $VnmrSelect sol/inova.sol
+   make_toc $Common $VnmrSelect ibm/ibm.ibm
+   make_toc $Common $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar fiddle examples files
+   cd $commondir/fiddle
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring fiddle files     for " | tee -a $log_fln
+   tar -cf - * | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755    ./fidlib ./manual
+#	would replace the chmods
+   setperms	./fidlib 755 644 755
+   setperms	./manual 755 644 755
+   tar -cf $dest_dir_code/$Common/fiddle.tar *
+   set_size_name $Common fiddle.tar
+   make_toc $Common "Fiddle_Example" sol/unity.sol
+   make_toc $Common "Fiddle_Example" sol/uplus.sol
+   make_toc $Common "Fiddle_Example" sol/inova.sol
+   make_toc $Common "Fiddle_Example" sol/mercury.sol
+   make_toc $Common "Fiddle_Example" sol/mercvx.sol
+   make_toc $Common "Fiddle_Example" sol/mercplus.sol
+   make_toc $Common "Fiddle_Example" sol/g2000.sol
+   make_toc $Common "Fiddle_Example" ibm/ibm.ibm
+   make_toc $Common "Fiddle_Example" sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+#
+#============== UNITY INOVA IBM SGI FILES ==================================
+echo "" | tee -a $log_fln
+nnl_echo "PART II -- UNITY/INOVA/IBM/SGI FILES -- $dest_dir_code/$Common" | tee -a $log_fln
+#
+#---------------------------------------------------------------------------
+# The parameter files are tarred
+# par200,par300,par400,par500,par600,par750 and parlib.
+# They are stored in /vcommon/upar
+
+  if [ x$par_answer = "xy" ]
+  then
+
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring parameter files  for " | tee -a $log_fln
+   cp -rp $ComPar2Tar $dest_dir_code/tmp
+   cd $dest_dir_code/tmp
+ pars=`ls -d par???`
+ for file in $pars
+ do
+   chmod 755 ./$file
+   setperms ./$file 755 644 755
+ done
+   tar cf $dest_dir_code/$Common/params.tar *
+   set_size_name $Common params.tar
+   make_toc $Common $VnmrSelect sol/unity.sol
+   make_toc $Common $VnmrSelect sol/uplus.sol
+   make_toc $Common $VnmrSelect sol/inova.sol
+   make_toc $Common $VnmrSelect ibm/ibm.ibm
+   make_toc $Common $VnmrSelect sgi/sgi.sgi
+   echo "" >> $log_fln
+   nnl_echo "tarring: " >> $log_fln
+   ls -CF $dest_dir_code/tmp >> $log_fln
+   echo "" >> $log_fln
+   nnl_echo "in UNITY : " >> $log_fln
+   ls -CF $dest_dir_code/tmp >> $log_fln
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping parXXX file	  for " | tee -a $log_fln
+   set_size_name $Common params.tar
+   make_toc $Common $VnmrSelect sol/unity.sol
+   make_toc $Common $VnmrSelect sol/uplus.sol
+   make_toc $Common $VnmrSelect sol/inova.sol
+   make_toc $Common $VnmrSelect ibm/ibm.ibm
+   make_toc $Common $VnmrSelect sgi/sgi.sgi
+
+  fi
+#
+#---------------------------------------------------------------------
+# tar some common directories straight from source
+   cd $commondir/Pbox
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring wavelib and help for " | tee -a $log_fln
+   tar -cf - $Pbox2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   setperms ./wavelib 755 644 755
+   setperms ./help 755 644 755
+   tar cf $dest_dir_code/$Common/wavelib.tar *
+   set_size_name $Common wavelib.tar
+   make_toc $Common $VnmrSelect sol/unity.sol
+   make_toc $Common $VnmrSelect sol/uplus.sol
+   make_toc $Common $VnmrSelect sol/inova.sol
+   make_toc $Common $VnmrSelect ibm/ibm.ibm
+   make_toc $Common $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+#---------------------------------------------------------------------
+# tar some common directories straight from source
+   cd $commondir
+   for file in $uComDirs2Tar
+   do
+      cd $commondir
+      echo "" | tee -a $log_fln
+      nnl_echo " Tarring $file		  for " | tee -a $log_fln
+      tar -cf - $file | (cd $dest_dir_code/tmp; tar xfBp -)
+      cd $dest_dir_code/tmp
+#      chmod 755 ./$file
+      setperms ./$file 755 644 755
+      if [ x$file = "xshapelib" ]
+      then
+         chmod  644 shapelib/.Pbox_defaults
+      fi
+#      chmod 644 ./$file/*
+      tar cf $dest_dir_code/$Common/$file.tar $file
+      set_size_name $Common $file.tar
+      make_toc $Common $VnmrSelect sol/unity.sol
+      make_toc $Common $VnmrSelect sol/uplus.sol
+      make_toc $Common $VnmrSelect sol/inova.sol
+      make_toc $Common $VnmrSelect ibm/ibm.ibm
+      make_toc $Common $VnmrSelect sgi/sgi.sgi
+   done
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar psg to psg
+#   echo "" | tee -a $log_fln
+#   nnl_echo " Tarring psg files	  for " | tee -a $log_fln
+#   (cd $commondir; cp -rp psg $dest_dir_code/tmp)
+#   cd $dest_dir_code/tmp
+#   chmod 755   ./psg
+#   chmod 644   ./psg/*
+#   tar cf $dest_dir_code/$Common/psg.tar *
+#   set_size_name $Common psg.tar
+#   make_toc $Common $VnmrSelect sol/unity.sol
+#   make_toc $Common $VnmrSelect sol/uplus.sol
+#   make_toc $Common $VnmrSelect sol/inova.sol
+#   make_toc $Common $VnmrSelect ibm/ibm.ibm
+#   make_toc $Common $VnmrSelect sgi/sgi.sgi
+#   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar psglib to psg
+   cd $dest_dir_code/tmp
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring psglib files	  for " | tee -a $log_fln
+   (cd $commondir; cp -rp psglib $dest_dir_code/tmp)
+   chmod 755   ./psglib
+   chmod 644   ./psglib/*
+   tar cf $dest_dir_code/$Inova/psglib.tar *
+   set_size_name $Inova psglib.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   make_toc $Inova $VnmrSelect ibm/ibm.ibm
+   make_toc $Inova $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+#---------------------------------------------------------------------
+# tar psglib to psg
+   cd $dest_dir_code/tmp
+   mkdir psglib
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring psglib files	  for " | tee -a $log_fln
+   (cd $sol53common; cp -rp psglib/*.c $dest_dir_code/tmp/psglib)
+   chmod 755   ./psglib
+   chmod 644   ./psglib/*
+   tar cf $dest_dir_code/$Unity/psglib.tar *
+   set_size_name $Unity psglib.tar
+   make_toc $Unity $VnmrSelect sol/unity.sol
+   make_toc $Unity $VnmrSelect sol/uplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#============== UNITY INOVA G2000 FILES ==============================
+echo "" | tee -a $log_fln
+nnl_echo "PART III -- UNITY/INOVA/G2000 FILES -- $dest_dir_code/$Solaris" | tee -a $log_fln
+#
+#---------------------------------------------------------------------
+# tar some common directories straight from source
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring bin.tar	  for " | tee -a $log_fln
+   tar -cf - $BinFiles2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   tar -cf $dest_dir_code/$Solaris/bin.tar bin
+   set_size_name $Solaris bin.tar
+   make_toc $Solaris $VnmrSelect sol/unity.sol
+   make_toc $Solaris $VnmrSelect sol/uplus.sol
+   make_toc $Solaris $VnmrSelect sol/g2000.sol
+   make_toc $Solaris $VnmrSelect sol/mercury.sol
+   make_toc $Solaris $VnmrSelect sol/mercvx.sol
+   make_toc $Solaris $VnmrSelect sol/mercplus.sol
+   make_toc $Solaris $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar some common directories straight from source
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring tcllib.tar	  for " | tee -a $log_fln
+   tar -cf - $TclLibs2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod    755 ./lib
+   chmod    644 ./lib/*
+   tar -cf $dest_dir_code/$Solaris/tcllib.tar lib
+   set_size_name $Solaris tcllib.tar
+   make_toc $Solaris $VnmrSelect sol/unity.sol
+   make_toc $Solaris $VnmrSelect sol/uplus.sol
+   make_toc $Solaris $VnmrSelect sol/g2000.sol
+   make_toc $Solaris $VnmrSelect sol/mercury.sol
+   make_toc $Solaris $VnmrSelect sol/mercvx.sol
+   make_toc $Solaris $VnmrSelect sol/mercplus.sol
+   make_toc $Solaris $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#-----------------------------------------------------
+# tar the common bin scripts into bin tar file
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring unibin.tar	  for " | tee -a $log_fln
+   tar -cf - $UniBinScripts2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   tar cf $dest_dir_code/$Solaris/unibin.tar bin
+   set_size_name $Solaris unibin.tar
+   make_toc $Solaris $VnmrSelect sol/unity.sol
+   make_toc $Solaris $VnmrSelect sol/uplus.sol
+   make_toc $Solaris $VnmrSelect sol/g2000.sol
+   make_toc $Solaris $VnmrSelect sol/mercury.sol
+   make_toc $Solaris $VnmrSelect sol/mercvx.sol
+   make_toc $Solaris $VnmrSelect sol/mercplus.sol
+   make_toc $Solaris $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar some common directories straight from source
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring binx.tar	  for " | tee -a $log_fln
+   tar -cf - $BinX2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   chmod 755	./app-defaults
+   chmod 644	./app-defaults/*
+   tar -cf $dest_dir_code/$Solaris/binx.tar *
+   set_size_name $Solaris binx.tar
+   make_toc $Solaris $VnmrSelect sol/unity.sol
+   make_toc $Solaris $VnmrSelect sol/uplus.sol
+   make_toc $Solaris $VnmrSelect sol/g2000.sol
+   make_toc $Solaris $VnmrSelect sol/mercury.sol
+   make_toc $Solaris $VnmrSelect sol/mercvx.sol
+   make_toc $Solaris $VnmrSelect sol/mercplus.sol
+   make_toc $Solaris $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# just to get vnmrwish
+   cd $solobjdir/proglib/tcl
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring TclMore files    for " | tee -a $log_fln
+   mkdir -p $dest_dir_code/tmp/tcl/bin
+   cp $TclMore $dest_dir_code/tmp/tcl/bin/
+   cd $dest_dir_code/tmp
+   chmod -R 755  tcl
+   (cd tcl/bin; ln vnmrwish vnmrWish)
+   tar -cf $dest_dir_code/$Solaris/tcl2.tar *
+   set_size_name $Solaris tcl2.tar
+   make_toc $Solaris $VnmrSelect sol/unity.sol
+   make_toc $Solaris $VnmrSelect sol/uplus.sol
+   make_toc $Solaris $VnmrSelect sol/g2000.sol
+   make_toc $Solaris $VnmrSelect sol/mercury.sol
+   make_toc $Solaris $VnmrSelect sol/mercvx.sol
+   make_toc $Solaris $VnmrSelect sol/mercplus.sol
+   make_toc $Solaris $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+#  Accouting scripts and executable 
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Accounting files for " | tee -a $log_fln
+   tar -cf - $Acct2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 adm
+   chmod 777 adm/tmp
+   tar -cf $dest_dir_code/$Solaris/adm.tar *
+   set_size_name $Solaris adm.tar
+   make_toc $Solaris $VnmrSelect sol/unity.sol
+   make_toc $Solaris $VnmrSelect sol/uplus.sol
+   make_toc $Solaris $VnmrSelect sol/g2000.sol
+   make_toc $Solaris $VnmrSelect sol/mercury.sol
+   make_toc $Solaris $VnmrSelect sol/mercvx.sol
+   make_toc $Solaris $VnmrSelect sol/mercplus.sol
+   make_toc $Solaris $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#-----------------------------------------------------
+# tar some common text files into one tar file
+   cd $commondir/tape_sol
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring templ.tar	  for " | tee -a $log_fln
+   tar -cf - $SolTemplTar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   rm -rf ./user_templates/layout
+   chmod 755 ./user_templates
+   cd ./user_templates
+   if [ x$LoadVnmrJ = "xy" ]
+   then
+       ln -s dtj.tar dt.tar
+       ln -s dtj2.tar dt2.tar
+   else
+       ln -s dtc.tar dt.tar
+       ln -s dtc2.tar dt2.tar
+   fi
+   cd $dest_dir_code/tmp
+   setperms ./user_templates 755 644 755
+   tar cf $dest_dir_code/$Solaris/templ.tar *
+   set_size_name $Solaris templ.tar
+   make_toc $Solaris $VnmrSelect sol/unity.sol
+   make_toc $Solaris $VnmrSelect sol/uplus.sol
+   make_toc $Solaris $VnmrSelect sol/g2000.sol
+   make_toc $Solaris $VnmrSelect sol/mercury.sol
+   make_toc $Solaris $VnmrSelect sol/mercvx.sol
+   make_toc $Solaris $VnmrSelect sol/mercplus.sol
+   make_toc $Solaris $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar Gmap help, maclib, manual and menulib files
+   cd $commondir/Gmap
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Gmap Text	  for " | tee -a $log_fln
+   tar -cf - $GmapText2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755	./help
+   chmod 644	./help/*
+   chmod 755    ./maclib
+   chmod 644    ./maclib/*
+   chmod 755    ./manual
+   chmod 644    ./manual/*
+   chmod 755    ./menulib
+   chmod 644    ./menulib/*
+   tar -cf $dest_dir_code/$Gmap/gmaptext.pwd *
+   set_size_name $Gmap gmaptext.pwd
+   make_toc $Gmap "Gradient_shim" sol/unity.sol
+   make_toc $Gmap "Gradient_shim" sol/uplus.sol
+   make_toc $Gmap "Gradient_shim" sol/inova.sol
+   make_toc $Gmap "Gradient_shim" sol/g2000.sol
+   make_toc $Gmap "Gradient_shim" sol/mercury.sol
+   make_toc $Gmap "Gradient_shim" sol/mercvx.sol
+   make_toc $Gmap "Gradient_shim" sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar Gmap parlib psglib files
+   cd $commondir/Gmap
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Gmap par/psglib  for " | tee -a $log_fln
+   tar -cf - $GmapPars2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755    ./parlib
+   setperms ./parlib 755 644 755
+   setperms ./psglib 755 644 755
+#   chmod 755    ./parlib/*
+#   chmod 644    ./parlib/*/*
+#   chmod 755	./psglib
+   tar -cf $dest_dir_code/$Gmap/gmappars.pwd *
+   set_size_name $Gmap gmappars.pwd
+   make_toc $Gmap "Gradient_shim" sol/unity.sol
+   make_toc $Gmap "Gradient_shim" sol/uplus.sol
+   make_toc $Gmap "Gradient_shim" sol/inova.sol
+   make_toc $Gmap "Gradient_shim" sol/g2000.sol
+   make_toc $Gmap "Gradient_shim" sol/mercury.sol
+   make_toc $Gmap "Gradient_shim" sol/mercvx.sol
+   make_toc $Gmap "Gradient_shim" sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#---------------------------------------------------------------------
+# tar the motif libraryes UNITY seqlib 
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring motif.tar 2.5.1  for " | tee -a $log_fln
+   tar -cf - lib | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755   ./lib
+   chmod 755   ./lib/*
+   tar -cf $dest_dir_code/$Unity/motif.tar *
+   set_size_name $Unity motif.tar
+   make_toc $Unity $VnmrSelect sol/unity.sol
+   make_toc $Unity $VnmrSelect sol/uplus.sol
+   make_toc $Unity $VnmrSelect sol/inova.sol
+   make_toc $Unity $VnmrSelect sol/g2000.sol
+   make_toc $Unity $VnmrSelect sol/mercury.sol
+   make_toc $Unity $VnmrSelect sol/mercvx.sol
+   make_toc $Unity $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#============== UNITY INOVA FILES ====================================
+echo "" | tee -a $log_fln
+nnl_echo "PART IV -- UNITY/INOVA FILES -- $dest_dir_code/$Unity/$Inova" | tee -a $log_fln
+#
+#---------------------------------------------------------------------
+# tar acqbin and binstuff
+#   cd $solobjdir
+#   echo "" | tee -a $log_fln
+#   nnl_echo " Tarring psg objects	  for " | tee -a $log_fln
+#   tar -cf - $BinPsg2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+#   cd $dest_dir_code/tmp
+#   mv psg lib
+#   chmod 755   ./lib
+#   chmod 755   ./lib/*
+#   chmod 644   ./lib/x_ps.o
+#   tar -cf $dest_dir_code/$Unity/$Inova/psg.tar lib
+#   set_size_name $Unity/$Inova psg.tar
+#   make_toc $Unity/$Inova $VnmrSelect sol/unity.sol
+#   make_toc $Unity/$Inova $VnmrSelect sol/uplus.sol
+#   make_toc $Unity/$Inova $VnmrSelect sol/inova.sol
+#   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar the standard UNITY seqlib 
+#   cd $solobjdir
+#   echo "" | tee -a $log_fln
+#   nnl_echo " Tarring seqlib.tar	  for " | tee -a $log_fln
+#   tar -cf - $BinSeq2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+#   cd $dest_dir_code/tmp
+#   chmod 755   ./seqlib
+#   chmod 755   ./seqlib/*
+#   tar -cf $dest_dir_code/$Unity/$Inova/seqlib.tar *
+#   set_size_name $Unity/$Inova seqlib.tar
+#   make_toc $Unity/$Inova $VnmrSelect sol/unity.sol
+#   make_toc $Unity/$Inova $VnmrSelect sol/uplus.sol
+#   make_toc $Unity/$Inova $VnmrSelect sol/inova.sol
+#   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# binaries for Pbox on UNITYs
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Pbox bin          for " | tee -a $log_fln
+   tar -cf - $PboxBin2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   setperms ./bin 755 644 755
+   tar cf $dest_dir_code/$Unity/pboxbin.tar *
+   set_size_name $Unity pboxbin.tar
+   make_toc $Unity $VnmrSelect sol/unity.sol
+   make_toc $Unity $VnmrSelect sol/uplus.sol
+   make_toc $Unity $VnmrSelect sol/inova.sol
+   make_toc $Unity $VnmrSelect sol/mercury.sol
+   make_toc $Unity $VnmrSelect sol/mercvx.sol
+   make_toc $Unity $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Wobbler files	  for " | tee -a $log_fln
+   cd $commondir
+   tar -cf - $WobbleText | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $solobjdir
+   tar -cf - $WobbleExec | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755 ./tune
+   setperms ./tune 755 644 755
+#   chmod 644    ./tune/*
+#   chmod 755    ./tune/manual
+#   chmod 644	./tune/manual/*
+#   chmod 755	./tune/tunecal
+#   chmod 755	./tune
+   setperms ./app-defaults 755 644 755
+#   chmod 755	./app-defaults
+#   chmod 644	./app-defaults/*
+   tar -cf $dest_dir_code/$Unity/$Inova/wobbler.tar *
+   set_size_name $Unity/$Inova wobbler.tar
+   make_toc $Unity/$Inova $VnmrSelect sol/inova.sol
+   make_toc $Unity/$Inova $VnmrSelect sol/unity.sol
+   make_toc $Unity/$Inova $VnmrSelect sol/uplus.sol
+   make_toc $Unity/$Inova $VnmrSelect sol/mercvx.sol
+   make_toc $Unity/$Inova $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+   
+#============== UNITY GEMINI 2000 FILES  ===================================
+echo "" | tee -a $log_fln
+nnl_echo "PART V -- UNITY/G2000 FILES -- $dest_dir_code/$Unity/$Gemini" | tee -a $log_fln
+#
+#---------------------------------------------------------------------------
+   cd $dest_dir_code/tmp; mkdir lib
+   cd $solobjdir/proglib/vnmr/
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring acqcomm library  for " | tee -a $log_fln
+   tar -cf - $uLibs2Tar | (cd $dest_dir_code/tmp/lib; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755 ./lib/lib*.so*
+   chmod 644 ./lib/lib*.a
+   tar -cf $dest_dir_code/$Unity/$Gemini/libs.tar lib
+   set_size_name $Unity/$Gemini libs.tar
+   make_toc $Unity/$Gemini $VnmrSelect sol/unity.sol
+   make_toc $Unity/$Gemini $VnmrSelect sol/uplus.sol
+   make_toc $Unity/$Gemini $VnmrSelect sol/g2000.sol
+   make_toc $Unity/$Gemini $VnmrSelect sol/mercury.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#============== UNITY FILES =========================================
+echo "" | tee -a $log_fln
+nnl_echo "PART VI -- UNITY FILES -- $dest_dir_code/$Unity" | tee -a $log_fln
+#
+#---------------------------------------------------------------------
+# tar psg to psg
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring psg files	  for " | tee -a $log_fln
+   (cd $sol53common; cp -rp psg $dest_dir_code/tmp)
+   cd $dest_dir_code/tmp
+   chmod 755   ./psg
+   chmod 644   ./psg/*
+   tar cf $dest_dir_code/$Unity/psg.tar *
+   set_size_name $Unity psg.tar
+   make_toc $Unity $VnmrSelect sol/unity.sol
+   make_toc $Unity $VnmrSelect sol/uplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar libpsg 
+   cd $sol53objdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring psg objects	  for " | tee -a $log_fln
+   tar -cf - $BinPsg2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   mv psg lib
+   chmod 755   ./lib
+   chmod 755   ./lib/*
+   chmod 644   ./lib/x_ps.o
+   tar -cf $dest_dir_code/$Unity/libpsg.tar lib
+   set_size_name $Unity libpsg.tar
+   make_toc $Unity $VnmrSelect sol/unity.sol
+   make_toc $Unity $VnmrSelect sol/uplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar the standard UNITY seqlib 
+   cd $sol53objdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring seqlib.tar	  for " | tee -a $log_fln
+   tar -cf - $BinSeq2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755	./seqlib
+   tar -cf $dest_dir_code/$Unity/seqlib.tar *
+   set_size_name $Unity seqlib.tar
+   make_toc $Unity $VnmrSelect sol/unity.sol
+   make_toc $Unity $VnmrSelect sol/uplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the kernal SCSI driver part
+   cd $solobjdir/proglib/kernel_solaris
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Kernel driver	  for " | tee -a $log_fln
+   mkdir $dest_dir_code/tmp/solkernel
+   cp -rp $Kernels2Move $dest_dir_code/tmp/solkernel
+   cd $dest_dir_code/tmp
+   chmod 755 ./solkernel
+   chmod 644 ./solkernel/*
+   tar -cf $dest_dir_code/$Unity/kernel.tar solkernel
+   set_size_name $Unity kernel.tar
+   make_toc $Unity $VnmrSelect sol/unity.sol
+   make_toc $Unity $VnmrSelect sol/uplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar acqbin and binstuff
+   cd $sol53objdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring acqbin.tar	  for " | tee -a $log_fln
+   mkdir $dest_dir_code/tmp/acqbin
+   mkdir $dest_dir_code/tmp/bin
+   tar -cf - $BinAcq2Tar | (cd $dest_dir_code/tmp; tar xfBp - )
+   cd $dest_dir_code/tmp
+   mv ./bin/iadisplay ./bin/uiadisplay
+   mv ./bin/vconfig ./bin/uconfig
+   mv ./acqbin/Acqproc ./acqbin/uAcqproc
+   cd bin
+   ln -s uiadisplay iadisplay
+   ln -s uconfig vconfig
+   ln -s usetacq setacq
+   cd ../acqbin
+   ln -s uAcqproc Acqproc
+   cd ..
+   chmod -R 755 ./acqbin
+   chmod -R 755 ./bin
+   chmod 755	./app-defaults
+   chmod 644	./app-defaults/*
+   tar -cf $dest_dir_code/$Unity/acqbin.tar *
+   set_size_name $Unity acqbin.tar
+   make_toc $Unity $VnmrSelect sol/unity.sol
+   make_toc $Unity $VnmrSelect sol/uplus.sol
+   rm -rf $dest_dir_code/tmp/bin $dest_dir_code/tmp/acqbin
+#
+#---------------------------------------------------------------------
+# tar the common acq scripts into bin tar file ---------
+#	for 53 archive common dirs are in sol53 directory
+   cd $sol53common
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring acq.tar	  for " | tee -a $log_fln
+   tar -cf - $AcqTarLst | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755   ./acq
+   chmod 644   ./acq/*
+   tar cf $dest_dir_code/$Unity/acq.tar *
+   set_size_name $Unity acq.tar
+   make_toc $Unity $VnmrSelect sol/unity.sol
+   make_toc $Unity $VnmrSelect sol/uplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#============== GEMINI 2000 FILES ===================================
+echo "" | tee -a $log_fln
+nnl_echo "PART VII -- GEMINI 2000 FILES -- $dest_dir_code/$Gemini" | tee -a $log_fln
+#
+#---------------------------------------------------------------------------
+# tar the gpar* files into one tar file
+  if [ x$gpar_answer = "xy" ]
+  then
+
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring parameter files  for " | tee -a $log_fln
+   cp -rp $gPar2Tar $dest_dir_code/tmp
+   cd $dest_dir_code/tmp
+ pars=`ls -d par???`
+ for file in $pars
+ do
+   chmod 755 ./$file
+   setperms ./$file 755 644 755
+ done
+#   chmod 644   ./par??0/stdpar/*/*
+#   chmod 755   ./par??0/stdpar/*
+#   chmod 644   ./par??0/tests/*/*
+#   chmod 755   ./par??0/tests/*
+#   chmod 644   ./parlib/*/*
+#   chmod 755   ./par???/*
+#   chmod 755   ./par???
+   tar cf $dest_dir_code/$Gemini/gpar.tar *
+   set_size_name $Gemini gpar.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+   make_toc $Gemini $VnmrSelect sol/mercury.sol
+   make_toc $Gemini $VnmrSelect sol/mercvx.sol
+   make_toc $Gemini $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping gparXXX file	  for " | tee -a $log_fln
+   set_size_name $Gemini gpar.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+   make_toc $Gemini $VnmrSelect sol/mercury.sol
+   make_toc $Gemini $VnmrSelect sol/mercvx.sol
+   make_toc $Gemini $VnmrSelect sol/mercplus.sol
+
+  fi
+
+#
+#---------------------------------------------------------------------
+# tar psg to gpsg
+   echo "" | tee -a $log_fln
+  if [ x$gem_answer = "xy" ]
+  then
+
+   nnl_echo " Tarring gpsg files	  for " | tee -a $log_fln
+   (cd $commondir; cp -rp gpsg $dest_dir_code/tmp/psg)
+   cd $dest_dir_code/tmp
+   chmod 755   ./psg
+   setperms ./psg 755 644 755
+#   chmod 755   ./psg
+#   chmod 644   ./psg/*
+   tar cf $dest_dir_code/$Gemini/psg.tar *
+   set_size_name $Gemini psg.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar psglib to gpsg
+   cd $dest_dir_code/tmp
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring gpsglib files	  for " | tee -a $log_fln
+   (cd $commondir; cp -rp gpsglib $dest_dir_code/tmp/psglib)
+   chmod 755   ./psglib
+   chmod 644   ./psglib/*
+   tar cf $dest_dir_code/$Gemini/psglib.tar *
+   set_size_name $Gemini psglib.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+   make_toc $Gemini $VnmrSelect sol/mercury.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the gemini acq scripts into bin tar file
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring gacq.tar	  for " | tee -a $log_fln
+   tar -cf - $gAcqTarLst | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755    ./acq
+   chmod 644    ./acq/*
+   tar cf $dest_dir_code/$Gemini/gacq.tar *
+   set_size_name $Gemini gacq.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the gemini acqbin into bin tar file
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring gacqbin.tar	  for " | tee -a $log_fln
+   mkdir $dest_dir_code/tmp/acqbin
+   mkdir $dest_dir_code/tmp/bin
+   tar -cf - $gBinAcq2Tar | (cd $dest_dir_code/tmp; tar xfBp - )
+   cd $dest_dir_code/tmp
+   cd bin
+   ln -s giadisplay iadisplay
+   ln -s gsetacq setacq
+   cd ../acqbin
+   ln -s gAcqproc Acqproc
+   cd ..
+   chmod -R 755   ./acqbin
+   chmod -R 755   ./bin
+   chmod 755	./app-defaults
+   chmod 644	./app-defaults/*
+   tar -cf $dest_dir_code/$Gemini/gacqbin.tar *
+   set_size_name $Gemini gacqbin.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+   make_toc $Gemini $VnmrSelect sol/mercury.sol
+   rm -rf $dest_dir_code/tmp/bin $dest_dir_code/tmp/acqbin
+#
+#---------------------------------------------------------------------------
+# tar the gpsg* files into one tar file
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring gpsg Objects	  for " | tee -a $log_fln
+   tar -cf - $gBinPsg2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   mv gpsg lib
+   chmod 755   ./lib
+   chmod 755   ./lib/*
+   chmod 644   ./lib/x_ps.o
+   cd bin
+   ln -s gconfig vconfig
+   cd ..
+   chmod -R 755   ./bin
+   tar -cf $dest_dir_code/$Gemini/gpsglibs.tar lib bin
+   set_size_name $Gemini gpsglibs.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the gemini seqlib
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring gseqlib.tar	  for " | tee -a $log_fln
+   tar -cf - $gBinSeq2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   mv gseqlib seqlib
+   chmod 755   ./seqlib
+   chmod 755   ./seqlib/*
+   tar -cf $dest_dir_code/$Gemini/gseqlib.tar *
+   set_size_name $Gemini gseqlib.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+   make_toc $Gemini $VnmrSelect sol/mercury.sol
+   rm -rf $dest_dir_code/tmp/*
+
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping gpsg files	  for " | tee -a $log_fln
+   set_size_name $Gemini psg.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping gpsglib files	  for " | tee -a $log_fln
+   set_size_name $Gemini psglib.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+   make_toc $Gemini $VnmrSelect sol/mercury.sol
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping gacq.tar	  for " | tee -a $log_fln
+   set_size_name $Gemini gacq.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping gacqbin.tar	  for " | tee -a $log_fln
+   set_size_name $Gemini gacqbin.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+   make_toc $Gemini $VnmrSelect sol/mercury.sol
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping gpsg Objects	  for " | tee -a $log_fln
+   set_size_name $Gemini gpsglibs.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping gseqlib.tar	  for " | tee -a $log_fln
+   set_size_name $Gemini gseqlib.tar
+   make_toc $Gemini $VnmrSelect sol/g2000.sol
+   make_toc $Gemini $VnmrSelect sol/mercury.sol
+
+   echo "" | tee -a $log_fln
+
+
+  fi
+#
+#============== MERCURY FILES ========================================
+echo "" | tee -a $log_fln
+nnl_echo "PART VIIb -- MERCURY FILES -- $dest_dir_code/$Mercury" | tee -a $log_fln
+#
+#---------------------------------------------------------------------------
+# tar Pbox stuff
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Pbox files	  for " | tee -a $log_fln
+   cd $commondir/kPbox
+   tar -cf - $kPbox2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   setperms ./help     755 644 755
+   setperms ./shapelib 755 644 755
+   setperms ./wavelib  755 644 755
+   tar cf $dest_dir_code/$Mercury/kpbox.tar *
+   set_size_name $Mercury kpbox.tar
+   make_toc $Mercury $VnmrSelect sol/mercury.sol
+   make_toc $Mercury $VnmrSelect sol/mercvx.sol
+   make_toc $Mercury $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar psg to kpsg
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring kpsg files	  for " | tee -a $log_fln
+   (cd $commondir; cp -rp kpsg $dest_dir_code/tmp/psg)
+   cd $dest_dir_code/tmp
+   chmod 755   ./psg
+   chmod 644   ./psg/*
+   tar cf $dest_dir_code/$Mercury/psg.tar *
+   set_size_name $Mercury psg.tar
+   make_toc $Mercury $VnmrSelect sol/mercury.sol
+   make_toc $Mercury $VnmrSelect sol/mercvx.sol
+   make_toc $Mercury $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the kpsg* files into one tar file
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring kpsg Objects	  for " | tee -a $log_fln
+   tar -cf - $kBinPsg2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   mv kpsg lib
+   chmod 755   ./lib
+   chmod 755   ./lib/*
+   chmod 644   ./lib/x_ps.o
+   cd bin
+   ln -s kconfig vconfig
+   ln -s mqtune_data qtune_data
+   cd ..
+   chmod -R 755   ./bin
+   tar -cf $dest_dir_code/$Mercury/kpsglibs.tar lib bin
+   set_size_name $Mercury kpsglibs.tar
+   make_toc $Mercury $VnmrSelect sol/mercury.sol
+   make_toc $Mercury $VnmrSelect sol/mercvx.sol
+   make_toc $Mercury $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar kpsglib 
+   cd $dest_dir_code/tmp
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring kpsglib files	  for " | tee -a $log_fln
+   (cd $commondir; cp -rp kpsglib $dest_dir_code/tmp/psglib)
+   chmod 755   ./psglib
+   chmod 644   ./psglib/*
+   tar cf $dest_dir_code/$Mercury/psglib.tar *
+   set_size_name $Mercury psglib.tar
+   make_toc $Mercury $VnmrSelect sol/mercury.sol
+   make_toc $Mercury $VnmrSelect sol/mercvx.sol
+   make_toc $Mercury $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the additional seqlib for mercury 
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring kseqlib.tar	  for " | tee -a $log_fln
+   tar -cf - $kBinSeq2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   mv kseqlib seqlib
+   chmod 755   ./seqlib
+   chmod 755   ./seqlib/*
+   tar -cf $dest_dir_code/$Mercury/kseqlib.tar *
+   set_size_name $Mercury kseqlib.tar
+   make_toc $Mercury $VnmrSelect sol/mercury.sol
+   make_toc $Mercury $VnmrSelect sol/mercvx.sol
+   make_toc $Mercury $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the mercury acq scripts into bin tar file
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring kacq.tar	  for " | tee -a $log_fln
+   tar -cf - $kAcqTarLst | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755    ./acq
+   chmod 644    ./acq/*
+   mv ./acq/kapmon ./acq/apmon
+   tar cf $dest_dir_code/$Mercury/kacq.tar *
+   set_size_name $Mercury kacq.tar
+   make_toc $Mercury $VnmrSelect sol/mercury.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring vxWorks          for " | tee -a $log_fln
+   tar -cf - $kVx2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./acq
+   chmod 644    ./acq/vxBoot.big/*.sym
+   cd acq
+   mv ./kvxBoot.small  ./vxBoot.small
+   ln -s vxBoot.small vxBoot
+   cd ..
+   tar -cf $dest_dir_code/$Mercury/vxworks.tar acq
+   set_size_name $Mercury vxworks.tar
+   make_toc $Mercury $VnmrSelect sol/mercvx.sol
+   make_toc $Mercury $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring VxWorks' objects for " | tee -a $log_fln
+   tar -cf - $kVxObj2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   mv ./acq/kvwhdobj.o ./acq/vxBoot.big/vwhdobj.o
+   mv ./acq/kvwlibs.o  ./acq/vxBoot.big/vwlibs.o
+   mv ./acq/kvwtasks.o ./acq/vxBoot.big/vwtasks.o
+   setperms ./acq/vxBoot.big 755 644 755
+   tar -cf $dest_dir_code/$Mercury/vxobjs.tar acq
+   set_size_name $Mercury vxobjs.tar
+   make_toc $Mercury $VnmrSelect sol/mercvx.sol
+   make_toc $Mercury $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring CP/MAS template  for " | tee -a $log_fln
+   tar -cf - $kCPMAStemplate | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   tar -cf $dest_dir_code/$Mercury/cpmas.tar *
+   set_size_name $Mercury cpmas.tar
+   make_toc $Mercury $VnmrSelect sol/mercvx.sol
+   make_toc $Mercury $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#============== INOVA FILES ========================================
+echo "" | tee -a $log_fln
+nnl_echo "PART VIII -- INOVA FILES -- $dest_dir_code/$Inova" | tee -a $log_fln
+#
+#---------------------------------------------------------------------
+# tar psg to psg
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring psg files	  for " | tee -a $log_fln
+   (cd $commondir; cp -rp psg $dest_dir_code/tmp)
+   cd $dest_dir_code/tmp
+   chmod 755   ./psg
+   chmod 644   ./psg/*
+   tar cf $dest_dir_code/$Inova/psg.tar *
+   set_size_name $Inova psg.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   make_toc $Inova $VnmrSelect ibm/ibm.ibm
+   make_toc $Inova $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar psg libs
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring psg objects	  for " | tee -a $log_fln
+   tar -cf - $BinPsg2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   mv psg lib
+   chmod 755   ./lib
+   chmod 755   ./lib/*
+   chmod 644   ./lib/x_ps.o
+   tar -cf $dest_dir_code/$Inova/libpsg.tar lib
+   set_size_name $Inova libpsg.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar the standard INOVA seqlib 
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring seqlib.tar	  for " | tee -a $log_fln
+   tar -cf - $iBinSeq2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755   ./seqlib
+   chmod 755   ./seqlib/*
+   tar -cf $dest_dir_code/$Inova/seqlib.tar *
+   set_size_name $Inova seqlib.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring acqbin		  for " | tee -a $log_fln
+   tar -cf - $ProcFam | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   cp -p $commondir/bin/isetacq $dest_dir_code/tmp/bin
+   cp -p $solobjdir/bin/showconsole $dest_dir_code/tmp/bin
+   cd bin
+   ln -s iiadisplay iadisplay
+   ln -s isetacq setacq
+   cd $dest_dir_code/tmp
+   chmod 755    ./acq
+   chmod 644    ./acq/*
+   chmod -R 755 ./acqbin
+   chmod -R 755 ./bin
+   chmod 755	./app-defaults
+   chmod 644	./app-defaults/*
+   mv ./acqbin/nAutoproc ./acqbin/Autoproc
+   tar -cf $dest_dir_code/$Inova/acqbin.tar *
+   set_size_name $Inova acqbin.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   make_toc $Inova $VnmrSelect sol/mercvx.sol
+   make_toc $Inova $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#   
+#---------------------------------------------------------------------------
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring acqbin part 2    for " | tee -a $log_fln
+   tar -cf - $iProcFam | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp/bin
+   cp $sourcedir/systcl/sol/spincad.tbc spincad
+   cp $sourcedir/systcl/sol/spingen.tbc spingen
+   chmod 755 spincad spingen
+   ln -s iqtune_data qtune_data
+   cd $dest_dir_code/tmp
+   chmod 755    ./acq
+   chmod 644    ./acq/*
+   chmod -R 755 ./bin
+   chmod 755    ./app-defaults
+   chmod 644    ./app-defaults/*
+   setperms ./spincad 755 644 755
+   tar -cf $dest_dir_code/$Inova/acqbin2.tar *
+   set_size_name $Inova acqbin2.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+ 
+#---------------------------------------------------------------------------
+#Java Runtime Environment common to both JPSG and VNMRJ
+
+  if [ x$jre_answer = "xy" ]
+  then
+
+   if [ -d $dest_dir_code/jre ]
+   then 
+       rm -rf $dest_dir_code/jre
+   fi
+
+   if [ x$LoadVnmrJ = "xy" ]
+   then
+       cp -r /vcommon/JRE $dest_dir_code/jre #for installation's option
+   fi
+
+   cd $dest_dir_code/tmp
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring JRE 1.4          for " | tee -a $log_fln
+
+   cp -r /vcommon/JRE $dest_dir_code/tmp/jre
+
+   tar -cf $dest_dir_code/$Inova/jre.tar jre
+   set_size_name $Inova jre.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   make_toc $Inova $VnmrSelect sol/uplus.sol
+   make_toc $Inova $VnmrSelect sol/unity.sol
+   make_toc $Inova $VnmrSelect sol/mercplus.sol
+   make_toc $Inova $VnmrSelect sol/mercvx.sol
+   make_toc $Inova $VnmrSelect sol/mercury.sol
+   make_toc $Inova $VnmrSelect sol/g2000.sol
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping JRE        for " | tee -a $log_fln
+
+   set_size_name $Inova jre.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   make_toc $Inova $VnmrSelect sol/uplus.sol
+   make_toc $Inova $VnmrSelect sol/unity.sol
+   make_toc $Inova $VnmrSelect sol/mercplus.sol
+   make_toc $Inova $VnmrSelect sol/mercvx.sol
+   make_toc $Inova $VnmrSelect sol/mercury.sol
+   make_toc $Inova $VnmrSelect sol/g2000.sol
+
+  fi
+#
+
+#---------------------------------------------------------------------------
+#JPSG
+
+    cd $dest_dir_code/tmp
+    mkdir jpsg
+    echo "" | tee -a $log_fln
+    nnl_echo " Tarring JPSG stuff	  for " | tee -a $log_fln
+    tar -cf - $Jpsg2Tar | (cd $dest_dir_code/tmp/jpsg; tar xfBp -)
+    cd $dest_dir_code/tmp
+    setperms ./ 755 644 755
+    chmod 755 ./jpsg/Jpsg
+    tar -cf $dest_dir_code/$Inova/jpsg.tar jpsg
+    set_size_name $Inova jpsg.tar
+    make_toc $Inova $VnmrSelect sol/inova.sol
+    rm -rf $dest_dir_code/tmp/*
+
+#---------------------------------------------------------------------------
+# start VJ Sections
+#    set -x
+#---------------------------------------------------------------------------
+# VJ Section 1
+     if [ x$LoadVnmrJ = "xy" ]
+     then
+        echo "" | tee -a $log_fln
+        nnl_echo " Tarring VJ jar	  for " | tee -a $log_fln
+        cd $dest_dir_code/tmp
+        mkdir java
+        mkdir lib
+        tar -cf - $VnmrJJar2Tar | (cd $dest_dir_code/tmp/java; tar xfBp -)
+        setperms  ./java 755 644 755
+#
+#  Just to clearify, the previous tar just copied the appropriate files into
+#  /vnmrcd/cdimageVJ/tmp/java. Both the vnmrj.jar and the vnmrj.jar.dasho
+#  Now on the fly  in the tmp directory, for dasho usage we delete the vnmrj.jar and
+#  move the vnmrj.jar.dasho to vnmrj.jar
+#  This method is used also for managedb jars, see below
+#
+        if [ $useDasho = "y" ]
+        then
+#	   delete vnmrj.jar and replace it with dasho jar
+#set -x
+	   rm -f $dest_dir_code/tmp/java/vnmrj.jar
+	   mv $dest_dir_code/tmp/java/vnmrj.jar.dasho $dest_dir_code/tmp/java/vnmrj.jar
+#set +x
+        fi
+        tar -cf $dest_dir_code/$Inova/vnmrj.tar *
+        set_size_name $Inova vnmrj.tar
+        make_toc $Inova $VnmrSelect sol/inova.sol
+        make_toc $Inova $VnmrSelect sol/mercvx.sol
+        make_toc $Inova $VnmrSelect sol/mercplus.sol
+        rm -rf $dest_dir_code/tmp/*
+     fi
+#---------------------------------------------------------------------------
+# VJ Section 2
+     if [ x$LoadVnmrJ = "xy" ]
+     then
+        echo "" | tee -a $log_fln
+        nnl_echo " Tarring VJ admin jar	  for " | tee -a $log_fln
+        cd $dest_dir_code/tmp
+        mkdir java
+        tar -cf - $VnmrJAdmJar2Tar | (cd $dest_dir_code/tmp/java; tar xfBp -)
+# save VnmrAdmin.jar inside code, 
+# so we do not have to untar this large file twice
+	cp java/VnmrAdmin.jar $dest_dir_code
+        setperms  ./java 755 644 755
+        if [ $useDasho = "y" ]
+        then
+#	   delete vnmrj.jar and replace it with dasho jar
+#set -x
+	   rm -f $dest_dir_code/tmp/java/managedb.jar
+	   mv $dest_dir_code/tmp/java/managedb.jar.dasho $dest_dir_code/tmp/java/managedb.jar
+#set +x
+        fi
+        tar -cf $dest_dir_code/$Inova/vnmrjadmjar.tar *
+        set_size_name $Inova vnmrjadmjar.tar
+        make_toc $Inova $VnmrSelect sol/inova.sol
+        make_toc $Inova $VnmrSelect sol/mercvx.sol
+        make_toc $Inova $VnmrSelect sol/mercplus.sol
+        rm -rf $dest_dir_code/tmp/*
+     fi
+#---------------------------------------------------------------------------
+# VJ Section 3
+     if [ x$LoadVnmrJ = "xy" ]
+     then
+        echo "" | tee -a $log_fln
+        nnl_echo " Tarring VJ bin		  for " | tee -a $log_fln
+        cd $dest_dir_code/tmp
+        mkdir bin
+        tar -cf - $VnmrJBin2Tar | (cd $dest_dir_code/tmp/bin; tar xfBp -)
+        setperms  ./bin 755 644 755
+        tar -cf $dest_dir_code/$Inova/vnmrjbin.tar *
+        set_size_name $Inova vnmrjbin.tar
+        make_toc $Inova $VnmrSelect sol/inova.sol
+        make_toc $Inova $VnmrSelect sol/mercvx.sol
+        make_toc $Inova $VnmrSelect sol/mercplus.sol
+        rm -rf $dest_dir_code/tmp/*
+     fi
+#---------------------------------------------------------------------------
+# VJ Section 4
+     if [ x$LoadVnmrJ = "xy" ]
+     then
+        echo "" | tee -a $log_fln
+        nnl_echo " Tarring VJ postgres	  for " | tee -a $log_fln
+        cd $dest_dir_code/tmp
+        tar -cf - $VnmrJPGsql2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+        mv sysshuffler shuffler
+	mv create_pgsql_user pgsql/bin
+        setperms ./shuffler 755 644 755
+        tar -cf $dest_dir_code/$Inova/vnmrjpgsql.tar *
+        set_size_name $Inova vnmrjpgsql.tar
+        make_toc $Inova $VnmrSelect sol/inova.sol
+        make_toc $Inova $VnmrSelect sol/mercvx.sol
+        make_toc $Inova $VnmrSelect sol/mercplus.sol
+        rm -rf $dest_dir_code/tmp/*
+     fi
+#---------------------------------------------------------------------------
+# VJ Section 5
+     if [ x$LoadVnmrJ = "xy" ]
+     then
+        echo "" | tee -a $log_fln
+        nnl_echo " Tarring VJ maclib	  for " | tee -a $log_fln
+        cd $dest_dir_code/tmp
+        mkdir -p adm/users/profiles/data
+        mkdir -p adm/users/profiles/templates
+        mkdir -p adm/groups/profiles
+        tar -cf - $VnmrJAdm2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+	mv userDefaults adm/users
+	mv userlist.xml adm/users
+	mv grouplist.xml adm/groups
+        setperms ./adm/users 755 644 755
+        setperms ./adm/groups 755 644 755
+        tar -cf - $VnmrJ2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+        chmod 644 ./maclib/*
+        chmod 644 ./menujlib/*
+
+        tar -cf $dest_dir_code/$Inova/vnmrjtxt.tar *
+        set_size_name $Inova vnmrjtxt.tar
+        make_toc $Inova $VnmrSelect sol/inova.sol
+        make_toc $Inova $VnmrSelect sol/mercvx.sol
+        make_toc $Inova $VnmrSelect sol/mercplus.sol
+        rm -rf $dest_dir_code/tmp/*
+     fi
+#---------------------------------------------------------------------------
+# VJ Section 6
+     if [ x$LoadVnmrJ = "xy" ]
+     then
+        echo "" | tee -a $log_fln
+        nnl_echo " Tarring VJ templates	  for " | tee -a $log_fln
+        cd $dest_dir_code/tmp
+        tar -cf - $VnmrJTempl2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+        tar -cf - $VnmrJProperties2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+	mkdir -p templates/vnmrj/properties
+	mv -f cmdResources.properties templates/vnmrj/properties
+	mv -f paramResources.properties templates/vnmrj/properties
+
+        if [ x$LoadP11 = "xy" ]
+        then
+            mkdir -p p11
+            mkdir -p adm/p11
+            touch adm/p11/notice
+            touch adm/p11/sysListAll
+            mkdir -p adm/users/profiles
+
+            tar -cf - $P11Xml2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+            mv -f accPolicy                adm/users/profiles
+            mv -f part11Config             p11
+            mv -f AdminMenu.xml.p11        templates/vnmrj/interface/AdminMenu.xml
+            mv -f MainMenu.xml.p11         templates/vnmrj/interface/MainMenu.xml
+            mv -f DefaultToolBar.xml.p11   templates/vnmrj/interface/DefaultToolBar.xml
+            mv -f audit.xml saveas.xml cmdHis.xml  templates/vnmrj/interface
+            setperms ./p11 755 644 755
+        fi
+
+        setperms  ./templates 755 644 755
+        tar -cf $dest_dir_code/$Inova/vnmrjtempl.tar *
+        set_size_name $Inova vnmrjtempl.tar
+        make_toc $Inova $VnmrSelect sol/inova.sol
+        make_toc $Inova $VnmrSelect sol/mercvx.sol
+        make_toc $Inova $VnmrSelect sol/mercplus.sol
+        rm -rf $dest_dir_code/tmp/*
+     fi
+#---------------------------------------------------------------------------
+# VJ Section 7
+     if [ x$LoadVnmrJ = "xy" ]
+     then
+        echo "" | tee -a $log_fln
+        nnl_echo " Tarring VJ iconlib	  for " | tee -a $log_fln
+        cd $dest_dir_code/tmp
+        cp -r $commondir/iconlib/vnmrbg_iconlib iconlib
+        chmod 644 ./iconlib/*
+        tar -cf $dest_dir_code/$Inova/vnmrjicons.tar *
+        set_size_name $Inova vnmrjicons.tar
+        make_toc $Inova $VnmrSelect sol/inova.sol
+        make_toc $Inova $VnmrSelect sol/mercvx.sol
+        make_toc $Inova $VnmrSelect sol/mercplus.sol
+        rm -rf $dest_dir_code/tmp/*
+     fi
+#---------------------------------------------------------------------------
+# VJ Section 8
+     if [ x$LoadVnmrJ = "xy" ]
+     then
+        echo "" | tee -a $log_fln
+        nnl_echo " Tarring VJ help	  for " | tee -a $log_fln
+        cd $dest_dir_code/tmp
+#        cp -r $commondir/VnmrJHelp jhelp
+	ln -s /cdrom/cdrom0/.jhelp jhelp
+        tar -cf $dest_dir_code/$Inova/vnmrjhelp.tar *
+        set_size_name $Inova vnmrjhelp.tar
+        make_toc $Inova $VnmrSelect sol/inova.sol
+        make_toc $Inova $VnmrSelect sol/mercvx.sol
+        make_toc $Inova $VnmrSelect sol/mercplus.sol
+        rm -rf $dest_dir_code/tmp/*
+     fi
+#---------------------------------------------------------------------------
+#    set +x
+# end VJ Sections
+#---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring java stuff	  for " | tee -a $log_fln
+   tar -cf - $Java2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+#   chmod 755 ./java/lib*.so*
+   tar -cf $dest_dir_code/$Inova/java.tar java
+   set_size_name $Inova java.tar
+   make_toc $Inova $VnmrSelect sol/unity.sol
+   make_toc $Inova $VnmrSelect sol/uplus.sol
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   make_toc $Inova $VnmrSelect sol/g2000.sol
+   make_toc $Inova $VnmrSelect sol/mercury.sol
+   make_toc $Inova $VnmrSelect sol/mercvx.sol
+   make_toc $Inova $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#---------------------------------------------------------------------------
+   cd $solobjdir/proglib
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring libraries	  for " | tee -a $log_fln
+   tar -cf - $iLibs2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   mv ncomm lib
+   mv dicom/* lib
+   chmod 755 ./lib/lib*.so*
+   chmod 644 ./lib/lib*.a
+   chmod 644 ./lib/dicom.dic
+   tar -cf $dest_dir_code/$Inova/libs.tar lib
+   set_size_name $Inova libs.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   make_toc $Inova $VnmrSelect sol/mercvx.sol
+   make_toc $Inova $VnmrSelect sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring vxWorks.auto	  for " | tee -a $log_fln
+   tar -cf - $iVxAuto2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./acq
+   tar -cf $dest_dir_code/$Inova/vxauto.tar acq
+   set_size_name $Inova vxauto.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring vxWorks	  for " | tee -a $log_fln
+   tar -cf - $iVx2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./acq
+   chmod 644    ./acq/vxBoot.big/*.sym
+   cd acq
+   ln -s vxBoot.small/vxBoot vxBoot
+   cd ..
+   tar -cf $dest_dir_code/$Inova/vxworks.tar acq
+   set_size_name $Inova vxworks.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring VxWorks' objects for " | tee -a $log_fln
+   tar -cf - $iVxObj2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 644    ./acq/vxBoot.big/*
+   tar -cf $dest_dir_code/$Inova/vxobjs.tar acq
+   set_size_name $Inova vxobjs.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+
+#---------------------------------------------------------------------
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring vxWorksPPC  for " | tee -a $log_fln
+   tar -cf - $iVxPpc2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./acq
+   chmod 644    ./acq/vxBootPPC.big/*.sym
+   cd acq
+   ln -s vxBoot.small    vxBoot
+   ln -s vxBootPPC.small vxBootPPC
+   cd ..
+   tar -cf $dest_dir_code/$Inova/vxppc.tar acq
+   set_size_name $Inova vxppc.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+
+#---------------------------------------------------------------------------
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring VxWorksPPC' objects for " | tee -a $log_fln
+   tar -cf - $iVxPpcObj2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 644    ./acq/vxBootPPC.big/*
+   tar -cf $dest_dir_code/$Inova/vxppcobjs.tar acq
+   set_size_name $Inova vxppcobjs.tar
+   make_toc $Inova $VnmrSelect sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+
+#
+#============== IBM FILES ========================================
+echo "" | tee -a $log_fln
+nnl_echo "PART IX -- IBM FILES -- $dest_dir_code/$Aix " | tee -a $log_fln
+#-----------------------------------------------------
+# tar some common text files into one tar file
+  if [ x$ibm_answer = "xy" ]
+  then
+
+   cd $commondir/tape_ibm
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring templ.tar  for " | tee -a $log_fln
+   tar -cf - $IbmTemplTar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   setperms ./user_templates 755 644 755
+   cd $dest_dir_code/tmp
+   tar -cf $dest_dir_code/$Aix/templ.ibm *
+   set_size_name $Aix templ.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping templ.tar file		for " | tee -a $log_fln
+
+   set_size_name $Aix templ.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+
+  fi
+
+#
+#---------------------------------------------------------------------
+# tar some common directories straight from source
+  if [ x$ibm_answer = "xy" ]
+  then
+
+   cd $ibmobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring bin.tar		for " | tee -a $log_fln
+   tar -cf - $IbmBinFiles2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   tar -cf - $PboxBin2Tar  | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   tar -cf $dest_dir_code/$Aix/bin.ibm bin
+   set_size_name $Aix bin.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping bin.tar		for " | tee -a $log_fln
+
+   set_size_name $Aix bin.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+
+  fi
+#
+#---------------------------------------------------------------------
+# tar some common directories straight from source
+  if [ x$ibm_answer = "xy" ]
+  then
+
+   cd $ibmobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring tcllib.ibm		for " | tee -a $log_fln
+   tar -cf - $IbmTclLibs2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755 ./lib
+   chmod 644 ./lib/*
+   tar -cf $dest_dir_code/$Aix/tcllib.ibm lib
+   set_size_name $Aix tcllib.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping tcllib.ibm		for " | tee -a $log_fln
+
+   set_size_name $Aix tcllib.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+
+  fi
+#
+#---------------------------------------------------------------------
+# tar some common directories straight from source
+  if [ x$ibm_answer = "xy" ]
+  then
+
+   cd $ibmobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring binx.tar		for " | tee -a $log_fln
+   tar -cf - $IbmBinX2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   chmod 755    ./bin/Vnmr
+   chmod 755	./app-defaults
+   chmod 644	./app-defaults/*
+   tar -cf $dest_dir_code/$Aix/binx.ibm *
+   set_size_name $Aix binx.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping binx.tar		for " | tee -a $log_fln
+
+   set_size_name $Aix binx.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+
+  fi
+#
+#---------------------------------------------------------------------
+# tar acqbin and binstuff
+  if [ x$ibm_answer = "xy" ]
+  then
+
+   cd $ibmobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring acqbin.tar	  for " | tee -a $log_fln
+   mkdir $dest_dir_code/tmp/acqbin
+   mkdir $dest_dir_code/tmp/bin
+   tar -cf - $IbmBinAcq2Tar | (cd $dest_dir_code/tmp; tar xfBp - )
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./acqbin
+   chmod -R 755 ./bin
+   chmod 755	./app-defaults
+   chmod 644	./app-defaults/*
+   tar -cf $dest_dir_code/$Aix/acqbin.ibm *
+   set_size_name $Aix acqbin.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+   rm -rf $dest_dir_code/tmp/bin $dest_dir_code/tmp/acqbin
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping acqbin.tar	for " | tee -a $log_fln
+
+   set_size_name $Aix acqbin.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+
+  fi
+#
+#---------------------------------------------------------------------
+# tar acqbin and binstuff
+  if [ x$ibm_answer = "xy" ]
+  then
+
+   cd $ibmobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring psg objects	  for " | tee -a $log_fln
+   tar -cf - $IbmBinPsg2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   mv psg lib
+   chmod 755   ./lib
+   chmod 755   ./lib/*
+   chmod 644   ./lib/x_ps.o
+   tar -cf $dest_dir_code/$Aix/psg.ibm lib
+   set_size_name $Aix psg.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping psg objects	for " | tee -a $log_fln
+
+   set_size_name $Aix psg.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+
+  fi
+#
+#---------------------------------------------------------------------------
+  if [ x$ibm_answer = "xy" ]
+  then
+
+   cd $dest_dir_code/tmp; mkdir lib
+   cd $ibmobjdir/proglib/vnmr/
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring acqcomm library  for " | tee -a $log_fln
+   tar -cf - $IbmLibs2Tar | (cd $dest_dir_code/tmp/lib; tar xfBp -)
+   cd $dest_dir_code/tmp
+#   chmod 755 ./lib/lib*.so*
+   chmod 644 ./lib/lib*.a
+   tar -cf $dest_dir_code/$Aix/libs.ibm lib
+   set_size_name $Aix libs.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping acqcomm library  for " | tee -a $log_fln
+
+   set_size_name $Aix libs.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+
+  fi
+#---------------------------------------------------------------------
+# tar the IBM seqlib 
+  if [ x$ibm_answer = "xy" ]
+  then
+
+   cd $ibmobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring seqlib.tar	  for " | tee -a $log_fln
+   tar -cf - $BinSeq2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755   ./seqlib
+   chmod 755   ./seqlib/*
+   tar -cf $dest_dir_code/$Aix/seqlib.ibm *
+   set_size_name $Aix seqlib.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping seqlib.tar         for " | tee -a $log_fln
+
+   set_size_name $Aix seqlib.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+
+  fi
+#
+#---------------------------------------------------------------------------
+# just to get vnmrwish
+  if [ x$ibm_answer = "xy" ]
+  then
+
+   cd $ibmobjdir/proglib/tcl
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring TclMore files    for " | tee -a $log_fln
+   mkdir -p $dest_dir_code/tmp/tcl/bin
+   cp $TclMore $dest_dir_code/tmp/tcl/bin/
+   cd $dest_dir_code/tmp
+   chmod -R 755  tcl
+   tar -cf $dest_dir_code/$Aix/tcl2.ibm *
+   set_size_name $Aix tcl2.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping TclMore files  for " | tee -a $log_fln
+
+   set_size_name $Aix tcl2.ibm
+   make_toc $Aix $VnmrSelect ibm/ibm.ibm
+
+  fi
+#============== SGI FILES ========================================
+echo "" | tee -a $log_fln
+nnl_echo "PART X -- SGI FILES -- $dest_dir_code/irix" | tee -a $log_fln
+#-----------------------------------------------------
+# tar some common text files into one tar file
+  if [ x$sgi_answer = "xy" ]
+  then
+
+   cd $commondir/tape_sgi
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring templ.tar	  for " | tee -a $log_fln
+   tar -cf - $SgiTemplTar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   setperms ./user_templates 755 644 755
+   cd $dest_dir_code/tmp
+   tar -cf $dest_dir_code/$Irix/templ.sgi *
+   set_size_name $Irix templ.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping templ.tar   for " | tee -a $log_fln
+
+   set_size_name $Irix templ.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+
+  fi
+#
+#---------------------------------------------------------------------
+# tar some common directories straight from source
+  if [ x$sgi_answer = "xy" ]
+  then
+
+   cd $sgiobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring bin.tar	  for " | tee -a $log_fln
+   tar -cf - $IbmBinFiles2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   tar -cf - $PboxBin2Tar  | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   tar -cf $dest_dir_code/$Irix/bin.sgi bin
+   set_size_name $Irix bin.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping bin.tar     for " | tee -a $log_fln
+
+   set_size_name $Irix bin.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+
+  fi
+#
+#---------------------------------------------------------------------
+# tar some common directories straight from source
+  if [ x$sgi_answer = "xy" ]
+  then
+
+   cd $sgiobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring binx.tar	  for " | tee -a $log_fln
+   tar -cf - $SgiBinX2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   chmod 755    ./bin/Vnmr
+   chmod 755	./app-defaults
+   chmod 644	./app-defaults/*
+   tar -cf $dest_dir_code/$Irix/binx.sgi *
+   set_size_name $Irix binx.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping binx.tar    for " | tee -a $log_fln
+
+   set_size_name $Irix binx.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+
+  fi
+#
+#---------------------------------------------------------------------
+# tar acqbin and binstuff
+  if [ x$sgi_answer = "xy" ]
+  then
+
+   cd $sgiobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring acqbin.tar	for " | tee -a $log_fln
+   mkdir $dest_dir_code/tmp/acqbin
+   mkdir $dest_dir_code/tmp/bin
+   tar -cf - $SgiBinAcq2Tar | (cd $dest_dir_code/tmp; tar xfBp - )
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./acqbin
+   chmod -R 755 ./bin
+   chmod 755	./app-defaults
+   chmod 644	./app-defaults/*
+   tar -cf $dest_dir_code/$Irix/acqbin.sgi *
+   set_size_name $Irix acqbin.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping acqbin.tar	for " | tee -a $log_fln
+
+   set_size_name $Irix acqbin.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+
+  fi
+#
+#---------------------------------------------------------------------
+# tar spincad tuff
+  if [ x$sgi_answer = "xy" ]
+  then
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring spincad stuff         for " | tee -a $log_fln
+   cd $dest_dir_code/tmp
+   mkdir bin
+   mkdir -p tcl/tklibrary/vnmr
+   cp -r $commondir/spincad .
+   cp  $sourcedir/systcl/sgi/spincad.tbc     bin/spincad
+   cp  $sourcedir/systcl/sgi/spingen.tbc     bin/spingen
+   cp  $sourcedir/systcl/vnmr/docker.tbc     tcl/tklibrary/vnmr
+   chmod 755   ./bin/*
+   tar -cf $dest_dir_code/$Irix/spincad.sgi *
+   set_size_name $Irix spincad.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping spincad stuff	    for " | tee -a $log_fln
+
+   set_size_name $Irix spincad.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+
+  fi
+
+#
+#---------------------------------------------------------------------
+# tar acqbin and binstuff
+  if [ x$sgi_answer = "xy" ]
+  then
+
+   cd $sgiobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring psg objects	  for " | tee -a $log_fln
+   tar -cf - $SgiBinPsg2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   mv psg lib
+   chmod 755   ./lib
+   chmod 755   ./lib/*
+   tar -cf $dest_dir_code/$Irix/psg.sgi lib
+   set_size_name $Irix psg.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping psg objects       for " | tee -a $log_fln
+
+   set_size_name $Irix psg.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+
+  fi
+#
+#---------------------------------------------------------------------------
+  if [ x$sgi_answer = "xy" ]
+  then
+
+   cd $dest_dir_code/tmp; mkdir lib
+   cd $sgiobjdir/proglib/vnmr/
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring acqcomm library  for " | tee -a $log_fln
+   tar -cf - $uLibs2Tar | (cd $dest_dir_code/tmp/lib; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755 ./lib/lib*.so*
+   chmod 644 ./lib/lib*.a
+   tar -cf $dest_dir_code/$Irix/libs.sgi lib
+   set_size_name $Irix libs.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping acqcomm library  for " | tee -a $log_fln
+
+   set_size_name $Irix libs.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+
+  fi
+#---------------------------------------------------------------------
+# tar the SGI seqlib 
+  if [ x$sgi_answer = "xy" ]
+  then
+
+   cd $sgiobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring seqlib.tar	  for " | tee -a $log_fln
+   tar -cf - $BinSeq2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755   ./seqlib
+   chmod 755   ./seqlib/*
+   tar -cf $dest_dir_code/$Irix/seqlib.sgi *
+   set_size_name $Irix seqlib.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping seqlib.tar     	for " | tee -a $log_fln
+
+   set_size_name $Irix seqlib.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+
+  fi
+#
+#-----------------------------------------------------
+# tar the common bin scripts into bin tar file
+  if [ x$sgi_answer = "xy" ]
+  then
+
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring sgibin.tar	  for " | tee -a $log_fln
+   tar -cf - $SgiBinScripts2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   tar -cf $dest_dir_code/$Irix/sgibin.sgi bin
+   set_size_name $Irix sgibin.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping sgibin.tar      	for " | tee -a $log_fln
+
+   set_size_name $Irix sgibin.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+
+  fi
+#
+#---------------------------------------------------------------------------
+# just to get vnmrwish
+  if [ x$sgi_answer = "xy" ]
+  then
+
+   cd $sgiobjdir/proglib/tcl
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring TclMore files    for " | tee -a $log_fln
+   mkdir -p $dest_dir_code/tmp/tcl/bin
+   cp $TclMore $dest_dir_code/tmp/tcl/bin/
+   cd $dest_dir_code/tmp
+   chmod -R 755  tcl
+   (cd tcl/bin; ln vnmrwish vnmrWish)
+   tar -cf $dest_dir_code/$Irix/tcl2.sgi tcl
+   set_size_name $Irix tcl2.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+
+  else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping TclMore files   for " | tee -a $log_fln
+
+   set_size_name $Irix tcl2.sgi
+   make_toc $Irix $VnmrSelect sgi/sgi.sgi
+
+  fi
+#============== OPTION FILES ========================================
+echo "" | tee -a $log_fln
+nnl_echo "PART XI -- OPTION FILES -- $dest_dir_code/\`option'" | tee -a $log_fln
+##---------------------------------------------------------------------------
+## Acroread online directory is copied so it can be read from the CDROM
+#
+#  if [ x$acro_answer = "xy" ]
+#  then
+#   echo "" | tee -a $log_fln
+#   manual_dir=$commondir
+#   if test ! -d $manual_dir
+#   then
+#    echo "Cannot find '$manual_dir'" | tee -a $log_fln
+#   fi
+#   if test -w $dest_dir_code/acrobat/online
+#   then
+#      rm -r  $dest_dir_code/acrobat/online
+#   fi
+#   nnl_echo " Tarring Online_Manuals	  for " | tee -a $log_fln
+#   cd $manual_dir
+#   tar -cf - online | (cd $dest_dir_code/acrobat; tar xfBp -)
+#
+#   cd  $dest_dir_code/acrobat/
+#   setperms ./online 755 644 755
+#
+#   set_size_name "" acrobat/online/cdrom/unity
+#   make_toc "" "Online_Manuals" sol/unity.sol
+#
+#   set_size_name "" acrobat/online/cdrom/inova
+#   make_toc "" "Online_Manuals" sol/inova.sol
+#
+#   set_size_name "" acrobat/online/cdrom/unity
+#   make_toc "" "Online_Manuals" sol/uplus.sol
+#
+#   set_size_name "" acrobat/online/cdrom/inova
+#   make_toc "" "Online_Manuals" ibm/ibm.ibm
+#
+#   set_size_name "" acrobat/online/cdrom/inova
+#   make_toc "" "Online_Manuals" sgi/sgi.sgi
+#
+#   set_size_name "" acrobat/online/cdrom/mercury
+#   make_toc "" "Online_Manuals" sol/mercury.sol
+#
+#   set_size_name "" acrobat/online/cdrom/mercvx
+#   make_toc "" "Online_Manuals" sol/mercvx.sol
+#
+#   set_size_name "" acrobat/online/cdrom/mercplus
+#   make_toc "" "Online_Manuals" sol/mercplus.sol
+#
+#   set_size_name "" acrobat/online/cdrom/g2000
+#   make_toc "" "Online_Manuals" sol/g2000.sol
+#
+#   echo "" | tee -a $log_fln
+#   echo "" >>  $log_fln
+##
+##---------------------------------------------------------------------------
+## Acroread object code, tar correct version to $dest_dir_code
+#   echo "" | tee -a $log_fln
+#   nnl_echo " Tarring ACRO object code for " | tee -a $log_fln
+#   cd /vcommon
+#   cp -r acrobat $dest_dir_code/acrobat
+#   chmod 644 $dest_dir_code/acrobat/acrobat/*
+#   set_size_name acrobat/acrobat sunsparc-rs-40.tar
+#   make_toc acrobat/acrobat "Online_Manuals" sol/unity.sol
+#   make_toc acrobat/acrobat "Online_Manuals" sol/uplus.sol
+#   make_toc acrobat/acrobat "Online_Manuals" sol/g2000.sol
+#   make_toc acrobat/acrobat "Online_Manuals" sol/mercury.sol
+#   make_toc acrobat/acrobat "Online_Manuals" sol/mercvx.sol
+#   make_toc acrobat/acrobat "Online_Manuals" sol/mercplus.sol
+#   make_toc acrobat/acrobat "Online_Manuals" sol/inova.sol
+#   echo "" | tee -a $log_fln
+#
+#   nnl_echo "         ACRO object code for " | tee -a $log_fln
+#   set_size_name acrobat/acrobat aix-rs-40.tar
+#   make_toc acrobat/acrobat "Online_Manuals" ibm/ibm.ibm
+#   echo "" | tee -a $log_fln
+#
+#   nnl_echo "         ACRO object code for " | tee -a $log_fln
+#   set_size_name acrobat/acrobat irix-rs-40.tar
+#   make_toc acrobat/acrobat "Online_Manuals" sgi/sgi.sgi
+#
+# else
+#
+#   echo "" | tee -a $log_fln
+#   nnl_echo " Skipping Online_Manuals   for " | tee -a $log_fln
+#   set_size_name "" acrobat/online/cdrom/unity
+#   make_toc "" "Online_Manuals" sol/unity.sol
+#
+#   set_size_name "" acrobat/online/cdrom/inova
+#   make_toc "" "Online_Manuals" sol/inova.sol
+#
+#   set_size_name "" acrobat/online/cdrom/unity
+#   make_toc "" "Online_Manuals" sol/uplus.sol
+#
+#   set_size_name "" acrobat/online/cdrom/inova
+#   make_toc "" "Online_Manuals" ibm/ibm.ibm
+#
+#   set_size_name "" acrobat/online/cdrom/inova
+#   make_toc "" "Online_Manuals" sgi/sgi.sgi
+#
+#   set_size_name "" acrobat/online/cdrom/mercury
+#   make_toc "" "Online_Manuals" sol/mercury.sol
+#
+#   set_size_name "" acrobat/online/cdrom/mercvx
+#   make_toc "" "Online_Manuals" sol/mercvx.sol
+#
+#   set_size_name "" acrobat/online/cdrom/mercplus
+#   make_toc "" "Online_Manuals" sol/mercplus.sol
+#
+#   set_size_name "" acrobat/online/cdrom/g2000
+#   make_toc "" "Online_Manuals" sol/g2000.sol
+#
+#   echo "" | tee -a $log_fln
+#
+#   nnl_echo " Skipping ACRO objects	  for " | tee -a $log_fln
+#   set_size_name acrobat/acrobat sunsparc-rs-40.tar
+#   make_toc acrobat/acrobat "Online_Manuals" sol/unity.sol
+#   make_toc acrobat/acrobat "Online_Manuals" sol/uplus.sol
+#   make_toc acrobat/acrobat "Online_Manuals" sol/g2000.sol
+#   make_toc acrobat/acrobat "Online_Manuals" sol/mercury.sol
+#   make_toc acrobat/acrobat "Online_Manuals" sol/mercvx.sol
+#   make_toc acrobat/acrobat "Online_Manuals" sol/mercplus.sol
+#   make_toc acrobat/acrobat "Online_Manuals" sol/inova.sol
+#   echo "" | tee -a $log_fln
+#   nnl_echo "          ACRO objects	  for " | tee -a $log_fln
+#   set_size_name acrobat/acrobat aix-rs-40.tar
+#   make_toc acrobat/acrobat "Online_Manuals" ibm/ibm.ibm
+#   echo "" | tee -a $log_fln
+#   nnl_echo "          ACRO objects	  for " | tee -a $log_fln
+#   set_size_name acrobat/acrobat irix-rs-40.tar
+#   make_toc acrobat/acrobat "Online_Manuals" sgi/sgi.sgi
+# fi
+#---------------------------------------------------------------------------
+# Glide files, tar correct version to $dest_dir_code
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring GLIDE Text files for " | tee -a $log_fln
+   tar -cf - $GlideText2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755 ./glide
+   chmod 755 ./glide/*
+   chmod 644 ./glide/*/*
+   chmod 755 ./glide/exp/*
+   chmod 644 ./glide/exp/*/*
+   chmod 644 ./glide/vnmrmenu
+   tar -cf $dest_dir_code/$Glide/glide.tar glide
+   set_size_name $Glide glide.tar
+   make_toc $Glide "GLIDE" sol/g2000.sol
+# ** If you uncomment this also uncomment the Glide Objects **
+#   make_toc $Glide glide.tar "GLIDE" ibm/ibm.ibm
+#   make_toc $Glide glide.tar "GLIDE" sgi/sgi.sgi
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Glide Objects    for " | tee -a $log_fln
+   tar -cf - $GlideBin2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   tar -cf $dest_dir_code/$Glide/$Solaris/glide.tar bin
+   set_size_name $Glide/$Solaris glide.tar
+   make_toc $Glide/$Solaris "GLIDE" sol/g2000.sol
+   rm -rf $dest_dir_code/tmp/*
+#---------------------------------------------------------------------------
+# Glide files, tar correct version to $dest_dir_code
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring GLIDEPACK  files for " | tee -a $log_fln
+   tar -cf - $GlidepackText2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   mv glidepack glide
+   chmod 755 ./glide
+   chmod 755 ./glide/*
+   chmod 644 ./glide/*/*
+   chmod 755 ./glide/exp/*
+   chmod 644 ./glide/exp/*/*
+   chmod 755 ./glide/cp_uninstall/*
+   chmod 644 ./glide/cp_uninstall/*/*
+   chmod 644 ./glide/vnmrmenu
+   tar -cf $dest_dir_code/$Glidepack/glidetxt.tar *
+   set_size_name $Glidepack glidetxt.tar
+   make_toc $Glidepack $VnmrSelect sol/inova.sol
+   make_toc $Glidepack $VnmrSelect sol/unity.sol
+   make_toc $Glidepack $VnmrSelect sol/uplus.sol
+   make_toc $Glidepack $VnmrSelect sol/mercplus.sol
+   make_toc $Glidepack $VnmrSelect sol/mercvx.sol
+   make_toc $Glidepack $VnmrSelect sol/mercury.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring GLIDEPACK Object for " | tee -a $log_fln
+   tar -cf - $GlidepackBin2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   tar -cf $dest_dir_code/$Glidepack/glidebin.tar bin
+   set_size_name $Glidepack glidebin.tar
+   make_toc $Glidepack $VnmrSelect sol/inova.sol
+   make_toc $Glidepack $VnmrSelect sol/unity.sol
+   make_toc $Glidepack $VnmrSelect sol/uplus.sol
+   make_toc $Glidepack $VnmrSelect sol/mercplus.sol
+   make_toc $Glidepack $VnmrSelect sol/mercvx.sol
+   make_toc $Glidepack $VnmrSelect sol/mercury.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# ** If you uncomment this, also uncomment the options "Glide Text" **
+#   cd $ibmobjdir
+#   echo "" | tee -a $log_fln
+#   nnl_echo " Tarring Glide Objects	  for " | tee -a $log_fln
+#   tar -cf - $GlideBin2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+#   cd $dest_dir_code/tmp
+#   chmod -R 755 ./bin
+#   tar -cf $dest_dir_code/$Glide/$Aix/glide.tar bin
+#   set_size_name $Glide/$Aix glide.tar
+#   make_toc $Glide/$Aix "GLIDE" ibm/ibm.ibm
+#   rm -rf $dest_dir_code/tmp/*
+#---------------------------------------------------------------------------
+# ** If you uncomment this, also uncomment the options "Glide Text" **
+#   cd $sgiobjdir
+#   echo "" | tee -a $log_fln
+#   nnl_echo " Tarring Glide Objects	  for " | tee -a $log_fln
+#   tar -cf - $GlideBin2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+#   cd $dest_dir_code/tmp
+#   chmod -R 755 ./bin
+#   tar -cf $dest_dir_code/$Glide/$Irix/glide.tar bin
+#   set_size_name $Glide/$Irix glide.tar
+#   make_toc $Glide/$Irix "GLIDE" sgi/sgi.sgi
+#   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the PFG common files maclib, manual, psglib
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring PFG Text	  for " | tee -a $log_fln
+   cd PFG
+   tar -cf - $ComPFG2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755   ./parlib
+   chmod 755   ./parlib/*
+   chmod 644   ./parlib/*/*
+   chmod 755   ./psglib
+   chmod 644   ./psglib/*
+   chmod 755   ./maclib
+   chmod 644   ./maclib/*
+   chmod 755   ./manual
+   chmod 644   ./manual/*
+   tar -cf $dest_dir_code/$Pfg/$Common/pfg.tar *
+   set_size_name $Pfg/$Common pfg.tar
+   make_toc $Pfg/$Common "PFG" sol/unity.sol
+   make_toc $Pfg/$Common "PFG" sol/uplus.sol
+   make_toc $Pfg/$Common "PFG" sol/inova.sol
+   make_toc $Pfg/$Common "PFG" ibm/ibm.ibm
+   make_toc $Pfg/$Common "PFG" sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the PFG seqlib
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring PFG Objects	  for " | tee -a $log_fln
+   tar -cf - $BinPFG2Tar $BinPFGCP2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755   ./seqlib
+   chmod 755   ./seqlib/*
+   tar -cf $dest_dir_code/$Pfg/$Unity/pfgobj.tar *
+   set_size_name $Pfg/$Unity pfgobj.tar
+   make_toc $Pfg/$Unity "PFG" sol/unity.sol
+   make_toc $Pfg/$Unity "PFG" sol/uplus.sol
+   make_toc $Pfg/$Unity "PFG" sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the gPFG common files maclib, manual, psglib
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring gPFG Text	  for " | tee -a $log_fln
+   cd gPFG
+   tar -cf - $gComPFG2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755   ./parlib
+   chmod 755   ./parlib/*
+   chmod 644   ./parlib/*/*
+   chmod 755   ./maclib
+   chmod 644   ./maclib/*
+   chmod 755   ./manual
+   chmod 644   ./manual/*
+   tar -cf $dest_dir_code/$Pfg/$Gemini/pfg.tar *
+   set_size_name $Pfg/$Gemini pfg.tar
+   make_toc $Pfg/$Gemini "PFG" sol/g2000.sol
+   make_toc $Pfg/$Gemini "PFG" sol/mercury.sol
+   make_toc $Pfg/$Gemini "PFG" sol/mercvx.sol
+   make_toc $Pfg/$Gemini "PFG" sol/mercplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the gPFG seqlib
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring gPFG Objects	  for " | tee -a $log_fln
+   tar -cf - $gBinPFG2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   mv gseqlib seqlib
+   chmod 755   ./seqlib
+   chmod 755   ./seqlib/*
+   tar -cf $dest_dir_code/$Pfg/$Gemini/pfgobj.tar *
+   set_size_name $Pfg/$Gemini pfgobj.tar
+   make_toc $Pfg/$Gemini "PFG" sol/g2000.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the kPFG seqlib
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring kPFG Objects	  for " | tee -a $log_fln
+   tar -cf - $kBinPFG2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   mv kseqlib seqlib
+   chmod 755   ./seqlib
+   chmod 755   ./seqlib/*
+   tar -cf $dest_dir_code/$Mvx/pfgobj.tar *
+   set_size_name $Mvx pfgobj.tar
+   make_toc $Mvx "PFG" sol/mercplus.sol
+   make_toc $Mvx "PFG" sol/mercvx.sol
+   make_toc $Mvx "PFG" sol/mercury.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the PFG seqlib
+   cd $ibmobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring PFG Objects	  for " | tee -a $log_fln
+   tar -cf - $BinPFG2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755   ./seqlib
+   chmod 755   ./seqlib/*
+   tar -cf $dest_dir_code/$Pfg/$Aix/pfgobj.tar *
+   set_size_name $Pfg/$Aix pfgobj.tar
+   make_toc $Pfg/$Aix "PFG" ibm/ibm.ibm
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the PFG seqlib
+   cd $sgiobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring PFG Objects	  for " | tee -a $log_fln
+   tar -cf - $BinPFG2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755   ./seqlib
+   chmod 755   ./seqlib/*
+   tar -cf $dest_dir_code/$Pfg/$Irix/pfgobj.tar *
+   set_size_name $Pfg/$Irix pfgobj.tar
+   make_toc $Pfg/$Irix "PFG" sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+
+#
+#---------------------------------------------------------------------------
+# tar the Sudo files
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Sudo Files	  for " | tee -a $log_fln
+
+   cd $commondir
+   tar -cf $dest_dir_code/$Common/sudo.tar sudo
+   set_size_name $Common sudo.tar
+   make_toc $Common $VnmrSelect sol/mercvx.sol
+   make_toc $Common $VnmrSelect sol/mercplus.sol
+   make_toc $Common $VnmrSelect sol/inova.sol
+#
+#---------------------------------------------------------------------------
+# tar the kermit files
+   cd $commondir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Kermit Text	  for " | tee -a $log_fln
+   tar -cf - $ComKermit2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755   ./kermit
+   chmod 644   ./kermit/*
+   tar cf $dest_dir_code/$Kermit/kermit.tar kermit
+   set_size_name $Kermit kermit.tar
+   make_toc $Kermit "Kermit" sol/unity.sol
+   make_toc $Kermit "Kermit" sol/uplus.sol
+   make_toc $Kermit "Kermit" sol/g2000.sol
+   make_toc $Kermit "Kermit" sol/mercury.sol
+   make_toc $Kermit "Kermit" sol/mercvx.sol
+   make_toc $Kermit "Kermit" sol/mercplus.sol
+   make_toc $Kermit "Kermit" sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Kermit Objects	  for " | tee -a $log_fln
+   cd $commondir
+   tar -cf - $Bin4Kermit2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755   ./kermit
+   tar -cf $dest_dir_code/$Kermit/$Solaris/kermit.tar kermit
+   set_size_name $Kermit/$Solaris kermit.tar
+   make_toc $Kermit/$Solaris "Kermit" sol/unity.sol
+   make_toc $Kermit/$Solaris "Kermit" sol/uplus.sol
+   make_toc $Kermit/$Solaris "Kermit" sol/g2000.sol
+   make_toc $Kermit/$Solaris "Kermit" sol/mercury.sol
+   make_toc $Kermit/$Solaris "Kermit" sol/mercvx.sol
+   make_toc $Kermit/$Solaris "Kermit" sol/mercplus.sol
+   make_toc $Kermit/$Solaris "Kermit" sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the GNU files
+
+  if [ x$gnu_answer = "xy" ]
+  then
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring GNU Files	  for " | tee -a $log_fln
+   cd /vcommon
+   tar -cf $dest_dir_code/$Gnu/gnu.tar $GNU4Solaris2Tar
+   set_size_name $Gnu gnu.tar
+   make_toc $Gnu "GNU_Compiler" sol/unity.sol
+   make_toc $Gnu "GNU_Compiler" sol/uplus.sol
+   make_toc $Gnu "GNU_Compiler" sol/g2000.sol
+   make_toc $Gnu "GNU_Compiler" sol/mercury.sol
+   make_toc $Gnu "GNU_Compiler" sol/mercvx.sol
+   make_toc $Gnu "GNU_Compiler" sol/mercplus.sol
+   make_toc $Gnu "GNU_Compiler" sol/inova.sol
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping GNU	  for " | tee -a $log_fln
+   set_size_name $Gnu gnu.tar
+   make_toc $Gnu "GNU_Compiler" sol/unity.sol
+   make_toc $Gnu "GNU_Compiler" sol/uplus.sol
+   make_toc $Gnu "GNU_Compiler" sol/g2000.sol
+   make_toc $Gnu "GNU_Compiler" sol/mercury.sol
+   make_toc $Gnu "GNU_Compiler" sol/mercvx.sol
+   make_toc $Gnu "GNU_Compiler" sol/mercplus.sol
+   make_toc $Gnu "GNU_Compiler" sol/inova.sol
+
+ fi
+#
+#---------------------------------------------------------------------------
+# tar the micro Image common files maclib, manual, parlib imaging
+#   cd $commondir/Image
+#   echo "" | tee -a $log_fln
+#   nnl_echo " Tarring uImage Text	  for " | tee -a $log_fln
+#   tar -cf - $ComImage2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+#   cd $dest_dir_code/tmp
+#   chmod 755   ./parlib
+#   chmod 755   ./parlib/*
+#   chmod 644   ./parlib/*/*
+#   chmod 755   ./maclib
+#   chmod 644   ./maclib/*
+#   chmod 755   ./manual
+#   chmod 644   ./manual/*
+#   chmod 755   ./psglib
+#   tar -cf $dest_dir_code/$Uimaging/uimage.tar *
+#   set_size_name $Uimaging uimage.tar
+#   make_toc $Uimaging "uImaging" sol/unity.sol
+#   make_toc $Uimaging "uImaging" sol/uplus.sol
+#   make_toc $Uimaging "uImaging" sol/inova.sol
+#   make_toc $Uimaging "uImaging" ibm/ibm.ibm
+#   make_toc $Uimaging "uImaging" sgi/sgi.sgi
+#   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the micro Image seqlib
+#   cd $solobjdir
+#   echo "" | tee -a $log_fln
+#   nnl_echo " Tarring uImage Objects	  for "  | tee -a $log_fln
+#   tar -cf - $uBinImage2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+#   cd $dest_dir_code/tmp
+#   chmod 755   ./seqlib
+#   chmod 755   ./seqlib/*
+#   chmod -R 755   ./bin
+#   chmod 755   ./app-defaults
+#   chmod 644   ./app-defaults/*
+#   tar -cf $dest_dir_code/$Uimaging/$Unity/uimage.tar *
+#   set_size_name $Uimaging/$Unity uimage.tar
+#   make_toc $Uimaging/$Unity "uImaging" sol/unity.sol
+#   make_toc $Uimaging/$Unity "uImaging" sol/uplus.sol
+#   make_toc $Uimaging/$Unity "uImaging" sol/inova.sol
+#   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the micro Image seqlib
+#   cd $ibmobjdir
+#   echo "" | tee -a $log_fln
+#   nnl_echo " Tarring uImage Objects	  for "  | tee -a $log_fln
+#   tar -cf - $ibmBinImage2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+#   cd $dest_dir_code/tmp
+#   chmod 755   ./seqlib
+#   chmod 755   ./seqlib/*
+#   tar -cf $dest_dir_code/$Uimaging/$Aix/uimage.tar *
+#   set_size_name $Uimaging/$Aix uimage.tar
+#   make_toc $Uimaging/$Aix "uImaging" ibm/ibm.ibm
+#   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the micro Image seqlib
+#   cd $sgiobjdir
+#   echo "" | tee -a $log_fln
+#   nnl_echo " Tarring uImage Objects	  for "  | tee -a $log_fln
+#   tar -cf - $ibmBinvnmr | (cd $dest_dir_code/tmp; tar xfBp -)
+#   cd $dest_dir_code/tmp
+#   chmod 755   ./seqlib
+#   chmod 755   ./seqlib/*
+#   tar -cf $dest_dir_code/$Uimaging/$Irix/uimage.tar *
+#   set_size_name $Uimaging/$Irix uimage.tar
+#   make_toc $Uimaging/$Irix "uImaging" sgi/sgi.sgi
+#   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the IMAGE common files maclib, manual, parlib imaging
+   cd $commondir/IMAGE
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring IMAGE Text	  for " | tee -a $log_fln
+   tar -cf - $ComIMAGE2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755    ./parlib
+   chmod 755    ./parlib/*
+   chmod 644    ./parlib/*/*
+   setperms	./fidlib 755 644 755
+   chmod 755	./help
+   chmod 755	./help/help.imaging
+   chmod 644	./help/help.imaging/*
+   chmod 755    ./maclib
+   chmod 755    ./maclib/maclib.imaging
+   chmod 644    ./maclib/maclib.imaging/*
+   chmod 755    ./menulib
+   chmod 755    ./menulib/menulib.imaging
+   chmod 644    ./menulib/menulib.imaging/*
+   chmod 755    ./nuctables
+   chmod 644    ./nuctables/*
+   chmod 755    ./psglib
+   chmod 644    ./psglib/*
+   chmod 755    ./tablib
+   chmod 644    ./tablib/*
+   setperms	./imaging 755 644 755
+   chmod 755	./bin/*
+   chmod 644    ./vnmrmenu
+   chmod -R 755   ./user_templates
+   tar -cf $dest_dir_code/$Image/image.tar *
+   set_size_name $Image image.tar
+   make_toc $Image "Imaging_or_Triax" sol/unity.sol
+   make_toc $Image "Imaging_or_Triax" sol/uplus.sol
+   make_toc $Image "Imaging_or_Triax" sol/inova.sol
+#   make_toc $Image "Imaging_or_Triax" ibm/ibm.ibm
+#   make_toc $Image "Imaging_or_Triax" sgi/sgi.sgi
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the IMAGE common files maclib, manual, parlib imaging
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring IMAGE Objects	  for " | tee -a $log_fln
+   tar -cf - $BinIMAGE2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755   ./bin
+   chmod    755   ./lib
+   chmod 644   ./lib/*
+   ln -s /usr/lib/libC.so.5 lib/libC.so
+   tar -cf $dest_dir_code/$Image/$Unity/image.tar *
+   set_size_name $Image/$Unity image.tar
+   make_toc $Image/$Unity "Imaging_or_Triax" sol/unity.sol
+   make_toc $Image/$Unity "Imaging_or_Triax" sol/uplus.sol
+   make_toc $Image/$Unity "Imaging_or_Triax" sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the IMAGE files seqlib for unity and inova
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring IMAGE Seqlib	  for " | tee -a $log_fln
+   tar -cf - $SeqIMAGE2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755   ./bin
+   chmod    755   ./seqlib
+   chmod    755   ./seqlib/*
+   tar -cf $dest_dir_code/$Image/$Unity/seqlib.tar *
+   set_size_name $Image/$Unity seqlib.tar
+   make_toc $Image/$Unity "Imaging_or_Triax" sol/unity.sol
+   make_toc $Image/$Unity "Imaging_or_Triax" sol/uplus.sol
+   make_toc $Image/$Unity "Imaging_or_Triax" sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# This stores a dummy file for Imaging. The difference in manual
+# size is about 25 Mbyte, to much to leave unaccounted.
+   cd $dest_dir_code/tmp
+   mkdir tmp
+   tar -cf $dest_dir_code/$Image/img_man.tar *
+   set_size_name $Image img_man.tar
+   tarFileSize=25000
+   make_toc $Image "Imaging_or_Triax" sol/unity.sol
+   tarFileSize=25000
+   make_toc $Image "Imaging_or_Triax" sol/uplus.sol
+   tarFileSize=4000
+   make_toc $Image "Imaging_or_Triax" sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------
+# tar Autotest files
+   cd $dest_dir_code/tmp
+   mkdir autotest
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Autotest files   for " | tee -a $log_fln
+   (cd $commondir/Autotest; cp -rp * $dest_dir_code/tmp/autotest)
+   setperms ./ 755 644 755
+   mv autotest/maclib .
+   tar -cf $dest_dir_code/$Inova/autotest.tar *
+   set_size_name $Inova autotest.tar
+   make_toc $Inova "Autotest" sol/inova.sol
+   make_toc $Inova "Autotest" sol/uplus.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the limnet files out
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring limnet.tar	  for " | tee -a $log_fln
+   cp -rp limnet $dest_dir_code/tmp/limnet
+   cd $dest_dir_code/tmp
+   chmod -R 755 limnet
+   tar -cf $dest_dir_code/$Limnet/$Solaris/limnet.tar limnet
+   set_size_name $Limnet/$Solaris limnet.tar
+   make_toc $Limnet/$Solaris "limNet" sol/unity.sol
+   make_toc $Limnet/$Solaris "limNet" sol/uplus.sol
+   make_toc $Limnet/$Solaris "limNet" sol/g2000.sol
+   make_toc $Limnet/$Solaris "limNet" sol/mercury.sol
+   make_toc $Limnet/$Solaris "limNet" sol/mercvx.sol
+   make_toc $Limnet/$Solaris "limNet" sol/mercplus.sol
+   make_toc $Limnet/$Solaris "limNet" sol/inova.sol
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the limnet files out
+   cd $ibmobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring limnet.tar	  for " | tee -a $log_fln
+   cp -rp limnet $dest_dir_code/tmp/limnet
+   cd $dest_dir_code/tmp
+   chmod -R 755 limnet
+   tar -cf $dest_dir_code/$Limnet/$Aix/limnet.tar limnet
+   set_size_name $Limnet/$Aix limnet.tar
+   make_toc $Limnet/$Aix "limNet" ibm/ibm.ibm
+   rm -rf $dest_dir_code/tmp/*
+#
+#---------------------------------------------------------------------------
+# tar the userlib option
+#    ===>>> Unity, UNIYTplus, UNITY INOVA, SGI, IBM USERLIB <<<===
+  if [ x$user_answer = "xy" ]
+  then
+
+   cd /vcommon/UserLib.inova_unity
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring userlib.tar (/vcommon/UserLib.inova_unity)  for " | tee -a $log_fln
+   tar -cf $dest_dir_code/$Unity/userlib.tar $UserLib2Tar
+   set_size_name $Unity/ userlib.tar
+   make_toc $Unity/ "Userlib" sol/unity.sol
+   make_toc $Unity/ "Userlib" sol/uplus.sol
+   make_toc $Unity/ "Userlib" sol/inova.sol
+   make_toc $Unity/ "Userlib" sgi/sgi.sgi
+   make_toc $Unity/ "Userlib" ibm/ibm.ibm
+
+ else
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping Userlib	  for " | tee -a $log_fln
+   set_size_name $Unity/ userlib.tar
+   make_toc $Unity/ "Userlib" sol/unity.sol
+   make_toc $Unity/ "Userlib" sol/uplus.sol
+   make_toc $Unity/ "Userlib" sol/inova.sol
+   make_toc $Unity/ "Userlib" sgi/sgi.sgi
+   make_toc $Unity/ "Userlib" ibm/ibm.ibm
+ fi
+#---------------------------------------------------------------------------
+# tar the userlib option
+#    ===>>> MERCURY, GEMINI 2000 USERLIB <<<===
+  if [ x$user_answer = "xy" ]
+  then
+
+   cd /vcommon/UserLib.mercury_gemini
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring userlib.tar (/vcommon/UserLib.mercury_gemini)  for " | tee -a $log_fln
+   tar -cf $dest_dir_code/$Gemini/userlib.tar $UserLib2Tar
+   set_size_name $Gemini/ userlib.tar
+   make_toc $Gemini/ "Userlib" sol/g2000.sol
+   make_toc $Gemini/ "Userlib" sol/mercury.sol
+   make_toc $Gemini/ "Userlib" sol/mercvx.sol
+   make_toc $Gemini/ "Userlib" sol/mercplus.sol
+
+ else
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping Userlib	  for " | tee -a $log_fln
+   set_size_name $Gemini/ userlib.tar
+   make_toc $Gemini/ "Userlib" sol/g2000.sol
+   make_toc $Gemini/ "Userlib" sol/mercury.sol
+   make_toc $Gemini/ "Userlib" sol/mercvx.sol
+   make_toc $Gemini/ "Userlib" sol/mercplus.sol
+ fi
+#============== PASSWORDED  FILES ========================================
+echo "" | tee -a $log_fln
+nnl_echo "PART XII -- PASSWORDED FILES -- $dest_dir_code/" | tee -a $log_fln
+#---------------------------------------------------------------------------
+# tar Diffusion's maclib, manual and parlib files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $commondir/Diffusion
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Diffusion	  for " | tee -a $log_fln
+   tar -cf - $Diffus2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755    ./maclib
+   chmod 644    ./maclib/*
+   chmod 755    ./manual
+   chmod 644    ./manual/*
+   chmod 755    ./parlib
+   chmod 755    ./parlib/*
+   chmod 644    ./parlib/*/*
+   tar -cf - * | $Encodedir/encode $Diff_password > $dest_dir_code/$Diff/diffuse.pwd
+   set_size_name $Diff diffuse.pwd
+   make_toc $Diff "Diffusion" sol/unity.opt
+   make_toc $Diff "Diffusion" sol/uplus.opt
+   make_toc $Diff "Diffusion" sol/inova.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping Diffusion  for " | tee -a $log_fln
+
+   set_size_name $Diff diffuse.pwd
+   make_toc $Diff "Diffusion" sol/unity.opt
+   make_toc $Diff "Diffusion" sol/uplus.opt
+   make_toc $Diff "Diffusion" sol/inova.opt
+
+ fi
+#
+#---------------------------------------------------------------------------
+# tar Diffusion's seqlib files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Diff Seq	  for " | tee -a $log_fln
+   tar -cf - $DiffusSeq2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./seqlib
+   tar -cf - * | $Encodedir/encode $Diff_password > $dest_dir_code/$Diff/diffseq.pwd
+   set_size_name $Diff diffseq.pwd
+   make_toc $Diff "Diffusion" sol/unity.opt
+   make_toc $Diff "Diffusion" sol/uplus.opt
+   make_toc $Diff "Diffusion" sol/inova.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping Diff Seq	  for " | tee -a $log_fln
+
+   set_size_name $Diff diffseq.pwd
+   make_toc $Diff "Diffusion" sol/unity.opt
+   make_toc $Diff "Diffusion" sol/uplus.opt
+   make_toc $Diff "Diffusion" sol/inova.opt
+
+ fi
+#
+#---------------------------------------------------------------------------
+# tar LCNMR's files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $commondir/LCNMR
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring LCNMR		  for " | tee -a $log_fln
+   tar -cf - $LCNMR2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755    ./maclib
+   chmod 644    ./maclib/*
+   chmod 755    ./manual
+   chmod 644    ./manual/*
+   chmod 755    ./menulib
+   chmod 644    ./menulib/*
+   chmod 755    ./parlib
+   chmod 755    ./parlib/*
+   chmod 644    ./parlib/*/*
+   chmod 755    ./shapelib
+   chmod 644    ./shapelib/*
+   chmod 755    ./tablib
+   chmod 644    ./tablib/*
+   setperms ./user_templates 755 644 755
+   tar -cf - * | $Encodedir/encode $LCNMR_password > $dest_dir_code/$LCNMR/lcnmr.pwd
+   set_size_name $LCNMR lcnmr.pwd
+   make_toc $LCNMR "LC-NMR" sol/unity.opt
+   make_toc $LCNMR "LC-NMR" sol/uplus.opt
+   make_toc $LCNMR "LC-NMR" sol/inova.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping LCNMR 	  for " | tee -a $log_fln
+
+   set_size_name $LCNMR lcnmr.pwd
+   make_toc $LCNMR "LC-NMR" sol/unity.opt
+   make_toc $LCNMR "LC-NMR" sol/uplus.opt
+   make_toc $LCNMR "LC-NMR" sol/inova.opt
+
+ fi
+#
+#
+#---------------------------------------------------------------------
+# tar the INOVA LCNMR seqlib 
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring LCNMR seqlib	  for " | tee -a $log_fln
+   tar -cf - $LCNMRSeq2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755   ./seqlib
+   chmod 755   ./seqlib/*
+   tar -cf - * | $Encodedir/encode $LCNMR_password > $dest_dir_code/$LCNMR/lcseqlib.pwd
+   set_size_name $LCNMR lcseqlib.pwd
+   make_toc $LCNMR "LC-NMR" sol/inova.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping LCNMR seqlib	  for " | tee -a $log_fln
+
+   set_size_name $LCNMR lcseqlib.pwd
+   make_toc $LCNMR "LC-NMR" sol/inova.opt
+
+ fi
+#
+#
+#---------------------------------------------------------------------------
+# tar STARS's binary files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $commondir/STARS
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring STARS binary	  for " | tee -a $log_fln
+   tar -cf - $BinSTARSSol2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   tar -cf - * | $Encodedir/encode $Stars_password > $dest_dir_code/$STARS/$Unity/stars.pwd
+   set_size_name $STARS/$Unity stars.pwd
+   make_toc $STARS/$Unity "STARS" sol/unity.opt
+   make_toc $STARS/$Unity "STARS" sol/uplus.opt
+   make_toc $STARS/$Unity "STARS" sol/inova.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping STARS binary	   for " | tee -a $log_fln
+
+   set_size_name $STARS/$Unity stars.pwd
+   make_toc $STARS/$Unity "STARS" sol/unity.opt
+   make_toc $STARS/$Unity "STARS" sol/uplus.opt
+   make_toc $STARS/$Unity "STARS" sol/inova.opt
+
+ fi
+#
+#---------------------------------------------------------------------------
+# tar STARS's text files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $commondir/STARS
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring STARS Text	  for " | tee -a $log_fln
+   tar -cf - $TextSTARS2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755    ./maclib*
+   chmod 644    ./maclib/*
+   chmod 755    ./menulib
+   chmod 644    ./menulib/*
+   tar -cf - * | $Encodedir/encode $Stars_password > $dest_dir_code/$STARS/stars.pwd
+   set_size_name $STARS stars.pwd
+   make_toc $STARS "STARS" sol/unity.opt
+   make_toc $STARS "STARS" sol/uplus.opt
+   make_toc $STARS "STARS" sol/inova.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping STARS Text	 for " | tee -a $log_fln
+
+   set_size_name $STARS stars.pwd
+   make_toc $STARS "STARS" sol/unity.opt
+   make_toc $STARS "STARS" sol/uplus.opt
+   make_toc $STARS "STARS" sol/inova.opt
+
+ fi
+#
+#---------------------------------------------------------------------------
+# tar Backproj help, maclib, manual and menulib files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $commondir/Backproj
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Backproj Text	  for " | tee -a $log_fln
+   tar -cf - $ComBackproj2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755    ./maclib
+   chmod 644    ./maclib/*
+   chmod 755    ./parlib
+   chmod 755    ./parlib/*
+   chmod 644    ./parlib/*/*
+   chmod 755	./psglib
+   tar -cf - * | $Encodedir/encode $Backproj_password > $dest_dir_code/$Backproj/backproj.pwd
+   set_size_name $Backproj backproj.pwd
+   make_toc $Backproj "Backprojection" sol/unity.opt
+   make_toc $Backproj "Backprojection" sol/uplus.opt
+   make_toc $Backproj "Backprojection" sol/inova.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping Backproj Text	  for " | tee -a $log_fln
+
+   set_size_name $Backproj backproj.pwd
+   make_toc $Backproj "Backprojection" sol/unity.opt
+   make_toc $Backproj "Backprojection" sol/uplus.opt
+   make_toc $Backproj "Backprojection" sol/inova.opt
+
+ fi
+#
+#---------------------------------------------------------------------------
+# tar Backproj's binary files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring Backproj binary  for " | tee -a $log_fln
+   tar -cf - $BinBackproj2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   chmod    755   ./seqlib
+   chmod    755   ./seqlib/*
+   tar -cf - * | $Encodedir/encode $Backproj_password > $dest_dir_code/$Backproj/$Unity/backproj.pwd
+   set_size_name $Backproj/$Unity backproj.pwd
+   make_toc $Backproj/$Unity "Backprojection" sol/unity.opt
+   make_toc $Backproj/$Unity "Backprojection" sol/uplus.opt
+   make_toc $Backproj/$Unity "Backprojection" sol/inova.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping Backproj binary for " | tee -a $log_fln
+
+   set_size_name $Backproj/$Unity backproj.pwd
+   make_toc $Backproj/$Unity "Backprojection" sol/unity.opt
+   make_toc $Backproj/$Unity "Backprojection" sol/uplus.opt
+   make_toc $Backproj/$Unity "Backprojection" sol/inova.opt
+
+ fi
+#
+#---------------------------------------------------------------------------
+# tar CSI user_templates files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $commondir/CSI
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring CSI Text	  for " | tee -a $log_fln
+   tar -cf - $ComCSI2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755   ./user_templates
+   tar -cf - * | $Encodedir/encode $CSI_password > $dest_dir_code/$CSI/csi.pwd
+   set_size_name $CSI csi.pwd
+   make_toc $CSI "CSI" sol/unity.opt
+   make_toc $CSI "CSI" sol/uplus.opt
+   make_toc $CSI "CSI" sol/inova.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping CSI Text	  for " | tee -a $log_fln
+
+   set_size_name $CSI csi.pwd
+   make_toc $CSI "CSI" sol/unity.opt
+   make_toc $CSI "CSI" sol/uplus.opt
+   make_toc $CSI "CSI" sol/inova.opt
+
+ fi
+#
+#---------------------------------------------------------------------------
+# tar CSI's binary files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring CSI binary	  for " | tee -a $log_fln
+   tar -cf - $BinCSI2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   tar -cf - * | $Encodedir/encode $CSI_password > $dest_dir_code/$CSI/$Unity/csi.pwd
+   set_size_name $CSI/$Unity csi.pwd
+   make_toc $CSI/$Unity "CSI" sol/unity.opt
+   make_toc $CSI/$Unity "CSI" sol/uplus.opt
+   make_toc $CSI/$Unity "CSI" sol/inova.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping CSI binary	  for " | tee -a $log_fln
+
+   set_size_name $CSI/$Unity csi.pwd
+   make_toc $CSI/$Unity "CSI" sol/unity.opt
+   make_toc $CSI/$Unity "CSI" sol/uplus.opt
+   make_toc $CSI/$Unity "CSI" sol/inova.opt
+
+ fi
+#
+#
+#---------------------------------------------------------------------
+# tar BIR shape files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $dest_dir_code/tmp
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring BIR shapes       for " | tee -a $log_fln
+   (cd $commondir/BIR; cp -rp wavelib $dest_dir_code/tmp)
+   chmod -R 755   ./wavelib
+   chmod 644      ./wavelib/*/*
+   tar -cf - * | $Encodedir/encode $BIR_password >$dest_dir_code/$Common/bir.pwd
+   set_size_name $Common bir.pwd
+   make_toc $Common "BIR_Shapes" sol/unity.opt
+   make_toc $Common "BIR_Shapes" sol/uplus.opt
+   make_toc $Common "BIR_Shapes" sol/inova.opt
+   make_toc $Common "BIR_Shapes" ibm/ibm.opt
+   make_toc $Common "BIR_Shapes" sgi/sgi.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping BIR shapes	  for " | tee -a $log_fln
+
+   set_size_name $Common bir.pwd
+   make_toc $Common "BIR_Shapes" sol/unity.opt
+   make_toc $Common "BIR_Shapes" sol/uplus.opt
+   make_toc $Common "BIR_Shapes" sol/inova.opt
+   make_toc $Common "BIR_Shapes" ibm/ibm.opt
+   make_toc $Common "BIR_Shapes" sgi/sgi.opt
+
+ fi
+#
+#
+#---------------------------------------------------------------------
+# tar DOSY files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $dest_dir_code/tmp
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring DOSY files	  for " | tee -a $log_fln
+   (cd $commondir/DOSY; cp -rp * $dest_dir_code/tmp)
+   chmod 755   ./*
+   chmod 644   ./*/*
+   chmod 755   ./parlib/*
+   chmod 644   ./parlib/*/*
+   chmod 755   ./psglib
+   chmod 644   ./psglib/*
+   chmod 755   ./fidlib/*
+   chmod 755   ./fidlib/*/*
+   chmod 644   ./fidlib/*/*/*
+   chmod 755   ./user_templates/dg
+   chmod 755   ./user_templates/dg/*
+   chmod 644   ./user_templates/dg/*/*
+
+   tar -cf - * | $Encodedir/encode $DOSY_password >$dest_dir_code/$Common/dosy.pwd
+   set_size_name $Common dosy.pwd
+   make_toc $Common "DOSY" sol/unity.opt
+   make_toc $Common "DOSY" sol/uplus.opt
+   make_toc $Common "DOSY" sol/inova.opt
+   make_toc $Common "DOSY" ibm/ibm.opt
+   make_toc $Common "DOSY" sgi/sgi.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping DOSY files	  for " | tee -a $log_fln
+
+   set_size_name $Common dosy.pwd
+   make_toc $Common "DOSY" sol/unity.opt
+   make_toc $Common "DOSY" sol/uplus.opt
+   make_toc $Common "DOSY" sol/inova.opt
+   make_toc $Common "DOSY" ibm/ibm.opt
+   make_toc $Common "DOSY" sgi/sgi.opt
+
+ fi
+#
+#---------------------------------------------------------------------
+# tar DOSY files
+  if [ x$password_answer = "xy" ]
+  then
+
+      cd $dest_dir_code/tmp
+      echo "" | tee -a $log_fln
+      nnl_echo " Tarring DOSY files       for " | tee -a $log_fln
+      (cd $commondir/DOSY; cp -rp * $dest_dir_code/tmp)
+      chmod 755   ./*
+      chmod 644   ./*/*
+      chmod 755   ./parlib/*
+      chmod 644   ./parlib/*/*
+      chmod 755   ./psglib
+      chmod 644   ./psglib/*
+      chmod 755   ./fidlib/*
+      chmod 755   ./fidlib/*/*
+      chmod 644   ./fidlib/*/*/*
+      chmod 755   ./user_templates/dg
+      chmod 755   ./user_templates/dg/*
+      chmod 644   ./user_templates/dg/*/*
+
+      chmod 755 ./seqlib
+      filelist=`ls $commondir/DOSY/seqlib`
+      rm seqlib/*
+
+      for file in $filelist
+      do
+          cp -p /vobj/sol/proglib/kseqlib/$file seqlib
+      done
+      chmod 755 ./seqlib/*
+
+      tar -cf - * | $Encodedir/encode $DOSY_password >$dest_dir_code/$Common/mdosy.pwd
+      set_size_name $Common mdosy.pwd
+      make_toc $Common "DOSY" sol/mercplus.opt
+      make_toc $Common "DOSY" sol/mercvx.opt
+      make_toc $Common "DOSY" sol/mercury.opt
+      rm -rf $dest_dir_code/tmp/*
+
+ else
+
+      set_size_name $Common mdosy.pwd
+      make_toc $Common "DOSY" sol/mercplus.opt
+      make_toc $Common "DOSY" sol/mercvx.opt
+      make_toc $Common "DOSY" sol/mercury.opt
+
+ fi
+#
+#---------------------------------------------------------------------
+# tar VAST files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $dest_dir_code/tmp
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring VAST files	  for " | tee -a $log_fln
+   (cd $commondir/Gilson; cp -rp * $dest_dir_code/tmp)
+#   chmod 755   ./*
+#   chmod 644   ./*/*
+#   chmod 755   ./bin/*
+#   chmod 755   ./tcl/bin
+#   chmod 755   ./tcl/bin/*
+#   chmod 755   ./asm/racks
+#   chmod 644   ./asm/racks/*
+#   chmod 755   ./asm/info
+#   chmod 644   ./asm/info/*
+#   chmod 755   ./asm/tcl
+#   chmod 644   ./asm/tcl/*
+   setperms ./ 755 644 755
+   setperms ./asm/info 755 666 755
+   setperms ./user_templates/dg 755 666 755
+   chmod 777 ./asm
+   chmod 777 ./asm/info
+#  chmod 755,  since normally TCL script are not mark executable
+   chmod 755   ./tcl/bin/*
+   tar -cf - * | $Encodedir/encode $VAST_password >$dest_dir_code/$Unity/$Inova/vast.pwd
+   set_size_name $Unity/$Inova vast.pwd
+   make_toc $Unity/$Inova "VAST" sol/inova.opt
+#
+# Mercruy-VX does not use the psglib (yet)
+#
+   cd $dest_dir_code/tmp
+   rm -rf psglib
+   tar -cf - * | $Encodedir/encode $VAST_password >$dest_dir_code/$Mvx/vast.pwd
+   set_size_name $Mvx vast.pwd
+   make_toc $Mvx "VAST" sol/mercvx.opt
+   make_toc $Mvx "VAST" sol/mercplus.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping VAST files	  for " | tee -a $log_fln
+
+   set_size_name $Unity/$Inova vast.pwd
+   make_toc $Unity/$Inova "VAST" sol/inova.opt
+   set_size_name $Mvx vast.pwd
+   make_toc $Mvx "VAST" sol/mercvx.opt
+   make_toc $Mvx "VAST" sol/mercplus.opt
+
+ fi
+#
+#
+#---------------------------------------------------------------------
+# tar the INOVA GILSON seqlib 
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring GILSON seqlib	  for " | tee -a $log_fln
+   tar -cf - $GILSONSeq2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod 755   ./seqlib
+   chmod 755   ./seqlib/*
+   tar -cf - * | $Encodedir/encode $VAST_password > $dest_dir_code/$Unity/$Inova/vastseqlib.pwd
+   set_size_name $Unity/$Inova vastseqlib.pwd
+   make_toc $Unity/$Inova "VAST" sol/inova.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping GILSON seqlib	  for " | tee -a $log_fln
+
+   set_size_name $Unity/$Inova vastseqlib.pwd
+   make_toc $Unity/$Inova "VAST" sol/inova.opt
+ fi
+#
+#
+#---------------------------------------------------------------------------
+# tar FDM binary files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $solobjdir
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring FDM binary  for  " | tee -a $log_fln
+   tar -cf - $FdmBin2Tar | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   chmod -R 755 ./bin
+   tar -cf - * | $Encodedir/encode $FDM_password > $dest_dir_code/$Unity/fdmbin.pwd
+   set_size_name $Unity fdmbin.pwd
+   make_toc $Unity "FDM" sol/g2000.opt
+   make_toc $Unity "FDM" sol/mercury.opt
+   make_toc $Unity "FDM" sol/mercvx.opt
+   make_toc $Unity "FDM" sol/mercplus.opt
+   make_toc $Unity "FDM" sol/unity.opt
+   make_toc $Unity "FDM" sol/uplus.opt
+   make_toc $Unity "FDM" sol/inova.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping FDM binary  for " | tee -a $log_fln
+
+   set_size_name $Unity fdmbin.pwd
+   make_toc $Unity "FDM" sol/g2000.opt
+   make_toc $Unity "FDM" sol/mercury.opt
+   make_toc $Unity "FDM" sol/mercvx.opt
+   make_toc $Unity "FDM" sol/mercplus.opt
+   make_toc $Unity "FDM" sol/unity.opt
+   make_toc $Unity "FDM" sol/uplus.opt
+   make_toc $Unity "FDM" sol/inova.opt
+ fi
+#
+#
+#---------------------------------------------------------------------------
+# tar Patented Image pulse sequences and supporting files
+  if [ x$password_answer = "xy" ]
+  then
+
+   cd $commondir/IMAGE_patent
+   echo "" | tee -a $log_fln
+   nnl_echo " Tarring IMAGE_patent for     " | tee -a $log_fln
+   tar -cf - $ImagePatentFiles | (cd $dest_dir_code/tmp; tar xfBp -)
+   cd $dest_dir_code/tmp
+   setperms ./imaging 755 644 755
+   setperms ./maclib  755 644 755
+   setperms ./parlib  755 644 755
+   setperms ./psglib 755 644 755
+   setperms ./seqlib 755 644 755
+   tar -cf - * | $Encodedir/encode $IMGP_password > $dest_dir_code/$Image/$Unity/img_pat.pwd
+   set_size_name $Image/$Unity img_pat.pwd
+   make_toc $Image/$Unity "Imaging_Sequences" sol/inova.opt
+   rm -rf $dest_dir_code/tmp/*
+
+ else
+
+   echo "" | tee -a $log_fln
+   nnl_echo " Skipping IMAGE_patent for  " | tee -a $log_fln
+
+   set_size_name $Image/$Unity img_pat.pwd
+   make_toc $Image/$Unity "Imaging_Sequences" sol/inova.opt
+ fi
+#
+#============== ACC ====================================================
+# copy Solaris patches
+   echo "" | tee -a $log_fln
+   nnl_echo "PART XV -- ACC FOR CHEMMAGNETICS -- " | tee -a $log_fln
+   if [ ! -d $dest_dir/acc ]
+   then
+       mkdir $dest_dir/acc
+   fi
+   cd /vcommon/acc
+   cp $ChemAcc $dest_dir/acc
+#
+#============== INSTALLATION FILES =========================================
+# copy some of the installation programs
+   echo "" | tee -a $log_fln
+   nnl_echo "PART XVI -- INSTALLATION FILES -- $dest_dir" | tee -a $log_fln
+#
+#---------------------------------------------------------------------------
+#
+   echo "" | tee -a $log_fln
+   echo " Making copies in '$LoadFilesDir'" | tee -a $log_fln
+
+   echo "volstart " | tee -a $log_fln
+   cp $sourcedir/sysscripts/volstart $dest_dir/volstart
+   chmod 777 $dest_dir/volstart
+
+   echo "load.nmr " | tee -a $log_fln
+   cp $sourcedir/sysscripts/autoloadcd $dest_dir/load.nmr
+   chmod 777 $dest_dir/load.nmr
+
+#   echo "load.std " | tee -a $log_fln
+#   cp $sourcedir/sysscripts/loadcd $dest_dir/load.std
+#   chmod 777 $dest_dir/load.std
+
+   if [ x$LoadVnmrJ != "xy" ]
+   then
+      echo $Code/i_vnmr.3 | tee -a $log_fln
+      cp $sourcedir/sysscripts/i_vnmr3 $dest_dir_code/i_vnmr.3
+      chmod 777 $dest_dir/code/i_vnmr.3
+
+      echo $Code/i_vnmr.4 | tee -a $log_fln
+      cp $sourcedir/sysscripts/i_vnmr4 $dest_dir_code/i_vnmr.4
+      chmod 777 $dest_dir/code/i_vnmr.4
+   fi
+
+   echo "checkspace, kill_insvnmr" | tee -a $log_fln
+   (cd $sourcedir/sysscripts; cp checkspace $dest_dir_code)
+   (cd $dest_dir_code; chmod 777 checkspace )
+   if [ x$LoadVnmrJ = "xy" ]
+   then
+      echo "vnmrsetup, dbsetup, ins_vnmr, kill_insvnmr" | tee -a $log_fln
+      (cd $sourcedir/sysscripts; cp dbsetup vnmrsetup ins_vnmr kill_insvnmr $dest_dir_code)
+      (cd $dest_dir_code; chmod 777 dbsetup vnmrsetup ins_vnmr kill_insvnmr)
+   fi
+
+#
+#   for VJ cdrom only
+#
+   if [ x$LoadVnmrJ = "xy" ]
+   then
+      (cd $dest_dir; rm -f load.nmr; ln -s code/vnmrsetup load.nmr)
+      for file in $LoadDecodeBin
+      do
+         echo $Code/$file | tee -a $log_fln
+         rm -f $dest_dir_code/$file
+         cp -p $solobjdir/proglib/bin/$file $dest_dir_code/$file
+         chmod 777 $dest_dir/code/$file
+      done
+   else
+ 
+      for file in $LoadSolFilesBin
+      do
+         echo $Code/$file | tee -a $log_fln
+         rm -f $dest_dir_code/$file
+         cp -p $solobjdir/proglib/bin/$file $dest_dir_code/$file
+         chmod 777 $dest_dir/code/$file
+      done
+   
+    
+      for file in $LoadIbmFilesBin
+      do
+         echo $Code/$file | tee -a $log_fln
+         rm -f $dest_dir_code/$file
+         cp -p $ibmobjdir/proglib/bin/$file $dest_dir_code/$file
+         chmod 777 $dest_dir/code/$file
+      done
+
+ 
+      for file in $LoadSgiFilesBin
+      do
+         echo $Code/$file | tee -a $log_fln
+         rm -f $dest_dir_code/$file
+         cp -p $sgiobjdir/proglib/bin/$file $dest_dir_code/$file
+         chmod 777 $dest_dir/code/$file
+      done
+   fi
+ 
+   echo "copying icons" | tee -a $log_fln
+   cd $dest_dir_code
+   if [ ! -d $dest_dir_code/icon ]
+   then
+      mkdir -p $dest_dir_code/icon
+   fi
+   cd icon
+   chmod -w *.icon
+   Sget bin inova.icon > /dev/null
+   Sget bin g2000.icon > /dev/null
+   Sget bin unity.icon > /dev/null
+   Sget bin uplus.icon > /dev/null
+   Sget bin mercury.icon > /dev/null
+   Sget bin mercvx.icon > /dev/null
+   Sget bin mercplus.icon > /dev/null
+   Sget bin sgi.icon > /dev/null
+   Sget bin ibm.icon > /dev/null
+   Sget bin logo.icon > /dev/null
+   chmod +w *.icon
+   mv inova.icon    inova.xpm;
+   mv g2000.icon    g2000.xpm;
+   mv unity.icon    unity.xpm;
+   mv uplus.icon    uplus.xpm;
+   mv mercury.icon  mercury.xpm;
+   mv mercvx.icon   mercvx.xpm;
+   mv mercplus.icon mercplus.xpm;
+   /vobj/sol/bin/convert inova.xpm    inova.gif
+   /vobj/sol/bin/convert g2000.xpm    g2000.gif
+   /vobj/sol/bin/convert unity.xpm    unity.gif
+   /vobj/sol/bin/convert uplus.xpm    uplus.gif
+   /vobj/sol/bin/convert mercury.xpm  mercury.gif
+   /vobj/sol/bin/convert mercvx.xpm   mercvx.gif
+   /vobj/sol/bin/convert mercplus.xpm mercplus.gif
+   mv inova.xpm     inova.icon
+   mv g2000.xpm     g2000.icon
+   mv unity.xpm     unity.icon
+   mv uplus.xpm     uplus.icon
+   mv mercury.xpm   mercury.icon
+   mv mercvx.xpm    mercvx.icon
+   mv mercplus.xpm  mercplus.icon
+ 
+   #cd $Install_dir
+   #echo $Code/readme.txt | tee -a $log_fln
+   #cp readme.txt $dest_dir/readme.txt
+   #chmod 644 $dest_dir/readme.txt
+   #cp readme.txt $dest_dir/../READ.ME
+   #chmod 644 $dest_dir/../READ.ME
+
+   cd $dest_dir_code/../
+   echo "" | tee -a $log_fln
+   echo "" | tee -a $log_fln
+   rm -f vnmrrev $RevFileName
+   echo "Writing Revision File '$RevFileName':"  | tee -a $log_fln
+   echo $VnmrRevId > vnmrrev
+   echo `date '+%B %d, %Y'` >> vnmrrev
+   cat vnmrrev | tee -a $log_fln
+   ln -s vnmrrev $RevFileName
+
+
+#Create a system checksums file to validate Part11 system
+
+if [ x$LoadP11 = "xy" ]
+then
+
+    mkdir -p $dest_dir_code/tmp
+    cd $dest_dir_code/tmp
+     
+    tar xvf $dest_dir_code/common/combin.tar
+    tar xvf $dest_dir_code/inova/vnmrj.tar
+    tar xvf $dest_dir_code/inova/vnmrjbin.tar
+    tar xvf $dest_dir_code/inova/java.tar
+    tar xvf $dest_dir_code/inova/vnmrjadmjar.tar
+    tar xvf $dest_dir_code/inova/wobbler.tar
+    tar xvf $dest_dir_code/inova/acqbin2.tar
+    tar xvf $dest_dir_code/inova/acqbin.tar
+    tar xvf $dest_dir_code/solaris/bin.tar
+    tar xvf $dest_dir_code/solaris/unibin.tar
+    tar xvf $dest_dir_code/solaris/binx.tar
+    tar xvf $dest_dir_code/unity/pboxbin.tar
+    tar xvf $dest_dir_code/unity/inova/wobbler.tar
+    tar xvf $dest_dir_code/imaging/unity/seqlib.tar
+    tar xvf $dest_dir_code/imaging/unity/image.tar
+    tar xvf $dest_dir_code/glidepack/glidebin.tar
+
+    mkdir -p adm/p11
+    bin/vnmrMD5 -l /vcommon/p11/sysList vnmrsystem > adm/p11/syschksm
+
+    #pack checksum file together within com.tar
+    tar -rf $dest_dir_code/common/com.tar  adm/p11/syschksm
+
+    cd $dest_dir_code
+    rm -rf tmp
+
+fi
+
+#
+#---------------------------------------------------------------------------
+# Finally, all done, write out passwd file, clean up some unneeded directories
+#
+   cd $dest_dir/..
+   echo "" | tee -a $log_fln
+   echo "" | tee -a $log_fln
+   echo "The passwords used with this install are:" > passwords | tee -a $log_fln
+   echo "" >> passwords
+#   echo "Gradient_shim	   $Gmap_password"  >> passwords
+   echo "Diffusion	   $Diff_password"  >> passwords
+   echo "LC-NMR		   $LCNMR_password" >> passwords
+   echo "STARS             $Stars_password" >> passwords
+#   echo "VNMR for IBM	   $IBM_password"   >> passwords
+#   echo "VNMR for SGI     $SGI_password"   >> passwords
+   echo "Backprojection	   $Backproj_password"   >> passwords
+   echo "CSI		   $CSI_password"   >> passwords
+   echo "BIR Shapes        $BIR_password"   >> passwords
+   echo "DOSY              $DOSY_password"  >> passwords
+   echo "VAST              $VAST_password"  >> passwords
+   echo "FDM               $FDM_password"   >> passwords
+   echo "Imaging_Sequences $IMGP_password"  >> passwords
+   echo "" >> passwords
+
+   cat passwords >> $log_fln
+   
+   cd $dest_dir_code
+   echo " " | tee -a $log_fln
+   echo "Deleting unneeded subdirectories:" | tee -a $log_fln
+   for file in $RmSubDirs
+   do
+      nnl_echo "$file " | tee -a $log_fln
+      rm -r $file
+   done
+   echo "" | tee -a $log_fln
+   echo "" | tee -a $log_fln
+
+   
+   if [ x$fini_dir != "xnone" ]
+   then
+     echo "Write CD Image to Destination Place: $fini_dir" | tee -a $log_fln
+     cd $dest_dir
+     tar -cf - . | (cd $fini_dir; tar xfBp -)
+     cp $dest_dir/../passwords $fini_dir.passwords
+
+     if [ x$LoadVnmrJ = "xy" ]
+     then
+        rm -f /rdvnmr/.cdromVJ_latest
+        ln -s $fini_dir /rdvnmr/.cdromVJ_latest
+     else
+        rm -f /rdvnmr/.cdrom_latest
+        ln -s $fini_dir /rdvnmr/.cdrom_latest
+     fi
+     if [ x$notifySW = "xy" ]
+     then
+	mail_list="`cat $vbin/cdout_mail_list`"
+        msg1="Subject:  $fini_dir Completed"
+        msg2="To: $mail_list"
+        msg3a=`echo "FYI,\n"`
+        msg3=`echo "CD Image \"$fini_dir\" is Ready.\n"`
+        msg="$msg1\n$msg2\n \n \n$msg3a\n\n$msg3\n\n"
+        echo $msg | mail  $mail_list 
+     fi
+    fi

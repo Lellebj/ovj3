@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+ <template type="basic" name="presscsi" author="notImplemented" investigator="varian"
+    rfcoil="main" anatomy="head" time_created="20011207T105239"
+    application="imaging" apptype="im1Dcsi" scans="presscsi" seqfil="presscsi">
+  <protocol title="presscsi" type="protocol">
+    <action  type="LIB" status="Ready" title="presscsi" exp="presscsi"
+      time="51 min, 16 sec" macro="sqexp('presscsi')" data="" />
+  </protocol>
+</template>

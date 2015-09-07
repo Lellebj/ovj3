@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="angio" author="notImplemented" investigator="varian"
+    rfcoil="main" anatomy="head" time_created="20011207T173049"
+    application="imaging" apptype="im2D" scans="angio" seqfil="angio">
+  <protocol title="angio" type="protocol">
+    <action  type="LIB" status="Ready" title="angio" exp="angio"
+      time="8 sec" macro="sqexp('angio')" data="" />
+  </protocol>
+</template>

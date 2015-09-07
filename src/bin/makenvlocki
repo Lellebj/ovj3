@@ -1,0 +1,391 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+SHELL=/usr/bin/sh
+MAKEFILE= makenvlocki
+
+SCCSDIR=$(sccsdir)
+REV_DATE=$(VNMR_REV_DATE)
+
+OPENWINHOME=/usr/openwin
+YACCDIR=/vobj/sol
+STD_YACCDIR=/usr/ccs/bin
+SRC_DIR=./
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmrbg/  -> directory under SCCS directory  (e.g., /big/sccs/vnmrbg/ )
+PROJCAT=
+
+# NDDS_HOME = /sw/NDDS/ndds.3.0m
+# NDDSGEN = $(NDDS_HOME)/bin/sparcSol2.8cc5.2/nddsgen
+# NDDSHOME = /sw/NDDS/ndds.3.0m
+
+# NDDS_HOME = /sw/NDDS/build_ndds_ver
+# NDDSHOME = /sw/NDDS/build_ndds_ver
+NDDSHOME = $(nddsdir)
+NDDS_HOME = $(nddsdir)
+NDDSHOME_GEN = $(nddsgendir)
+NDDSLIBPATH = lib/SolLibs
+NDDSGEN = $(NDDS_HOME)/bin/SolBin/nddsgen
+
+syslibs_sparcSol2.8cc5.2 = -lnsl -lgenIO -lsocket -lgen -lposix4 -lpthread -lm -lc
+
+#NDDSLIBS = -L$(NDDS_HOME)/lib/sparcSol2.8cc5.2 \
+#	-lnddsdiag -lnddsz -lnddsutilsz -lnddscdrz -lutilsipz -lutilsxxz -lperftimez -lwavesurf \
+#	$(syslibs_sparcSol2.8cc5.2)
+
+NDDSLIBS = -L$(NDDSHOME)/$(NDDSLIBPATH) \
+	-lnddsdiag -lnddsz -lnddsutilsz -lnddscdrz -lutilsipz -lutilsxxz -lperftimez -lwavesurf \
+	$(syslibs_sparcSol2.8cc5.2)
+
+NDDSLIBS_SFU = -L$(NDDSHOME)/$(NDDSLIBPATH) \
+	$(NDDSHOME)/$(NDDSLIBPATH)/libnddsdiagz.a \
+	$(NDDSHOME)/$(NDDSLIBPATH)/libnddsz.a  \
+	$(NDDSHOME)/$(NDDSLIBPATH)/libnddsutilsz.a \
+	$(NDDSHOME)/$(NDDSLIBPATH)/libnddscdrz.a \
+	$(NDDSHOME)/$(NDDSLIBPATH)/libutilsxxz.a \
+	$(NDDSHOME)/$(NDDSLIBPATH)/libutilsipz.a \
+	$(NDDSHOME)/$(NDDSLIBPATH)/libperftimez.a \
+	-static-libgcc -ldl -lm -lpthread -lsocket -lport -lbind
+
+# NDDSLIBS = $(STDLIBS)
+
+RLIBDIR = -R /vnmr/lib:$(NDDSHOME)/$(NDDSLIBPATH)
+
+INCLUDES = -I$(NDDSHOME)/include/unix \
+	-I$(NDDSHOME)/include/share
+
+OPTIMIZE = -xO2
+DEBUGOPT = -g -xF -xsb
+RANLIB =
+PIC = -K PIC
+SOL = --DSOLARIS
+ACC = cc
+LDSOFLAGS = -G
+
+# use echo where we don't perform action
+SLINK = ln -s
+OBJDIR = sol
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+#CFLAGS= -O -DBSDACQ -fsingle
+LPCFLAGS= -O4 -fsingle -dalign
+#CPPFLAGS= -DSUN -DBSDACQ
+# Default values are for inova (used for make depend)
+CPPFLAGS= -DVNMRJ -DBSDACQ -DSUN -DSOLARIS -DNESSIE
+#CFLAGS=-g $(MINCDIR) -I$(OPENWINHOME)/include
+CFLAGS= $(MINCDIR) -I$(OPENWINHOME)/include
+
+#LDFLAGS=  -g
+LDFLAGS=
+ASMCPP.s= /lib/cpp -P $(CPPFLAGS) $(TARGET_ARCH)
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LPCOMPILE.c= $(CC) $(LPCFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CCC) $(LDFLAGS) $(TARGET_ARCH)
+COMPILE.cc= $(CCC) $(CFLAGS) $(TARGET_ARCH) -c
+
+ 
+#--- SCCS Sources ----  
+ACQPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)acqproc/SCCS/s.
+BIN_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+VNMR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmr/SCCS/s.
+VNMRBG_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmrbg/SCCS/s.
+XRACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)xracq/SCCS/s.
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+EXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)expproc/SCCS/s.
+VWACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vwacq/SCCS/s.
+NVACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvacq/SCCS/s.
+PSG_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)psg/SCCS/s.
+
+ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)
+BIN_SRC_DIR= $(BIN_SCCS_SRC)
+EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)
+NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)
+VNMR_SRC_DIR= $(VNMR_SCCS_SRC)
+VNMRBG_SRC_DIR= $(VNMRBG_SCCS_SRC)
+NVACQ_SRC_DIR= $(NVACQ_SCCS_SRC)
+VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)
+XRACQ_SRC_DIR= $(XRACQ_SCCS_SRC)
+PSG_SRC_DIR= $(PSG_SCCS_SRC)
+
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+ACQPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)acqproc/SCCS get
+BIN_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get
+VNMR_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vnmr/SCCS get
+VNMRBG_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vnmrbg/SCCS get
+XRACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)xracq/SCCS get
+NCOMM_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ncomm/SCCS get
+EXPPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)expproc/SCCS get
+VWACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vwacq/SCCS get
+NVVNMRBG_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvvnmrbg/SCCS get
+NVACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvacq/SCCS get
+PSG_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)psg/SCCS get
+
+#----  default source extraction to links -------
+ACQPROC_GET= $(ACQPROC_SGET)
+BIN_GET= $(BIN_SGET)
+VNMR_GET= $(VNMR_SGET)
+VNMRBG_GET= $(VNMRBG_SGET)
+XRACQ_GET= $(XRACQ_SGET)
+NCOMM_GET= $(NCOMM_SGET)
+EXPPROC_GET= $(EXPPROC_SGET)
+VWACQ_GET= $(VWACQ_SGET)
+NVVNMRBG_GET = $(NVVNMRBG_SGET)
+NVACQ_GET = $(NVACQ_SGET)
+PSG_GET= $(PSG_SGET)
+
+# -- ibm motif libraries ---
+# RLIBDIR=-R /usr/openwin/lib:/usr/dt/lib:/vnmr/lib:$(NDDS_HOME)/lib/sparcSol2.8cc5.2
+RLIBDIR=-R /usr/openwin/lib:/usr/dt/lib:/vnmr/lib
+MLIBDIR=-L/usr/dt/lib -L/vobj/sol/proglib/ncomm -L/vobj/sol/lib
+MINCDIR=-I/usr/dt/include
+
+NDDS_TYPES = Lock_Cmd.x Lock_FID.x
+
+NDDS_SRC= $(NDDS_TYPES:.x=.c)
+NDDS_OBJ= $(NDDS_TYPES:.x=.o)
+
+#------------------------------------------------------------------------
+#-- NDDS comm Source  files
+#------------------------------------------------------------------------
+
+NVACQ_HDR=                      \
+		crc32.h         \
+		sysUtils.h      \
+		NDDS_Obj.h
+
+#		NDDS_SubFuncs.h
+
+NVACQ_SRC=                      \
+		NDDS_SubFuncs.c \
+		NDDS_Obj.c      \
+		sysUtils.c
+
+#		NDDS_Obj.c      \
+#		NDDS_PubFuncs.c \
+#		NDDS_SubFuncs.c
+
+NVACQ_OBJ= $(NVACQ_SRC:.c=.o)
+
+PROG_SRC =			\
+		nvlocki.c
+
+PROG_OBJ= $(PROG_SRC:.c=.o)
+
+#--- Expproc header files that are needed for interactive expts
+EXPPROC_HDR=			\
+		expQfuncs.h	\
+		shrexpinfo.h	\
+		shrstatinfo.h
+
+EXPPROC_SRC=			\
+		expQfuncs.c     \
+		statfuncs.c
+
+EXPPROC_OBJ=$(EXPPROC_SRC:.c=.o)
+
+PSG_HDR=
+PSG_SRC=			\
+		convertapbout.c
+PSG_OBJ=$(PSG_SRC:.c=.o)
+
+#--- vwacq (New Digital Console) header files that are needed for iadisplay
+VWACQ_HDR=			\
+		acqcmds.h	\
+		hostAcqStructs.h
+
+UNMRLIB_HDR=			\
+		data.h		\
+		acquisition.h	\
+		comm.h		\
+		graphics.h	\
+		group.h		\
+		variables.h		\
+		vnmrsys.h
+
+UNMRLIB_SRC=			\
+		comm.c		\
+		socket.c
+
+#		acqhwcmd.c	\
+
+UNMRLIB_OBJ= $(UNMRLIB_SRC:.c=.o)
+
+#---  XRacq Header files needed by Vnmr -------
+XRACQ_HDR=			\
+		ACQ_SUN.h
+
+NCOMM_HDR=			\
+		sockets.h	\
+		semLib.h	\
+		mfileObj.h	\
+		errLogLib.h	\
+		shrMLib.h
+
+NCOMM_SRC_LIB=                  \
+		errLogLib.c     \
+		semLib.c        \
+		mfileObj.c      \
+		shrMLib.c
+ 
+NCOMM_OBJ_LIB= $(NCOMM_SRC_LIB:.c=.o)
+
+#------------------------------------------------------------------------
+#---- All Sources and headers required for compilation -----
+#------------------------------------------------------------------------
+
+ALL_H_SRC= $(UNMRLIB_HDR) $(EXPPROC_HDR) \
+	$(NVACQ_HDR) $(VWACQ_HDR) $(XRACQ_HDR) $(NCOMM_HDR)
+
+COMMON_SRC= $(PROG_SRC) $(NDDS_TYPES) $(ALL_H_SRC)
+
+COMMON_OBJ= $(PROG_OBJ) $(NVACQ_OBJ)
+
+ALL_OBJ= $(COMMON_OBJ) $(NDDS_OBJ) $(NCOMM_OBJ_LIB) $(UNMRLIB_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ)
+
+
+#--- make Targets ----------------------------------------------
+
+std : SOLARIS
+
+SOLARIS : dbxsol
+	@echo "NMR_ID Solaris libraries complete -------------------------"
+
+
+dbxsol : 
+	@( if [ ! -d nvlocki_obj ]; then    \
+	   mkdir nvlocki_obj;                       \
+	fi)
+	( cd nvlocki_obj; SOLARIS="y"; export SOLARIS; $(MAKE) -f ../$(MAKEFILE) \
+	"CFLAGS= $(MINCDIR) -I$(OPENWINHOME)/include $(INCLUDES)" \
+	"CPPFLAGS= -DVNMRJ -DBSDACQ -DSUN -DSOLARIS -DNESSIE -DRTI_UNIX -DNIRVANA" \
+	"LPCFLAGS= -O -fsingle $(COPTIONS)"	\
+	"TARGET_ARCH=" \
+	"LDFLAGS= -L$(OPENWINHOME)/lib -L. $(MLIBDIR) $(RLIBDIR)" \
+	"LIBS = $(NDDSLIBS) -ll -lm -lsocket -ldl -lnsl" \
+	"GUI_TYPE=ow" \
+	 nvlocki )
+	( cp nvlocki_obj/nvlocki . )
+	@echo "nvlocki complete --------------------------"
+
+WINDOWS :
+	@( if [ ! -d nvlocki_sfu ]; then    \
+	   mkdir nvlocki_sfu;                       \
+	fi)
+	( cd nvlocki_sfu;                   \
+	  $(MAKE) -e -f ../$(MAKEFILE) \
+	  "CC = gcc"                  \
+	  "CCC = g++"                  \
+	  "DEBUGOPT = -g"                 \
+	  "NDDSHOME = $(nddsdir)"     \
+	  "NDDS_HOME = $(nddsdir)"     \
+	  "NDDSHOME_GEN = $(nddsgendir)" \
+	  "NDDSLIBPATH = lib/WinSFULibs"     \
+	  "NDDSGEN = $(NDDSHOME)/bin/WinBin/nddsgen.exe"  \
+	  "STDLIBS = -lsocket -lm -lpthread" \
+	  "RLIBDIR = -rpath /vnmr/lib:$(NDDSHOME)/lib/WinSFULibs" \
+	  "CFLAGS = -DEBUG -DLINUX -D_ALL_SOURCE -D_USE_LIBPORT -D_REENTRANT -DRTI_UNIX -DUSE_HTONS -DNO_MULTICAST -DNESSIE -DNIRVANA $(INCLUDES) "               \
+	  "LDFLAGS = " \
+	  "LIBS= -lm -lsocket -lport -lbind " \
+	  nvlocki_win; cp nvlocki_win ../nvlocki )
+	@echo "NMR_ID Windows SFU nvlocki complete -------------------------------------"
+
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE)	\
+	"VNMR_SRC_DIR= $(VNMR_SCCS_SRC)"   \
+	"VNMRBG_SRC_DIR= $(VNMRBG_SCCS_SRC)"   \
+	"XRACQ_SRC_DIR= $(XRACQ_SCCS_SRC)"	\
+	"ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)"	\
+	"NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)"	\
+        "EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)" \
+        "VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)" \
+	"VNMR_GET= $(VNMR_SGET)" 		\
+	"VNMRBG_GET= $(VNMRBG_SGET)" 		\
+	"XRACQ_GET= $(XRACQ_SGET)"		\
+	"ACQPROC_GET= $(ACQPROC_SGET)"	\
+	"NCOMM_GET= $(NCOMM_SGET)"		\
+        "EXPPROC_GET= $(EXPPROC_SGET)"	\
+        "NVACQ_GET= $(NVACQ_SGET)"	\
+        "VWACQ_GET= $(VWACQ_SGET)" 	\
+	src)
+
+
+src : $$(MAKEFILE) $(COMMON_SRC)
+	@echo target src :  is up  to date.........
+	@echo ""
+
+
+nvlocki : $$(ALL_OBJ)
+	(umask 2; $(LINK.c) -o $@ $(ALL_OBJ) $(LIBS)  )
+
+nvlocki_win : $$(ALL_OBJ)
+	(umask 2; $(LINK.c) -o $@ $(ALL_OBJ) $(NDDSLIBS_SFU)  )
+
+
+#--- Object Targets ---------------------------
+
+$(COMMON_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(NDDS_OBJ) :
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#------ makefile extraction via SCCS always. -------
+$(MAKEFILE) : $$(BIN_SCCS_SRC)$$(@)
+	$(BIN_SGET) $@
+
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(UNMRLIB_HDR) $(UNMRLIB_SRC) : $$(VNMR_SRC_DIR)$$(@)
+	$(VNMR_GET) $@
+
+$(XRACQ_HDR) : $$(XRACQ_SRC_DIR)$$(@)
+	$(XRACQ_GET) $@
+
+$(NCOMM_HDR) $(NCOMM_SRC_LIB): $$(NCOMM_SRC_DIR)$$(@)
+	$(NCOMM_GET) $@
+
+$(EXPPROC_HDR) $(EXPPROC_SRC): $$(EXPPROC_SRC_DIR)$$(@)
+	$(EXPPROC_GET) $@
+
+$(VWACQ_HDR) : $$(VWACQ_SRC_DIR)$$(@)
+	$(VWACQ_GET) $@
+
+$(NVACQ_HDR) $(NDDS_TYPES) $(NVACQ_SRC) : $$(NVACQ_SRC_DIR)$$(@)
+	$(NVACQ_SGET) $@
+
+$(PROG_SRC) : $$(BIN_SRC_DIR)$$(@)
+	$(BIN_SGET) $@
+
+$(PSG_HDR) $(PSG_SRC) : $$(PSG_SRC_DIR)$$(@)
+	$(PSG_SGET) $@
+
+Lock_FID.c Lock_FID.h : Lock_FID.x
+	-(umask 2; export NDDSHOME; NDDSHOME=$(NDDSHOME_GEN); $(NDDSGEN) -replace Lock_FID.x )
+
+Lock_Cmd.c Lock_Cmd.h : Lock_Cmd.x
+	@echo " get $@"
+	-(umask 2; export NDDSHOME; NDDSHOME=$(NDDSHOME_GEN); $(NDDSGEN) -replace Lock_Cmd.x )
+
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+
+nvlocki.o: nvlocki.c vnmrsys.h group.h ACQ_SUN.h shrexpinfo.h expQfuncs.h shrstatinfo.h
+nvlocki.o: acqcmds.h mfileObj.h errLogLib.h Lock_FID.h data.h hostAcqStructs.h
+nvlocki.o: graphics.h sockets.h Lock_FID.h NDDS_Obj.h
+Lock_FID.o: Lock_FID.c NDDS_Obj.h
+semLib.o: semLib.h
+shrMLib.o: shrMLib.h
+comm.o: errLogLib.h shrstatinfo.h acquisition.h comm.c comm.h
+socket.o: socket.c variables.h

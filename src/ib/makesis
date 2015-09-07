@@ -1,0 +1,246 @@
+#************************************************************************
+#									
+#  @(#)makesis 18.1 03/21/08 (c)1991-92 SISCO
+#
+#************************************************************************
+#
+#  Build "shared" library (libsis.so.xx) and static library (libsis.a)
+#  and install include-files into .../include/sis and libraries into
+#  .../lib directory. It expects a current copy of makesis in sccs.
+#  NOTE: "install" assumes a directory structure of:
+#	<toplevel>/src/sis/<sources>
+#	<toplevel>/lib/<libraries>
+#	<toplevel>/include/sis/<include_files>
+#
+#  NOTE: Requires that the user has set the environment variables:
+#	$sccsdir	(typically /sw2/sccs)
+#	$sourcedir	(typically /sw2/common)
+#
+#    make -f makesis -- decides which system it is on and makes the library
+#			accordingly
+#    make -f makesis debug --- does the same for debug versions.
+#    make -f makesis install	--- NOT currently being used
+#
+#  Build "shared" library (libsis.so.x.x) (not implemented yet)
+#
+#  Build "static" library (libsis.a)
+#    make -f makesis libsis
+#    make -f makesis libsis_sol
+#
+#  Created:  05/29/91 CG
+#
+#************************************************************************
+
+SIS_REV=
+
+#-------------------------------------------------
+# Directories
+#-------------------------------------------------
+SISSRC=$(sccsdir)/ib
+INSTALL_DIR=../..
+INCLUDE_DIR=$(INSTALL_DIR)/include/sis
+SOURCE_DIR=$(INSTALL_DIR)/src/sis
+LIB_DIR=$(INSTALL_DIR)/lib
+
+MAKEFILE=makesis
+
+OSTYPE=`uname -r | awk '{ print substr($$0,1,1) }'`
+
+#-------------------------------------------------
+# Source files						
+#-------------------------------------------------
+GRAPHICS_SRC=graphics.c siscms.c icon.c image.c image4.c \
+		contrast.c spline.c vscale.c vsfunc.c
+GRAPHICS_INC=graphics.h siscms.h contrast.h contrast_priv.h spline.h \
+		vscale.h vsfunc.h
+FILELIST_SRC=filelist.c expfile.c menu_dir.c
+FILELIST_INC=filelist.h
+INITSTART_SRC=initstart.c
+INITSTART_INC=initstart.h
+IPG_SRC=ipgwin.c
+IPG_INC=ipgwin.h svc.h rpc.h c_varieties.h
+MSGPRT_SRC=msgprt.c
+MSGPRT_INC=msgprt.h
+COMMON_SRC=
+COMMON_INC=stderr.h
+PRIMITIVE_SRC=prim_line.c
+PRIMITIVE_INC=primitive.h
+CONFIRMWIN_SRC=confirmwin.c
+CONFIRMWIN_INC=confirmwin.h
+
+#-------------------------------------------------
+# All sources						
+#-------------------------------------------------
+SIS_SRC=$(GRAPHICS_SRC) \
+	$(FILELIST_SRC) \
+	$(INITSTART_SRC) \
+	$(IPG_SRC) \
+	$(MSGPRT_SRC) \
+	$(COMMON_SRC) \
+	$(PRIMITIVE_SRC) \
+	$(CONFIRMWIN_SRC)
+
+SIS_OBJ=$(SIS_SRC:.c=.o)
+
+#-------------------------------------------------
+# All include files
+#-------------------------------------------------
+INCLUDES= $(GRAPHICS_INC) \
+	$(FILELIST_INC) \
+	$(INITSTART_INC) \
+	$(IPG_INC) \
+	$(MSGPRT_INC) \
+	$(COMMON_INC) \
+	$(PRIMITIVE_INC) \
+	$(CONFIRMWIN_INC)
+
+.INIT: $(INCLUDES)
+
+INSTALLED_INCLUDES= $(INCLUDES:%=$(INCLUDE_DIR)/%)
+INSTALLED_SOURCES= $(SIS_SRC:%=$(SOURCE_DIR)/%) $(INCLUDES:%=$(SOURCE_DIR)/%)
+
+#-------------------------------------------------
+# Added flags for compilation
+#-------------------------------------------------
+ALT_INCLUDE= -I$(OPENWINHOME)/include 
+
+# CENTERLINE_INCLUDES= -I$(OPENWINHOME)/include \
+# 	-I/usr/local/CenterLine/c++_1.1.0-r1.0/sun4-40/include
+# CPPFLAGS= $(CENTERLINE_INCLUDES)
+
+# The following are currently incompatible with CenterLine include files
+ipgwin.o prim_line.o := CPPFLAGS = $(ALT_INCLUDE)
+CPPFLAGS= -I$(OPENWINHOME)/include
+COMPAT= -compat=4 -DOWTOOLKIT_WARNING_DISABLED
+
+CCFLAGS=-g
+LIBFLAGS=-pic
+
+.PRECIOUS: $(TARGETLIB)
+.KEEP_STATE:
+
+
+#-------------------------------------------------
+# User specified target for static library
+#-------------------------------------------------
+std:		
+		@echo $(OSTYPE)
+		set -x; if [ $(OSTYPE) = "5" ]; then \
+		 ($(MAKE) -e -f $(MAKEFILE) "CCFLAGS= -O -DSOLARIS $(COMPAT)" \
+		   libsis_sol ); \
+		elif [ $(OSTYPE) = "4" ]; then \
+		 ( $(MAKE) -e -f $(MAKEFILE) "CCFLAGS= -O" \
+		 "ALT_INCLUDE= -I$(OPENWINHOME)/include -I/sis/local/CC/incl" \
+		   libsis ) ; \
+		fi
+
+debug: 
+		@echo $(OSTYPE)
+		set -x; if [ $(OSTYPE) = "5" ]; then \
+		 ($(MAKE) -e -f $(MAKEFILE) \
+			"CCFLAGS= -g -DDEBUG -DSOLARIS $(COMPAT)" \
+		   	libsis_soldbx ); \
+		elif [ $(OSTYPE) = "4" ]; then \
+		 ( $(MAKE) -e -f $(MAKEFILE) "CCFLAGS= -g -DDEBUG" \
+		 "ALT_INCLUDE= -I$(OPENWINHOME)/include -I/sis/local/CC/incl" \
+		   libsis_dbx ) ; \
+		fi
+
+libsis: libsis.a
+
+libsis_sol: libsis_sol.a
+
+libsis_dbx: libsis_dbx.a
+
+libsis_soldbx: libsis_soldbx.a
+
+#-------------------------------------------------
+# Old Default target
+#	install library in $(LIB_DIR)
+#	install include files in $(INCLUDE_DIR)
+#	install sources in $(SOURCE_DIR)
+#-------------------------------------------------
+install:	static \
+		$(INSTALLED_INCLUDES) \
+		$(LIB_DIR)/libsis.a
+
+#-------------------------------------------------
+# Flags changed due to users
+#-------------------------------------------------
+debug := CCFLAGS=-g $(COMPAT)
+profile := CCFLAGS = -pg -Bstatic  $(COMPAT)
+#static := LIBFLAGS=
+
+#-------------------------------------------------
+# Compilation
+#-------------------------------------------------
+$(TARGET_SIS_SO): $(SIS_OBJ)
+	(umask 2; ld -assert pure-text $(SIS_OBJ) -o $@)
+
+libsis.a libsis_dbx.a: $(SIS_OBJ)
+	(umask 2; ar rv $@ `lorder $(SIS_OBJ) | tsort` )
+	(umask 2; ranlib $@)
+
+libsis_sol.a libsis_soldbx.a: $(SIS_OBJ)
+	(umask 2; ar rv $@ `lorder $(SIS_OBJ) | tsort` )
+
+
+$(SIS_OBJ): $(@:.o=.c)
+	(umask 2; $(COMPILE.cc) $(LIBFLAGS) $<)
+
+#-------------------------------------------------
+# Rules for putting stuff in the installation places
+#-------------------------------------------------
+$(INCLUDE_DIR)/%:%
+	rm -f $@
+	cp $< $@
+
+#$(SOURCE_DIR)/%:%
+#	rm -f $@
+#	cp $< $@
+
+$(LIB_DIR)/libsis.a: libsis.a
+	rm -f $@
+	cp libsis.a $@
+	ranlib -t $@
+
+
+$(LIB_DIR)/libsis.a: libsis.a
+	rm -f $@
+	cp libsis.a $@
+
+#-------------------------------------------------
+# SCCS extraction
+#-------------------------------------------------
+$(GRAPHICS_SRC) $(GRAPHICS_INC): $(SISSRC)/SCCS/s.$$@
+	sccs -d $(SISSRC) get $(SIS_REV) $@
+$(FILELIST_SRC) $(FILELIST_INC): $(SISSRC)/SCCS/s.$$@
+	sccs -d $(SISSRC) get $(SIS_REV) $@
+$(INITSTART_SRC) $(INITSTART_INC): $(SISSRC)/SCCS/s.$$@
+	sccs -d $(SISSRC) get $(SIS_REV) $@
+$(IPG_SRC) $(IPG_INC): $(SISSRC)/SCCS/s.$$@
+	sccs -d $(SISSRC) get $(SIS_REV) $@
+$(MSGPRT_SRC) $(MSGPRT_INC): $(SISSRC)/SCCS/s.$$@
+	sccs -d $(SISSRC) get $(SIS_REV) $@
+$(COMMON_SRC) $(COMMON_INC): $(SISSRC)/SCCS/s.$$@
+	sccs -d $(SISSRC) get $(SIS_REV) $@
+$(PRIMITIVE_SRC) $(PRIMITIVE_INC): $(SISSRC)/SCCS/s.$$@
+	sccs -d $(SISSRC) get $(SIS_REV) $@
+$(CONFIRMWIN_SRC) $(CONFIRMWIN_INC): $(SISSRC)/SCCS/s.$$@
+	sccs -d $(SISSRC) get $(SIS_REV) $@
+
+#-------------------------------------------------
+# Clean							
+#-------------------------------------------------
+clean:
+	/bin/rm -f $(SIS_OBJ); \
+	sccs -d $(SISSRC) clean ;\
+	sccs -d $(SISSRC) clean ;\
+	sccs -d $(SISSRC) clean ;\
+	sccs -d $(SISSRC) clean ;\
+	sccs -d $(SISSRC) clean ;\
+	sccs -d $(SISSRC) clean ;\
+	sccs -d $(SISSRC) clean ;\
+	sccs -d $(SISSRC) clean ;
+
+now:

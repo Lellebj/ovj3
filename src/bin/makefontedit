@@ -1,0 +1,55 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#---PAID sccs home---
+SDIR=$(sccsdir)/bin/SCCS/s.
+SGET=sccs -p$(sccsdir)/bin/SCCS get
+
+MAKEFILE= makefontedit
+
+#---normal operational compile flags
+CFLAGS= -c -O
+
+INCLDIR=/usr/openwin/include
+
+#---debugging with DBXTOOL compile flags
+#CFLAGS= -c -g
+
+#---normally LDFLAGS is left undefined - symbol included for SOLARIS target
+
+
+fontedit: fontedit.o
+	 (umask 2; cc -o fontedit $(LDFLAGS) fontedit.o \
+		-lXt -lX11 -ll -lm)
+ow:
+	($(MAKE) -ef $(MAKEFILE) \
+	  fontedit)
+
+IRIX:
+	($(MAKE) -ef $(MAKEFILE) \
+	  "INCLDIR=. "			\
+	  "CFLAGS=-c -O -cckr -DIRIX" \
+	  fontedit)
+
+AIX:
+	($(MAKE) -ef $(MAKEFILE) \
+	  "INCLDIR=. "			\
+	  fontedit)
+
+SOLARIS:
+	$(MAKE) -e -f $(MAKEFILE) 	\
+	"CFLAGS= -c -O -DSOLARIS"	\
+	"LDFLAGS= -L /usr/ccs/lib"	\
+	 fontedit
+
+
+fontedit.o: fontedit.c
+	  (umask 2; cc $(CFLAGS) -I$(INCLDIR) fontedit.c)
+
+fontedit.c: $(SDIR)fontedit.c
+	  $(SGET) fontedit.c
+

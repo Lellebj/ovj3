@@ -1,0 +1,48 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+MAKEFILE= makedps_ps_gen.lnx
+
+SCCSDIR=$(sccsdir)
+
+# ----- PAID sccs home ----
+BSCCS=$(SCCSDIR)/bin/SCCS/s.
+VSCCS=$(SCCSDIR)/vnmr/SCCS/s.
+BGET = sccs -p$(SCCSDIR)/bin/SCCS get
+VGET = sccs -p$(SCCSDIR)/vnmr/SCCS get
+
+#-- Normal operational compile flags
+CFLAGS= -c -O2 -Wall -m32
+LDFLAGS= -m32
+SCFLAGS= -S -O
+
+
+#------------------------------------------------------------------------
+#---  object modules needed for "enter"
+#------------------------------------------------------------------------
+OBJ=                      \
+	dps_ps_gen.o
+
+
+dps_ps_gen: $(OBJ)
+	(umask 2; cc $(LDFLAGS) -o dps_ps_gen $(OBJ) )
+
+LINUX:  $(MAKEFILE) dps_ps_gen
+	@echo "dps_ps_gen complete -----------------------"
+
+$(MAKEFILE) :
+	($(BGET) $@ )
+
+$(OBJ) : dps_ps_gen.c  dpsdef.h
+	(umask 2; cc $(CFLAGS) dps_ps_gen.c  )
+
+dps_ps_gen.c : $(BSCCS)dps_ps_gen.c
+	$(BGET) dps_ps_gen.c
+
+dpsdef.h : $(VSCCS)dpsdef.h
+	$(VGET) dpsdef.h

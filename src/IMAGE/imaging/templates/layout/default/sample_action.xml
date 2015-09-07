@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="ISO-8859-1" standalone="no"?>
+<!--
+ !
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<actionpanel>
+  <group size="700 20" fg="PlainText" bg="transparent" border="None"
+    side="Top" justify="Left" tab="no" reference="sample_action" useref="no"
+    >
+    <label loc="0 0" size="440 20"
+      label=""
+      />
+    <button loc="440 0" size="120 20"
+      style="PlainText"
+      fg="white" bg="darkRed"
+      label="Stop"
+      vq="system"
+      vc="sqmode='pause' xmq('abort')"
+      show="$VALUE=2*(system='spectrometer')-1"
+      />
+    <label loc="560 0" size="60 20"
+      label=""
+      />
+    <button loc="620 0" size="80 20"
+      style="PlainText"
+      label="Help"
+      vc="sequencehelp"
+      statpar="status"
+      decor1="yes"
+      />
+  </group>
+</actionpanel>
+

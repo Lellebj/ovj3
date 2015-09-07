@@ -1,0 +1,20 @@
+#! /bin/csh
+# '@(#)hermes.sh 22.1 03/24/08 2003-2004 '
+# 
+#
+# Copyright (C) 2015  Stanford University
+# 
+# You may distribute under the terms of either the GNU General Public
+# License or the Apache License, as specified in the README file.
+# 
+# For more information, see the README file.
+# 
+#
+
+set TCLDIR=$vnmrsystem/tcl
+setenv TCL_LIBRARY $TCLDIR/tcllibrary
+setenv TK_LIBRARY  $TCLDIR/tklibrary
+
+cd $TCLDIR/bin
+./vnmrwish -f hermes.tk "$1" &
+

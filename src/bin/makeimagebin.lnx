@@ -1,0 +1,112 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makeimagebin  make file
+#
+#
+
+MAKEFILE= makeimagebin.lnx
+
+SRC_DIR=/vcommon/IMAGE/src
+BIN_DIR=/vcommon/IMAGE/bin
+
+SCCSDIR=$(sccsdir)
+
+#-The SCCS Sources -----------------------------------------------
+PROG_SCCS_DIR=$(SCCSDIR)/bin/SCCS/s.
+
+CFLAGS= -O2 -DLINUX
+CPPFLAGS=
+LDFLAGS=
+TARGET_ARCH=
+LIBS=-lgsl -lgslcblas -lm
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(LIBS) $(TARGET_ARCH)
+
+#---  SCCS Extraction Commands for Sources Needed In True Source Dir.  -------
+PROG_SGET = sccs -p$(SCCSDIR)/bin/SCCS get
+
+
+#------------------------------------------------------------------------
+#-- common Infoproc sources files 
+#------------------------------------------------------------------------
+PROG_SRC=				\
+		fdf.c			\
+		image_functions.c	\
+		main_fdffit.c		\
+		getpars.c		\
+		main_asl.c		\
+		gsl_functions.c		\
+		main_diffusion.c	\
+		utils.c
+
+PROG_HDR=	utils.h
+
+PROG_OBJ= $(PROG_SRC:.c=.o)
+
+PROGS=	asl		\
+	diffcalc	\
+	fdffit
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(PROG_SRC) $(PROG_HDR)
+
+
+#--- PAID Targets ------------------------------------------
+std LINUX : $(MAKEFILE) Source  src
+	$(MAKE) -e -f $(MAKEFILE)  \
+	  all 
+	@echo "NMR_ID imagebin complete ----------------------------------"
+
+
+# ---- Be sure True Source that we link to are upto date.
+Source : $(ALLSRC)
+	@echo Sources up to date...
+
+src : $(ALLSRC)
+	@echo Making sources in $(SRC_DIR)
+	(cd $(SRC_DIR); 		\
+	$(PROG_SGET) $(MAKEFILE);	\
+	$(MAKE) -e -f $(MAKEFILE) Source; \
+        rm -f $(MAKEFILE) )
+
+all : $(PROGS)
+
+asl : main_asl.o
+	@echo Making $@...
+	( umask 2;  $(LINK.c) -o $@ main_asl.o; \
+	  cp $@ $(BIN_DIR) )
+
+fdffit : main_fdffit.o
+	@echo Making $@...
+	( umask 2;  $(LINK.c) -o $@ main_fdffit.o; \
+	  cp $@ $(BIN_DIR) )
+
+diffcalc : main_diffusion.o
+	@echo Making $@...
+	( umask 2;  $(LINK.c) -o $@ main_diffusion.o; \
+	  cp $@ $(BIN_DIR) )
+
+
+#--- Object Targets ------------------------------------------------------
+$(PROG_OBJ) : $(@:.o=.c)  utils.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c))
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(PROG_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+$(PROG_SRC) : % :$(PROG_SRC_DIR)%
+	$(PROG_SGET) $@
+
+$(PROG_HDR) : % :$(PROG_SRC_DIR)%
+	$(PROG_SGET) $@
+
+

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mainmenu>
+<!--
+ ! @(#)SolidStateExpts.xml.solids 1.2 02/21/07 Copyright (c) 2003-2005 Varian, Inc. All Rights Reserved
+ ! 
+ ! Varian, Inc. All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Varian, Inc. and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+    <subfilemenu label = "Basic 1D Experiments"
+             show="exists('Solids1DExpts.xml','templates/vnmrj/interface',-1):$SHOW"
+             file="Solids1DExpts.xml"
+             style="Menu1"
+    />
+    <subfilemenu label = "HX 2D Experiments"
+             show="exists('HX2DExpts.xml','templates/vnmrj/interface',-1):$SHOW"
+             file="HX2DExpts.xml"
+             style="Menu1"
+    />
+    <subfilemenu label = "HXY Experiments"
+             show="exists('HXYExpts.xml','templates/vnmrj/interface',-1):$SHOW"
+             file="HXYExpts.xml"
+             style="Menu1"
+    />
+    <subfilemenu label = "Quadrupole Experiments"
+             show="exists('QuadrupoleExpts.xml','templates/vnmrj/interface',-1):$SHOW"
+             file="QuadrupoleExpts.xml"
+             style="Menu1"
+    />
+    <subfilemenu label = "Multipulse Experiments"
+             show="exists('MultipulseExpts.xml','templates/vnmrj/interface',-1):$SHOW"
+             file="MultipulseExpts.xml"
+             style="Menu1"
+    />
+
+    <subfilemenu label = "Two-Receiver Experiments"
+             show="exists('RECXYExpts.xml','templates/vnmrj/interface',-1):$SHOW"
+             file="RECXYExpts.xml"
+             style="Menu1"
+    />
+    <subfilemenu label = "UIUC Experiments"
+             show="exists('UIUCsExpts.xml','templates/vnmrj/interface',-1):$SHOW"
+             file="UIUCsExpts.xml"
+             style="Menu1"
+    />
+</mainmenu>

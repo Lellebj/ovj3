@@ -1,0 +1,721 @@
+import os
+import sys
+import shutil
+
+#import variables  and environment from SConstruct
+Import("*")
+
+platform = sys.platform
+
+# we need to specify an absolute path so this SConstruct file
+# can be called from any other SConstruct file
+cwd = os.getcwd()
+
+# get options settings
+boFile=os.path.join(cwd,os.pardir,os.pardir,os.pardir,'buildoptions.py')
+if not os.path.exists(boFile):
+   boFile=os.path.join(cwd,os.pardir,os.pardir,os.pardir,'scripts','buildoptions.py')
+execfile(boFile)
+
+
+
+# define target file names
+solids_PsTargetList = ['br24q',
+                       'c7inad2d',
+                       'hetcorlgcp2d',    
+                       'lgcp',            
+                       'mqmas3qzf2d',     
+                       'mqmas5qzf2d',     
+                       'mrev8q',          
+                       'onepul',          
+                       'onepultoss',      
+                       'pisema2d',        
+                       'redor1onepul',    
+                       'redor1tancp',     
+                       'redor2onepul',    
+                       'redor2tancp',     
+                       'ssecho1d',
+                       'swwhh4',          
+                       'tancpht1',        
+                       'tancpx',          
+                       'tancpxecho',      
+                       'tancpxflip',      
+                       'tancpxfslg',      
+                       'tancpxidref',     
+                       'tancpxt1rho',     
+                       'tancpxtoss',      
+                       'tunerp',          
+                       'twopul',          
+                       'wisetancp2d',     
+                       'wpmlg1d',         
+                       'wpmlg2d',         
+                       'xmx',             
+                       'xx']              
+       		   
+
+
+psTargetList     =       ['APT',             
+                          'ADEQUATEAD',
+                          'CIGAR2j3j',       
+                          'COSY',            
+                          'CRAPT',            
+                          'DEPT',            
+                          'DQCOSY',          
+                          'FHdec',          
+                          'FH_gHETCOR',          
+                          'FH_HOESY',          
+                          'gHMBCRELAY',          
+                          'gHSQCAD_PS',          
+                          'HETCOR',          
+                          'HETERO2DJ',          
+                          'HMBC',            
+                          'HMQC',            
+                          'HMQC_d2',         
+                          'HMQCTOXY',        
+                          'HMQCTOXY_d2',     
+                          'HOMO2DJ',         
+                          'HOMODEC',         
+                          'HSQC',            
+                          'HSQC_d2',         
+                          'HSQCAD',          
+                          'HSQCTOXY',        
+                          'HSQCTOXY_d2',     
+                          'INADEQUATE',
+                          'INADEQUATEAD',
+                          'NOESY',           
+                          'NOESY1D',         
+                          'PRESAT',          
+                          'PSYCHE',          
+                          'PSYCHE_ES',          
+                          'PSYCHE_zTOCSY',          
+                          'ROESY',           
+                          'ROESY1D',         
+                          'T1meas',          
+                          'T2meas',          
+                          'TOCSY',           
+                          'TOCSY1D',         
+                          'binom',           
+                          'BilevelDec',           
+                          'calibrate',           
+                          'clubhsqc',        
+                          'cosyps',          
+                          'cpmgt2',          
+                          'cyclenoe',        
+                          'd2pul',           
+                          'fidelity',         
+                          'gmapz',           
+                          'hcchtocsy',       
+                          'het2dj',          
+                          'hetcorps',        
+                          'hmqctoxy3d',      
+                          'hom2dj',          
+                          'hsqcHT',          
+			  'dqcosyHT',
+			  'gmqcosyHT',
+			  'hmbcHT',
+			  'hsqctocsyHT',
+			  'noesyHT',
+			  'gcosyHT',
+			  'hetcorHT',
+			  'ineptr',
+			  'roesyHT',
+                          'hsqctoxySE',      
+                          'inadqt',          
+                          'inept',           
+                          'jumpret',         
+                          'mqcosy',          
+                          'mrseq',           
+                          'mrsim',           
+                          'mtune',           
+                          'trtune',           
+                          'aptunenv',        
+                          'pansy1d',
+                          'ppcal',           
+                          'pwxcal',           
+                          'relayh',          
+                          's2pul',           
+                          's2pulecho',           
+                          'selexcit',        
+                          'sh2pul',          
+                          'tncosyps',        
+                          'tndqcosy',        
+                          'tnmqcosy',        
+                          'tnnoesy',         
+                          'tnroesy',         
+                          'tntocsy',         
+                          'tocsyHT',         
+                          'troesy',          
+                          'wetdqcosy',       
+                          'wetpwxcal',       
+                          'wetrelayh',       
+                          'wettntocsy',      
+                          'wfgtest',         
+                         'g2pul',
+                         'g2pul_ecc',       
+                         'gCOSY',           
+                         'gDQCOSY',         
+                         'gHETCOR',         
+                         'gHMBC',           
+                         'gHMBCAD',         
+                         'gHMQC',           
+                         'gHMQC_d2',                
+                         'gHMQCTOXY',       
+                         'gHSQC',           
+                         'gHSQC_d2',                
+                         'gHSQCAD',         
+                         'gHSQCTOXY',       
+                         'gXHCAL',          
+                         'ghmqcps',         
+                         'gmqcosy',         
+                         'gnoesy',          
+                         'gtnnoesy',                
+                         'gtnroesy',                
+                         'hsqcHT',          
+			 'dqcosyHT',
+			 'gmqcosyHT',
+			 'hmbcHT',
+			 'hsqctocsyHT',
+			 'noesyHT',
+			 'gcosyHT',
+			 'hetcorHT',
+			 'roesyHT',
+                         'pansy_cosy',
+                         'pansy_tocsy',
+                         'profile',         
+                         'selexHT',         
+                         'tocsyHT',         
+                         'wetghmqcps',      
+                         'wetgmqcosyps',    
+                         'wetNOESY',                
+                         'wetROESY',                
+            	          'wetTOCSY',                
+                         'wetgCOSY',                
+                         'wetgDQCOSY',      
+                         'wetgHMBC',                
+                         'wetgHMQC',                
+                         'wetgHSQC',                
+                         'zCOSY',                
+                         'NOESY1D_ES',                
+                         'NOESY_ES2',                
+                         'NOESY_ES',                
+                         'ROESY1D_ES',                
+                         'ROESYAD_ES',                
+                         'ROESY_ES',                
+                         'STD_ES',                
+                         'TOCSY1D_ES',                
+                         'TOCSY_ES',                
+                         'water_ES',                
+                         'wLOGSY_ES',                
+                         'zTOCSY1D_ES',                
+                         'zTOCSY_ES',                
+        
+
+#                         'apt',             
+#                         'dept',            
+#                         'dqcosy',          
+#                         'hmqc',            
+#                         'hmqctocsy',       
+#                         'hsqc',            
+#                         'noesy',           
+#                         'roesy',           
+#                         'tocsy',           
+
+#                         'br24',            
+#                         'cylbr24',         
+#                         'cylmrev',         
+#                         'flipflop',        
+#                         'hetcorcp1',       
+#                         'mrev8',           
+#                         'redor1',          
+#                         'ssecho',          
+#                         'ssecho1',         
+#                         'xnoesysync'
+		                    ]
+                
+
+
+autotest_PSTargetList     =  ['AT_lkdec',      
+                              'ATB1profile',     
+                              'ATCNnoesy',       
+                              'ATcancel',        
+                              'ATcpmgt2',        
+                              'ATd2pul',         
+                              'ATdante',         
+                              'ATddec',          
+                              'ATdsh2pul',       
+                              'ATfsqd',          
+                              'ATg2pul',         
+                              'ATgNhmqc',        
+                              'ATgcancel',       
+                              'ATgecho',         
+                              'ATphswitch',      
+                              'ATphtest',        
+                              'ATprofile',       
+                              'ATrfhomo']        
+        
+ 
+
+
+
+#      	     	         'fsemsp',
+#      	     	         'memsp',
+image_PSTargetList    = ['GDACtest',        
+       	    	         'ecc1',            
+                         'ecc2',
+                         'fastestmap',
+              	         'flair',           
+                         'fsems_22c',         
+       	    	         'gsh2pul',         
+                         'mems_22c',           
+      	     	         'mgems',           
+      	     	         'mtx_spulse',           
+                         'prescanfreq',     
+                         'stems',           
+                         'risetime',
+                         'vnmrs_asl',
+                         'vnmrs_asltest',
+                         'vnmrs_adcpuls',
+                         'vnmrs_cine',
+                         'vnmrs_cpmg',
+                         'vnmrs_cpmgecho',
+                         'vnmrs_ct3d',      
+       	    	         'vnmrs_epi',       
+                         'vnmrs_epip',
+       	    	         'vnmrs_essfp',       
+       	    	         'vnmrs_episte',       
+                         'vnmrs_fse3d',     
+       	    	         'vnmrs_fssfp',       
+                         'vnmrs_fse3ddw',     
+                         'vnmrs_fsems',     
+                         'vnmrs_fsemsdw',
+                         'vnmrs_ge3d',      
+                         'vnmrs_ge3d_elliptical',
+                         'vnmrs_ge3dshim',  
+                         'vnmrs_gtest',
+                         'vnmrs_isis',      
+                         'vnmrs_mems',      
+                         'vnmrs_laser',      
+                         'vnmrs_me3d',
+                         'vnmrs_mge3d',
+                         'vnmrs_mprage',
+                         'vnmrs_ovs2d',      
+                         'vnmrs_ovs3d',      
+                         'vnmrs_prescanpower',      
+      	   	         'vnmrs_press',     
+                         'vnmrs_profile1d', 
+                         'vnmrs_quickshim', 
+       	     	         'vnmrs_se3d',      
+       	     	         'vnmrs_se3ddw',      
+                         'vnmrs_sems',      
+                         'vnmrs_semsdw',
+                         'vnmrs_sliceshim',
+                         'vnmrs_special',
+                         'vnmrs_spuls',           
+                         'vnmrs_stepuls',
+                         'vnmrs_t1puls',
+                         'vnmrs_t2puls',
+                         'vnmrs_tagcine',   
+                         'vnmrs_tssfp',   
+        
+
+#removed because of patent issues
+#                       'seqlib/gems',             
+#     	     	        'seqlib/steam',            
+#                       'seqlib/steami
+               		    ]           
+
+  
+
+
+diffus_PSTargetList   = ['g2pulramp',       
+                         'pge',             
+                         'pgeramp']         
+        
+
+dosy_PSTargetList =    ['Dbppste',         
+                        'Dbppste_cc',      
+                        'Dbppste_ghsqcse', 
+                        'Dbppste_wg',      
+                        'Dbppsteinept',    
+                        'Dcosyidosy',      
+                        'Ddeptse',      
+                        'Dproject_cc',      
+                        'DgcsteSL',        
+                        'DgcsteSL_cc',     
+                        'DgcsteSL_dpfgse', 
+                        'Dgcstecosy',      
+                        'Dgcstehmqc',      
+                        'Dgcstehmqc_ps',   
+                        'Dghmqcidosy',     
+                        'DgsteSL_cc',      
+                        'Dhom2djidosy',    
+                        'Doneshot',        
+                        'Doneshot_nugmap',        
+                        'Dpfgdste']        
+        
+
+
+patent_PSTargetList = ['vnmrs_steam',             
+                       'vnmrs_steam2',
+                       'vnmrs_gems',              
+                       'vnmrs_gems_fc',
+                       'vnmrs_gemsir',
+                       'vnmrs_gemsll',
+                       'vnmrs_gemsshim',
+                       'vnmrs_sgems']  
+        
+
+Dshimming_TargetList     = ['gmapxyz']
+
+Gilson_TargetList        = ['vast1d']
+
+CSI_TargetList           = ['vnmrs_csi2d',
+                            'vnmrs_acsi2d',              
+                            'vnmrs_csi3d',              
+                            'vnmrs_epsi3d',              
+                            'vnmrs_fepsi3d',   
+                            'vnmrs_laser_csi']                         
+
+LC_TargetList            = ['lc1d']
+
+#
+#       steamcsi    \ for now
+#       steami      \ for now
+#
+
+
+PSGLIBS = [ 'psglib','param', 'acqcomm' ]
+
+if ('interix' in platform):
+   libPsg = File(os.path.join(cwd,os.pardir,os.pardir,'nvpsg','libpsglib.a'))
+   libParam = File(os.path.join(cwd,os.pardir,os.pardir,'nvpsg','libparam.a'))
+   libAcqCom = File(os.path.join(cwd,os.pardir,os.pardir,'ncomm','libacqcomm.a'))
+   PSGLIBS = [ libPsg, libParam, libAcqCom ]
+   # print "PSGLIBS: ", libPsg, libParam, libAcqCom
+   # print PSGLIBS
+
+# actual builds
+#building solids_PsTargetList
+# solids_Ps_builds = []
+# for i  in solids_PsTargetList:
+#         nvseqLibEnv.DpsPsGen(target  =   i+'dps.c',
+#                              source  =   i+'.c',
+#                              CPPPATH =   [nvpsgPath])
+# 
+#         solids_Ps_builds.append(nvseqLibEnv.Program(target     =  i,
+#                                                     source     =  i+'dps.c', 
+#                                                     CPPPATH    =  [cwd,
+#                                                                    nvpsgPath,
+#                                                                    vnmrPath],
+#                                                     LIBPATH    =  [nvpsgPath,
+#                                                                    ncommPath],
+#                                                     LIBS       =  [ PSGLIBS , 'm']))
+# 
+
+
+#building psTargetList
+ps_builds = []
+for i in psTargetList:
+        nvseqLibEnv.DpsPsGen(target  =   i+'dps.c',
+                             source  =   i+'.c',
+                             CPPPATH =   [nvpsgPath])
+
+        ps_builds.append(nvseqLibEnv.Program(target    =    i,
+                                             source    =    i+'dps.c', 
+                                             CPPPATH   =    [cwd,
+                                                             nvpsgPath,
+                                                             vnmrPath],
+                                             LIBPATH   =    [nvpsgPath,
+                                                             ncommPath],
+                                             LIBS       =  [ PSGLIBS , 'm']))
+
+
+
+
+#building autotest_PSTargetList 
+autotest_PS_builds = []
+for i in autotest_PSTargetList:
+        nvseqLibEnv.DpsPsGen(target  =   i+'dps.c',
+                             source  =   i+'.c',
+                             CPPPATH =   [nvpsgPath])
+
+        autotest_PS_builds.append(nvseqLibEnv.Program(target  = i,
+                                                      source  = i+'dps.c', 
+                                                      CPPPATH = [cwd,
+                                                                 nvpsgPath,
+                                                                 vnmrPath],
+                                                      LIBPATH = [nvpsgPath,
+                                                                 ncommPath],
+                                                      LIBS       =  [ PSGLIBS , 'm']))
+
+
+
+#building image_PSTargetList 
+image_PS_builds = []
+for i in image_PSTargetList:
+        nvseqLibEnv.DpsPsGen(target  =   i+'dps.c',
+                             source  =   i+'.c',
+                             CPPPATH =	 [nvpsgPath])
+
+        image_PS_builds.append(nvseqLibEnv.Program(target  = i,
+                                                   source  = i+'dps.c', 
+                                                   CPPPATH = [cwd,
+                                                              nvpsgPath,
+                                                              vnmrPath],
+                                                   LIBPATH = [nvpsgPath,
+                                                              ncommPath],
+                                                   LIBS       =  [ PSGLIBS , 'm']))
+
+
+#building diffus_PSTargetList 
+diffus_PS_builds = []
+for i in diffus_PSTargetList:
+        nvseqLibEnv.DpsPsGen(target  =   i+'dps.c',
+                             source  =   i+'.c',
+                             CPPPATH =   [nvpsgPath])
+
+        diffus_PS_builds.append(nvseqLibEnv.Program(target  = i,
+                                                    source  = i+'dps.c', 
+                                                    CPPPATH = [cwd,
+                                                               nvpsgPath,
+                                                               vnmrPath],
+                                                    LIBPATH = [nvpsgPath,
+                                                               ncommPath],
+                                                    LIBS       =  [ PSGLIBS , 'm']))
+                                                    # LIBS = [ libPsg, libParam, libAcqCom, 'm' ]))
+                                                    # LIBS    =  ['psglib','param', 'acqcomm', 'm']))
+
+
+
+
+#building dosy_PSTargetList 
+dosy_PS_builds = []
+for i in dosy_PSTargetList:
+        nvseqLibEnv.DpsPsGen(target  =   i+'dps.c',
+                             source  =   i+'.c',
+                             CPPPATH =   [nvpsgPath])
+
+        dosy_PS_builds.append(nvseqLibEnv.Program(target  = i,
+                                                  source  = i+'dps.c', 
+                                                  CPPPATH = [cwd,
+                                                             nvpsgPath,
+                                                             vnmrPath],
+                                                  LIBPATH = [nvpsgPath,
+                                                             ncommPath],
+                                                  LIBS       =  [ PSGLIBS , 'm']))
+
+
+
+#building patent_PSTargetList 
+patent_PS_builds = []
+for i in patent_PSTargetList:
+        nvseqLibEnv.DpsPsGen(target  =   i+'dps.c',
+                             source  =   i+'.c',
+                             CPPPATH =   [nvpsgPath])
+
+        patent_PS_builds.append(nvseqLibEnv.Program(target  = i,
+                                                    source  = i+'dps.c', 
+                                                    CPPPATH = [cwd,
+                                                               nvpsgPath,
+                                                               vnmrPath],
+                                                    LIBPATH = [nvpsgPath,
+                                                               ncommPath],
+                                                    LIBS       =  [ PSGLIBS , 'm']))
+
+
+
+
+#building Dshimming_TargetList 
+Dshimming_builds = []
+for i in Dshimming_TargetList:
+        nvseqLibEnv.DpsPsGen(target  =   i+'dps.c',
+                             source  =   i+'.c',
+                             CPPPATH =   [nvpsgPath])
+
+        Dshimming_builds.append(nvseqLibEnv.Program(target  = i,
+                                                    source  = i+'dps.c', 
+                                                    CPPPATH = [cwd,
+                                                               nvpsgPath,
+                                                               vnmrPath],
+                                                    LIBPATH = [nvpsgPath,
+                                                               ncommPath],
+                                                    LIBS       =  [ PSGLIBS , 'm']))
+
+
+
+#building Gilson_Target 
+Gilson_builds = []
+for i in Gilson_TargetList:
+        nvseqLibEnv.DpsPsGen(target  =   i+'dps.c',
+                             source  =   i+'.c',
+                             CPPPATH =   [nvpsgPath])
+
+        Gilson_builds.append(nvseqLibEnv.Program(target  = i,
+                                                    source  = i+'dps.c', 
+                                                    CPPPATH = [cwd,
+                                                               nvpsgPath,
+                                                               vnmrPath],
+                                                    LIBPATH = [nvpsgPath,
+                                                               ncommPath],
+                                                    LIBS       =  [ PSGLIBS , 'm']))
+
+
+
+#building CSI_Target 
+CSI_builds = []
+for i in CSI_TargetList:
+        nvseqLibEnv.DpsPsGen(target  =   i+'dps.c',
+                             source  =   i+'.c',
+                             CPPPATH =   [nvpsgPath])
+
+        CSI_builds.append(nvseqLibEnv.Program(target  = i,
+                                                    source  = i+'dps.c', 
+                                                    CPPPATH = [cwd,
+                                                               nvpsgPath,
+                                                               vnmrPath],
+                                                    LIBPATH = [nvpsgPath,
+                                                               ncommPath],
+                                                    LIBS       =  [ PSGLIBS , 'm']))
+
+
+
+#building LC_Target 
+LC_builds = []
+for i in LC_TargetList:
+        nvseqLibEnv.DpsPsGen(target  =   i+'dps.c',
+                             source  =   i+'.c',
+                             CPPPATH =   [nvpsgPath])
+
+        LC_builds.append(nvseqLibEnv.Program(target  = i,
+                                                    source  = i+'dps.c', 
+                                                    CPPPATH = [cwd,
+                                                               nvpsgPath,
+                                                               vnmrPath],
+                                                    LIBPATH = [nvpsgPath,
+                                                               ncommPath],
+                                                    LIBS       =  [ PSGLIBS , 'm']))
+
+
+
+
+# function  to  replace  vnmrs_  to ""
+def str_starts_with(astring, *prefixes):
+    startswith = astring.startswith
+    for prefix in prefixes:
+       if startswith(prefix):
+       	  return astring.replace(prefix,"",1 ) 
+       return astring    
+
+
+
+# method to copy files to remote directory
+def copyFiles(execPath,sourcePath,targetFileList,buildFileList, env):
+	
+	if not os.path.exists(execPath) :
+	      os.makedirs(execPath)
+
+	if not os.path.exists(sourcePath) :
+      		os.makedirs(sourcePath)
+	for i in range(len(targetFileList)):
+		destexec  = os.path.join(execPath,str_starts_with(targetFileList[i],'vnmrs_'))
+		env.AddPostAction(buildFileList[i],Action(Copy(destexec,os.path.join(cwd,targetFileList[i]))))
+		destsource = os.path.join(sourcePath,str_starts_with(targetFileList[i],'vnmrs_')+'.c',)
+		env.AddPostAction(buildFileList[i],Action(Copy(destsource,os.path.join(cwd,targetFileList[i]+'.c'))))
+		env.AddPostAction(buildFileList[i],Action(Chmod(destsource,0644)))
+
+
+
+
+
+# copy solids_PsTargetList to  vnmr
+vnmrPsglibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'vnmr','psglib')
+vnmrSeqlibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'vnmr','seqlib')
+# copyFiles(vnmrSeqlibPath,vnmrPsglibPath,solids_PsTargetList,solids_Ps_builds,nvseqLibEnv)
+
+
+#copy  autotest_PSTargetList  to vnmr
+vnmrAutotestSeqlibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'vnmr','autotest','seqlib')
+vnmrAutotestPsglibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'vnmr','autotest','psglib')
+copyFiles(vnmrAutotestSeqlibPath,vnmrAutotestPsglibPath,autotest_PSTargetList,autotest_PS_builds,nvseqLibEnv)
+
+
+#copy psTargetList to vnmr
+vnmrPsglibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'vnmr','psglib')
+vnmrSeqlibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'vnmr','seqlib')
+copyFiles(vnmrSeqlibPath,vnmrPsglibPath,psTargetList,ps_builds,nvseqLibEnv)
+
+
+#copy image_PSTargetList  to /options/standard 
+optionsimage_PSseqlibtPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','standard','IMAGE','imaging','seqlib')
+optionsimage_PSpsglibtPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','standard','IMAGE','imaging','psglib')
+copyFiles(optionsimage_PSseqlibtPath,optionsimage_PSpsglibtPath,image_PSTargetList,image_PS_builds,nvseqLibEnv)
+
+print boEnv['IMAGE']
+# optionally copy it to vnmr/
+if boEnv['IMAGE'] == 'y':
+	vnmrImagePsglibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'vnmr','imaging','psglib')
+	vnmrImageSeqlibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'vnmr','imaging','seqlib')
+	copyFiles(vnmrImageSeqlibPath,vnmrImagePsglibPath,image_PSTargetList,image_PS_builds,nvseqLibEnv)
+
+
+#copy diffus_PSTargetList  to /options/passworded 
+optionsdiffus_PSseqlibtPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','passworded','Diffusion','seqlib')
+optionsdiffus_PSpsglibtPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','passworded','Diffusion','psglib')
+copyFiles(optionsdiffus_PSseqlibtPath,optionsdiffus_PSpsglibtPath,diffus_PSTargetList,diffus_PS_builds,nvseqLibEnv)
+
+
+print boEnv['DIFFUS']
+# optionally copy it to vnmr/
+if boEnv['DIFFUS'] == 'y':
+	copyFiles(vnmrSeqlibPath,vnmrPsglibPath,diffus_PSTargetList,diffus_PS_builds,nvseqLibEnv)
+
+
+#copy dosy_PSTargetList  to /options/passworded 
+optionsdosy_PSseqlibtPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','passworded','DOSY','seqlib')
+optionsdosy_PSpsglibtPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','passworded','DOSY','psglib')
+copyFiles(optionsdosy_PSseqlibtPath,optionsdosy_PSpsglibtPath,dosy_PSTargetList,dosy_PS_builds,nvseqLibEnv)
+
+
+print boEnv['DOSY']
+# optionally copy it to vnmr/
+if boEnv['DOSY'] == 'y':
+	copyFiles(vnmrSeqlibPath,vnmrPsglibPath,dosy_PSTargetList,dosy_PS_builds,nvseqLibEnv)
+
+
+
+#copy patent_PSTargetList  to /options/passworded 
+optionspatent_PSseqlibtPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','passworded','IMAGE_Patent','imaging','seqlib')
+optionspatent_PSpsglibtPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','passworded','IMAGE_Patent','imaging','psglib')
+copyFiles(optionspatent_PSseqlibtPath,optionspatent_PSpsglibtPath,patent_PSTargetList,patent_PS_builds,nvseqLibEnv)
+
+print boEnv['PATENT']
+# optionally copy it to vnmr/
+if boEnv['PATENT'] == 'y':
+	vnmrImagePsglibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'vnmr','imaging','psglib')
+	vnmrImageSeqlibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'vnmr','imaging','seqlib')
+	copyFiles(vnmrImageSeqlibPath,vnmrImagePsglibPath,patent_PSTargetList,patent_PS_builds,nvseqLibEnv)
+
+
+
+#copy Dshimming_TargetList  to /vnmr/gxyzshim
+optionsDshimming_seqlibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'vnmr','gxyzshim','seqlib')
+optionsDshimming_PSpsglibtPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'vnmr','gxyzshim','psglib')
+copyFiles(optionsDshimming_seqlibPath,optionsDshimming_PSpsglibtPath,Dshimming_TargetList,Dshimming_builds,nvseqLibEnv)
+
+#copy Gilson_Target  to /options/passworded 
+optionsGilson_seqlibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','passworded','Gilson','seqlib')
+optionsGilson_psglibtPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','passworded','Gilson','psglib')
+copyFiles(optionsGilson_seqlibPath,optionsGilson_psglibtPath,Gilson_TargetList,Gilson_builds,nvseqLibEnv)
+
+
+#copy CSI_TargetList  to /options/passworded 
+#copy to IMAGE_Patent instead
+optionsCSI_seqlibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','passworded','IMAGE_Patent','imaging','seqlib')
+optionsCSI_psglibtPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','passworded','IMAGE_Patent','imaging','psglib')
+copyFiles(optionsCSI_seqlibPath,optionsCSI_psglibtPath,CSI_TargetList,CSI_builds,nvseqLibEnv)
+
+
+#copy LC_TargetList  to /options/passworded 
+optionsLC_seqlibPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','passworded','LC','lc','seqlib')
+optionsLC_psglibtPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,os.pardir,'options','passworded','LC','lc','psglib')
+copyFiles(optionsLC_seqlibPath,optionsLC_psglibtPath,LC_TargetList,LC_builds,nvseqLibEnv)

@@ -4784,8 +4784,7 @@ int imagesChanged()
 /******************/
 {
     float theta, psi, phi, scale[3];
-    int i, len;
-    float epsi = 0.009;
+    int i, len, epsi = 0.009;
     CImgInfo_t* imgInfor;
     int* ids;
 

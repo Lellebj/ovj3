@@ -1,0 +1,77 @@
+/*
+ * Varian Assoc.,Inc. All Rights Reserved.
+ * This software contains proprietary and confidential
+ * information of Varian Assoc., Inc. and its contributors.
+ * Use, disclosure and reproduction is prohibited without
+ * prior consent.
+ */
+int  sgi_width = 64;
+int  sgi_height = 64;
+int  sgi_colors = 4;
+char *sgi_num[] = { "#FFFFFFFFFFFF", "green", "black", "#adadadadadad" };
+char *sgi_chs = " .Xo";
+char *sgi_data[] = {
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                            .    .                              ",
+"                          ....  ....                            ",
+"                        ......  ......                          ",
+"                      ........  ........                        ",
+"                    ..........  ..........                      ",
+"                   ...... ....  ............                    ",
+"                 ......   ....  ....  ........                  ",
+"               .......    ....  ....    ........                ",
+"              ......      ....  ....      .......               ",
+"            ......        ....  ....        ......              ",
+"           ......         ....  ....          .....             ",
+"          .....           ....  ....           ....             ",
+"          ......          ....  ....         .....              ",
+"           .......        ....  ....       .....                ",
+"             .......      ....  ....     ......  ..             ",
+"          ..   .......    ....  ....    .....  .....            ",
+"         .....   .......   ...  ...   .....  .......            ",
+"         .......   .......  ..  .   ......  ........            ",
+"         .........   .......      ......  ..... ....            ",
+"         ...........   .......  ......  .....   ....            ",
+"         ....  .......   ...........   ....     ....            ",
+"         ....    .......   .......   .....      ....            ",
+"         ....      .......   ...   .....        ....            ",
+"         ....        .......     .....   .      ....            ",
+"         ....          .......  ....   ....     ....            ",
+"         ....      ...    ....  ....   ......   ....            ",
+"         ....    ......   ....  .... .   ...... ....            ",
+"         ....   .....   . ....  .... ...   .........            ",
+"         .... .....   ... ....  .... .....   .......            ",
+"         ........   ..... ....  .... .......   .....            ",
+"         .......   ...... ....  ....   .......   ..             ",
+"         .....   ......   ....  ....     .......                ",
+"          ..   ......     ....  ....       .......              ",
+"             ......       ....  ....        ......              ",
+"            .....         ....  ....       ......               ",
+"            .......       ....  ....      .....                 ",
+"              .......     ....  ....    ......                  ",
+"                .......   ....  ....   .....                    ",
+"                  ....... ....  .... ......                     ",
+"                    ..........  .........                       ",
+"                      ........  .......                         ",
+"                        ......  ......                          ",
+"                                                                ",
+"                                                                ",
+"                   XXXXXXo       XXXXXo    XXXo                 ",
+"                  XXXXXXXXo    XXXXXXXXXo  XXXo                 ",
+"                 XXXo  XXXXo  XXXXo   XXXo XXXo                 ",
+"                 XXXo   XXXo  XXXo    XXXo XXXo                 ",
+"                 XXXXo       XXXo          XXXo                 ",
+"                  XXXXXo     XXXo          XXXo                 ",
+"                   XXXXXXo   XXXo          XXXo                 ",
+"                     XXXXXo  XXXo  XXXXXXo XXXo                 ",
+"                       XXXXo XXXo  XXXXXXo XXXo                 ",
+"                 XXXo   XXXo XXXo     XXXo XXXo                 ",
+"                 XXXo   XXXo  XXXo    XXXo XXXo                 ",
+"                 XXXXo XXXXo  XXXXo  XXXXo XXXo                 ",
+"                  XXXXXXXXo    XXXXXXXXXXo XXXo                 ",
+"                   XXXXXXo      XXXXXXoXXo XXXo                 ",
+"                                                                ",
+"                                                                ",
+"                                                                "};

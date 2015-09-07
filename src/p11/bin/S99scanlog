@@ -1,0 +1,41 @@
+#!/bin/sh
+# 
+# Agilent Technologies All Rights Reserved.
+# This software contains proprietary and confidential
+# information of Agilent Technologies and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# S99scanlog.sh
+# Starting scanlog daemon, system V style
+
+case "$1" in
+'start')
+        if [ -r /usr/varian/sbin/scanlog ]
+	then
+                echo 'starting scanlog daemon'
+
+                /usr/varian/sbin/scanlog &
+		echo $! > /vnmr/adm/scanlogpid
+		chmod 600 /vnmr/adm/scanlogpid
+        fi
+        ;;
+
+'stop')
+	if [ -r /vnmr/adm/scanlogpid ]
+	then
+        	scl_id=`cat /vnmr/adm/scanlogpid`
+		if [ x$scl_id != x ]
+		then
+		    /usr/bin/kill -9 $scl_id
+		fi
+	fi
+        ;;
+
+*)
+        echo "Usage: $0 { start | stop }"
+        exit 1
+        ;;
+esac
+exit 0

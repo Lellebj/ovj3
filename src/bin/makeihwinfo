@@ -1,0 +1,99 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+SHELL=/bin/sh
+
+MAKEFILE= makeihwinfo
+
+SCCSDIR= $(sccsdir)
+OBJDIR= undefined
+binSCCS= $(SCCSDIR)/bin/SCCS/s.
+CFLAGS= -DSUN -O
+COMPILE.c= $(CC) $(CFLAGS) -c
+LDFLAGS= -R /vnmr/lib
+
+
+SRCDIR= $(sourcedir)
+SRC_DIR= $(sourcedir)/sysbin/
+VNMR_SRC_DIR= $(SRC_DIR)
+BIN_SRC_DIR= $(SRC_DIR)
+VWACQ_SRC_DIR= $(SRC_DIR)
+
+VNMR_SCCS_DIR= $(SCCSDIR)/vnmr/SCCS/s.
+BIN_SCCS_DIR= $(SCCSDIR)/bin/SCCS/s.
+VWACQ_SCCS_DIR= $(SCCSDIR)/vwacq/SCCS/s.
+
+VNMR_LN= ln -s $(BIN_SRC_DIR)$(@)
+BIN_LN= ln -s $(BIN_SRC_DIR)$(@)
+VWACQ_LN= ln -s $(BIN_SRC_DIR)$(@)
+
+BIN_SGET= sccs -p$(SCCSDIR)/bin/SCCS get
+VNMR_SGET= sccs -p$(SCCSDIR)/vnmr/SCCS get
+VWACQ_SGET= sccs -p$(SCCSDIR)/vwacq/SCCS get
+
+BIN_GET= $(BIN_LN)
+VNMR_GET= $(VNMR_LN)
+VWACQ_GET= $(VNMR_LN)
+
+
+BIN_SRC=		\
+	ihwinfo.c
+
+VNMR_HDR=		\
+	acquisition.h
+
+VWACQ_HDR=		\
+	hostAcqStructs.h
+
+ALLSRC= $(BIN_SRC) $(VNMR_HDR) $(VWACQ_HDR)
+
+
+std SOLARIS : inova
+
+sun4 sun4c sun4m sparc :
+	@echo ihwinfo not available on $@
+
+inova : $$(MAKEFILE) Source
+	@( $(MAKE) -ef $(MAKEFILE)			\
+	   "CFLAGS= $(CFLAGS) -DNESSIE"			\
+	   "LIBDIR= $(solobjdir)/proglib/ncomm"		\
+	   "LIBS= -lacqcomm -lsocket"			\
+	    ihwinfo )
+
+lint : $(ALLSRC)
+	lint $(BIN_SRC)
+
+#-----------------------------------------------------------------------------
+
+ihwinfo : ihwinfo.o
+	$(CC) -o $@ $(LDFLAGS) $@.o -L$(LIBDIR) $(LIBS)
+
+ihwinfo.o : ihwinfo.c acquisition.h hostAcqStructs.h
+
+
+Source:
+	@( cd $(BIN_SRC_DIR); $(MAKE) -e -f $(MAKEFILE)	\
+             "BIN_SRC_DIR= $(BIN_SCCS_DIR)"		\
+             "BIN_GET= $(BIN_SGET)"			\
+             "VNMR_SRC_DIR= $(VNMR_SCCS_DIR)"		\
+             "VNMR_GET= $(VNMR_SGET)"			\
+             "VWACQ_SRC_DIR= $(VWACQ_SCCS_DIR)"		\
+             "VWACQ_GET= $(VWACQ_SGET)"			\
+              src )
+ 
+src: $(ALLSRC)
+	@echo source files for ihwinfo up to date
+
+$(BIN_SRC) : $$(BIN_SRC_DIR)$$(@)
+	$(BIN_GET) $@
+
+$(VNMR_HDR) : $$(VNMR_SRC_DIR)$$(@)
+	- $(VNMR_GET) $@
+
+$(VWACQ_HDR) : $$(VWACQ_SRC_DIR)$$(@)
+	$(VWACQ_GET) $@

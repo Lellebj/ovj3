@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='us-ascii'?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<mainmenu>
+   <subfilemenu label = "File"  hotkey = "f"
+	show="exists('MainMenuFile.xml','templates/vnmrj/interface',-1):$SHOW"
+	file="MainMenuFile.xml"
+	style="Menu1"
+   />
+   <subfilemenu label = "Edit"  hotkey = "e"
+	show="exists('MainMenuEdit.xml','templates/vnmrj/interface',-1):$SHOW"
+	file="MainMenuEdit.xml"
+	style="Menu1"
+   />
+   <subfilemenu label = "View"  hotkey = "v"
+	show="exists('MainMenuView.xml','templates/vnmrj/interface',-1):$SHOW"
+	file="MainMenuView.xml"
+	style="Menu1"
+   />
+    <subfilemenu label = "Acquisition"  hotkey = "a"
+	show="exists('MainMenuAcquire.xml','templates/vnmrj/interface',-1):$SHOW"
+	file="MainMenuAcquire.xml"
+	style="Menu1"
+   />
+   <subfilemenu label = "Tools"  hotkey = "t"
+	show="exists('MainMenuTools.xml','templates/vnmrj/interface',-1):$SHOW"
+	file="MainMenuTools.xml"
+	style="Menu1"
+   />
+   <subfilemenu label = "Help"  hotkey = "h"
+	show="exists('MainMenuHelp.xml','templates/vnmrj/interface',-1):$SHOW"
+	file="MainMenuHelp.xml"
+	style="Menu1"
+   />
+</mainmenu>

@@ -1,0 +1,405 @@
+# Copyright (c) Varian Assoc., Inc.  All Rights Reserved.
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+#************************************************************************
+# 
+#  Image browser programs needs two process "ib_ui" and "ib_graphics"
+#
+#  make -f makeib.lnx           --- build ib_graphics
+#  make -f makeib.lnx graphics  --- build ib_graphics
+#  make -f makeib.lnx ui        --- build ib_ui
+#  make -f makeib.lnx all       --- build ib_ui ib_graphics
+#  make -f makeib.lnx purify    --- same as "all", with "purify" stuff linked in
+#  make -f makeib.lnx malloc_debug --- same as "all" with debug malloc files
+#  make -f makeib.lnx debug     --- build DEBUG ib_graphics  version
+#  make -f makeib.lnx debug_ui  --- build DEBUG ib_ui  version
+#  make -f makeib.lnx profile   --- build PROFILE ib_graphics  version
+#  make -f makeib.lnx profile_ui--- build PROFILE ib_ui  version
+#
+#************************************************************************
+
+SHELL= /bin/sh
+SISINCLUDE= /share/sis/common/xtools/include
+IB_REV=
+SIS_REV=
+PARAMS_REV=
+
+LINK.cc= g++ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS)
+
+#----------------------
+# Directories for SCCS
+#----------------------
+SCCS_DIR=$(sccsdir)/ib
+SCCS_PARAMS_DIR=$(SCCS_DIR)
+GRAPHICS_SCCS_DIR=$(SCCS_DIR)
+
+#---------------------------
+# Target files to be built
+#---------------------------
+TARGET_UI=ib_ui
+TARGET_GRAPHICS=ib_graphics
+TARGET_SABER_GRAPHICS=saber_ib_graphics
+
+#---------------------------------------------
+# Source files for shared by ui and graphics
+#_--------------------------------------------
+SHARED_SRC=	message.c
+SHARED_INC=	define_ui.h message.h
+
+#---------------------------------------------
+# Source files for ui. 
+#---------------------------------------------
+UI_SRC=		win_ui.c
+UI_INC=	
+
+#---------------------------------------------
+# Source files for graphics
+#---------------------------------------------
+SIS_SRC=	graphics.c siscms.c image.c image2.c image3.c image4.c \
+		contrast.c spline.c \
+		filelist.c expfile.c menu_dir.c \
+		initstart.c ipgwin.c msgprt.c prim_line.c confirmwin.c
+SIS_INC=	confirmwin.h initstart.h msgprt.h ipgwin.h primitive.h \
+		siscms.h stderr.h
+DDL_SRC=	ddlnode.c ddlsymtab.c scanner.c parser.c misc.c \
+		action.c ddl.c
+DDL_INC=	ddllib.h ddlnode.h macrolist.h parser.h scanner.h symbol.h
+PARAMS_SRC=	error.c debug_alloc.c params.c tree.c stack.c
+
+IB_SRC=		common.c \
+		imagelist.c \
+		interrupt.c \
+		macroexec.c \
+		parmlist.c \
+		win_graphics.c
+
+IB_INC=		common.h \
+		filelist.h \
+		filelist_id.h \
+		ibcommands.h \
+		imagelist.h \
+		interrupt.h \
+		macroexec.h \
+		macrolist_ib.h \
+		magicfuncs.h \
+		parmlist.h
+
+GTOOLS_FROZEN_SRC= \
+		edgelist.c \
+		stringedit.c \
+		xview-keycodes.c
+
+GTOOLS_DEBUG_SRC= \
+		box.c \
+		file_format.c \
+		frame_data.c \
+		frame_select.c \
+		gframe.c \
+		gtools.c \
+		ib_gframe.c \
+		label.c \
+		line.c \
+		oval.c \
+		polygon.c \
+		point.c \
+		roitool.c \
+		voldata.c \
+		vs.c \
+		zoom.c
+
+GTOOLS_SRC=	$(GTOOLS_FROZEN_SRC) $(GTOOLS_DEBUG_SRC)
+
+GTOOLS_INC=	box.h \
+		file_format.h \
+		gframe.h \
+		gtools.h \
+		ibcursors.h \
+		label.h \
+		line.h \
+		oval.h \
+		point.h \
+		polygon.h \
+		roitool.h \
+		histogram.h \
+		stringedit.h \
+		voldata.h \
+		vs.h \
+		xview-keycodes.h \
+		zoom.h
+
+PROCESS_SRC=	arithmetic.c \
+		filter.c \
+		axis.c \
+		histenhance.c \
+		math.c \
+		statistics.c \
+		win_arithmetic.c \
+		win_math.c \
+		win_filter.c \
+		win_histenhance.c \
+		win_rotation.c \
+		win_stat.c
+
+PROCESS_INC= 	process.h \
+		axis.h \
+		win_math.h \
+		win_process.h \
+		win_rotation.h \
+		win_stat.h
+
+GRAPHICS_INC=   graphics.h contrast.h vscale.h vsfunc.h
+
+
+INFO_SRC=	win_point_info.c \
+		win_line_info.c 
+INFO_INC=	win_point_info.h \
+		win_line_info.h 
+
+MOVIE_SRC=	win_movie.c \
+		framelist.c
+
+MOVIE_INC=	framelist.h \
+		movie.h
+
+SISFILE_SRC=	sisfile.c ddlfile.c imginfo.c
+SISFILE_INC=	sisfile.h ddlfile.h statmacs.h imginfo.h
+
+CONVERT_SRC=	convert.c
+CONVERT_INC=	convert.h
+
+INPUTWIN_SRC=	inputwin.c
+INPUTWIN_INC=	inputwin.h
+
+GLUER_SRC=	crc.c
+GLUER_INC=	crc.h
+
+MISC_SRC=
+MISC_INC=	debug.h
+MISC_OBJ=$(MISC_SRC:.c=.o)
+
+
+PARAMS_INC=	params.h
+
+FROZEN_SRC=	$(INPUTWIN_SRC) $(GLUER_SRC) $(CONVERT_SRC) \
+                $(GTOOLS_FROZEN_SRC) $(SHARED_SRC)
+
+FROZEN_OBJ=$(FROZEN_SRC:.c=.o)
+
+DEBUG_SRC=	$(GTOOLS_DEBUG_SRC) $(IB_SRC) $(SISFILE_SRC) $(MOVIE_SRC) \
+		$(PROCESS_SRC) $(INFO_SRC) 
+
+DEBUG_OBJ=$(DEBUG_SRC:.c=.o)
+
+INCS=	$(IB_INC) \
+	$(GRAPHICS_INC) \
+	$(GTOOLS_INC) \
+	$(PROCESS_INC) \
+	$(INFO_INC) \
+	$(MOVIE_INC) \
+	$(DDL_INC) \
+	$(SIS_INC) \
+	$(SISFILE_INC) \
+	$(CONVERT_INC) \
+	$(INPUTWIN_INC) \
+	$(GLUER_INC) \
+	$(PARAMS_INC) \
+	$(MISC_INC) \
+	$(SHARED_INC)	\
+	generic.h
+
+# All source files for graphics
+GRAPHICS_SRC=$(IB_SRC) \
+	$(GTOOLS_SRC) \
+	$(PROCESS_SRC) \
+	$(MOVIE_SRC) \
+	$(INFO_SRC) \
+	$(SISFILE_SRC) \
+	$(CONVERT_SRC) \
+	$(INPUTWIN_SRC) \
+	$(GLUER_SRC)
+
+#---------------
+# Object files
+#---------------
+GRAPHICS_OBJ=$(GRAPHICS_SRC:.c=.o)
+UI_OBJ=$(UI_SRC:.c=.o)
+SHARED_OBJ=$(SHARED_SRC:.c=.o)
+malloc_debug := MALLOC_OBJ = /usr/lib/debug/malloc.o
+
+
+#---------------------------
+# Extract all include files
+#---------------------------
+.INIT:	$(IB_INC) \
+	$(GRAPHICS_INC) \
+	$(GTOOLS_INC) \
+	$(PROCESS_INC) \
+	$(INFO_INC) \
+	$(MOVIE_INC) \
+	$(DDL_INC) \
+	$(SIS_INC) \
+	$(SISFILE_INC) \
+	$(CONVERT_INC) \
+	$(INPUTWIN_INC) \
+	$(GLUER_INC) \
+	$(PARAMS_INC) \
+	$(MISC_INC) \
+	$(SHARED_INC)	\
+	generic.h
+
+
+#------------------------------
+# Include flags for compilation
+#
+#  WARNING ----- WARNING ------ WARNING ------ WARNING ----- WARNING
+#
+#  The compilation with optimization flag -O will cause the core
+#  dump in 'vsprintf' functinal call for AT&T C++ 2.0 under SunOS 4.1.
+#------------------------------
+
+# this is for using the CenterLine CC compiler
+C_PLUS_PLUS_INC_DIR= /usr/local/CenterLine/c++_1.1.0-r1.0/sun4-40/include
+#C_PLUS_PLUS_INC_DIR= /usr/local/CenterLine/include
+
+# the following are for using other CC compilers (e.g. Sun CC)
+#C_PLUS_PLUS_INC_DIR= /usr/local/CC/`arch`/incl
+#C_PLUS_PLUS_INC_DIR= ./incl
+
+OPENWINHOME=/usr/openwin
+
+#CPPFLAGS += -I$(SISINCLUDE)/sis -I$(SISINCLUDE) \
+#	 -I$(OPENWINHOME)/include -I$(C_PLUS_PLUS_INC_DIR)
+
+#CPPFLAGS += -I$(OPENWINHOME)/include -I$(C_PLUS_PLUS_INC_DIR)
+#CPPFLAGS += -DSOLARIS -I$(OPENWINHOME)/include
+
+CCFLAGS = -g -compat=4 -DOWTOOLKIT_WARNING_DISABLED
+
+#------------------------------
+# Library flags for compilation
+#------------------------------
+LDFLAGS = -m32 -Bstatic \
+	   -L. \
+	   -L$(lnxobjdir)/lib	\
+	   -L/usr/X11R6/lib	\
+#	   -L$(OPENWINHOME)/lib
+
+#DEPLIBS:sh = OSTYPE=`uname -r | awk '{ print substr($0,1,1) }'`; \
+#	 if [ $OSTYPE = "5" ]; then \
+#	   echo "libddl_sol.a libsis_sol.a libparams_sol.a libmagical_sol.a"; \
+#	 elif [ $OSTYPE = "4" ]; then \
+#	   echo "libddl.a libsis.a libparams.a libmagical.a"; \
+#	 fi;
+
+LDLIBS = libsis.a libparams.a $(OPENWINHOME)/lib/libxview.a $(OPENWINHOME)/lib/libolgx.a \
+        -ldl libddl.a libmagical.a -lXt -lX11 -lXm -lm -Bstatic
+
+CPPFLAGS = -I$(OPENWINHOME)/include
+
+.SCCS_GET:
+.PRECIOUS: $(TARGET_UI) $(TARGET_GRAPHICS)
+.KEEP_STATE:
+
+#------------------------------
+#  User specified targets
+#------------------------------
+# All
+all debug purify malloc_debug: $(TARGET_GRAPHICS) $(TARGET_UI)
+
+# User specific target for 'ib_graphics'
+graphics debug_graphics profile: $(TARGET_GRAPHICS)
+
+# User specific target for 'ib_ui'
+ui debug_ui profile_ui: $(TARGET_UI)
+
+#------------------------------
+# Flags Changed due to user's target
+#------------------------------
+#debug := CCFLAGS=-g
+purify := PURIFY = purify
+profile := CCFLAGS = -pg -Bstatic -compat=4 -DOWTOOLKIT_WARNING_DISABLED
+debug_ui debug_graphics debug := CCFLAGS=-g -compat=4 \
+				-DOWTOOLKIT_WARNING_DISABLED
+profile_ui := CCFLAGS = -pg -Bstatic -compat=4 -DOWTOOLKIT_WARNING_DISABLED
+all := CCFLAGS= -O -Bstatic -compat=4 -DOWTOOLKIT_WARNING_DISABLED
+debug_ui := CPPFLAGS += -DDEBUG
+
+#------------------------------
+# Compilation and Linking
+#------------------------------
+$(TARGET_GRAPHICS): $(GRAPHICS_OBJ) $(SHARED_OBJ) $(SCHEME_OBJ)
+	(umask 2; $(PURIFY) $(LINK.cc) -o $@ $(GRAPHICS_OBJ) $(SHARED_OBJ) \
+	 $(SCHEME_OBJ) $(MALLOC_OBJ) $(LDLIBS) )
+	#@(chmod -f 666 .nse_depinfo)
+
+$(TARGET_UI): $(UI_OBJ) $(SHARED_OBJ) $(MISC_OBJ)
+	(umask 2; $(LINK.cc) -o $@ $(UI_OBJ) $(SHARED_OBJ) $(MISC_OBJ) \
+	 $(LDLIBS) )
+	#@(chmod -f 666 .nse_depinfo)
+
+
+saberold:	$(GRAPHICS_OBJ) $(SHARED_OBJ)
+	#load  $(CPPFLAGS)  $(LDFLAGS) $(LDLIBS)
+	#load  $(CPPFLAGS) $(GRAPHICS_OBJ) $(SHARED_OBJ)
+
+saber:	$(FROZEN_OBJ) $(DEBUG_OBJ)
+	#load  $(CPPFLAGS)  $(LDFLAGS) $(LDLIBS)
+	#load  $(CPPFLAGS) $(FROZEN_OBJ) $(DEBUG_OBJ)
+
+saber_load_all:	$(SHARED_SRC) $(GRAPHICS_SRC) 
+	#load $(LDFLAGS) -Bdynamic -lxview -lolgx -lX -lm -Bstatic
+	#load $(CPPFLAGS) $(SHARED_SRC) $(GRAPHICS_SRC) 
+	#load $(CPPFLAGS) $(DDL_SRC) $(SIS_SRC)
+	#load -C $(CPPFLAGS) $(PARAMS_SRC)
+	#load libsis.a
+
+$(GRAPHICS_OBJ) $(UI_OBJ) $(SHARED_OBJ) $(MISC_OBJ): %.o:%.c $(INCS)
+	(umask 2; $(COMPILE.cc) -m32 -fPIC -O -DLINUX $< )
+
+#--------------------
+# SCCS extraction.
+#--------------------
+$(IB_SRC) $(IB_INC) $(UI_SRC) $(UI_INC) $(SHARED_SRC) $(SHARED_INC) \
+$(GTOOLS_SRC) $(GTOOLS_INC) $(PROCESS_SRC) $(PROCESS_INC) \
+$(MOVIE_SRC) $(MOVIE_INC) $(INFO_SRC) $(INFO_INC) \
+$(SISFILE_SRC) $(DDL_INC) $(SIS_INC) $(SISFILE_INC) \
+$(CONVERT_SRC) $(CONVERT_INC) \
+$(INPUTWIN_SRC) $(INPUTWIN_INC) $(GLUER_SRC) $(GLUER_INC) \
+$(MISC_SRC) $(MISC_INC) : \
+	%:$(SCCS_DIR)/SCCS/s.%
+	sccs -d $(SCCS_DIR) get $(IB_REV) $@
+
+$(GRAPHICS_INC): %:$(GRAPHICS_SCCS_DIR)/SCCS/s.%
+	sccs -d $(GRAPHICS_SCCS_DIR) get $(SIS_REV) $@
+
+$(PARAMS_INC): %:$(SCCS_PARAMS_DIR)/SCCS/s.%
+	sccs -d $(SCCS_PARAMS_DIR) get $(PARAMS_REV) $@
+
+generic.h: 
+	sccs -p$(sccsdir)/aip/SCCS get $@
+
+BACKUP:
+	cp  .make.state .make.state.bak
+
+depend:
+	makedepend -I$(C_PLUS_PLUS_INC_DIR) $(CPPFLAGS) *.[ch]
+
+clean:
+	/bin/rm -f $(GRAPHICS_OBJ) $(UI_OBJ) $(SHARED_OBJ); \
+	sccs -d $(SCCS_DIR) clean; \
+	sccs -d $(SCCS_DIR)/gtools clean; \
+	sccs -d $(SCCS_DIR)/process clean; \
+	sccs -d $(SCCS_DIR)/movie clean; \
+	sccs -d $(SCCS_DIR)/misc clean; \
+	sccs -d $(SCCS_DIR)/sisfile clean; \
+	sccs -d $(SCCS_DIR)/convert clean; \
+	sccs -d $(SCCS_DIR)/inputwin clean; \
+	sccs -d $(SCCS_PARAMS_DIR) clean; \
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+

@@ -1,0 +1,28 @@
+#
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved.
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+#	Originator: Phil Hornung
+
+eccsend: eccsend.c
+	cc  -O -Bstatic -o eccsend eccsend.c -lm 
+
+eccTool: eccTool.c
+	cc  -O -Bstatic -o eccTool eccTool.c  \
+	-lsuntool -lsunwindow -lpixrect -lm 
+
+# X VERSIONS
+
+XeccTool:	XeccTool.o xph.o 
+	cc -g XeccTool.o xph.o -o XeccTool -L$O/lib -lXol -lXt -lX11
+
+XeccTool.o:	XeccTool.c  xph.h
+	cc -g -I$O/include -c  XeccTool.c
+
+xph.o:	xph.c  xph.h
+	cc -g -I$O/include -c  xph.c
+

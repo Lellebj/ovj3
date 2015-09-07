@@ -1,0 +1,53 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+# makeexpfit  make file
+# make -f makeexpfit,  creates expfit for PAID
+#
+MAKEFILE=makeexpfit
+
+ROOT=$(sccsdir)
+JAWS=$(vnmrdir)
+
+JSCCS=$(JAWS)/SCCS/
+
+binSCCS=$(ROOT)/bin/SCCS/s.
+
+BINGET = sccs -p$(ROOT)/bin/SCCS get
+
+#-- Normal operational compile flags
+CFLAGS= -fsingle -c -O
+
+#-- Debugging with DBXTOOL ccompile flags
+#CFLAGS= -c -g
+
+#------------------------------------------------------------------------
+#--- objects that are needed for expfit
+#------------------------------------------------------------------------
+OBJ=                     \
+                expfit.o
+
+expfit: $(OBJ)
+	(umask 2; cc -o expfit $(OBJ) -ll -lm  )
+
+AIX: expfit
+
+SOLARIS: expfit
+
+IRIX:
+	($(MAKE) -ef $(MAKEFILE) \
+	  "CFLAGS=-c -O -cckr -DIRIX" \
+	  expfit)
+ 
+expfit.o       : expfit.c
+	(umask 2; cc $(CFLAGS) expfit.c  )
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+
+expfit.c : $(binSCCS)expfit.c
+	$(BINGET) expfit.c

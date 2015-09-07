@@ -1,0 +1,1366 @@
+#
+# Varian, Inc. All Rights Reserved. 
+# This software contains proprietary and confidential information of
+# Varian, Inc. and its contributors.  Use, disclosure and reproduction
+# is prohibited without prior consent.
+#
+SHELL = /bin/sh
+
+SCCSJDIR=        $(sccsjdir)
+MAKEFILE=        makevnmrj.lnx
+VNMRJ_SCCS_SRC=  $(SCCSJDIR)/vnmrj/SCCS/s.
+SCCS_JSRC_GET=   sccs -p$(SCCSJDIR)/vnmrj/SCCS get
+IMAGE_DIR=       $(commondir)/vnmrj/vnmr_images
+BASE_DIR=        $(shell pwd)
+BO_DEST_DIR=     vnmr/bo
+JGL_DEST_DIR=	 vnmr/jgl
+SHUF_DEST_DIR=   vnmr/ui/shuf
+UI_DEST_DIR=     vnmr/ui
+UTIL_DEST_DIR=   vnmr/util
+LC_DEST_DIR=     vnmr/lc
+JB_DEST_DIR=     vnmr/lc/jumbuck
+CRYO_DEST_DIR=   vnmr/cryo
+SMS_DEST_DIR=    vnmr/sms
+LCACCESS_DEST_DIR= lcaccess
+MSACCESS_DEST_DIR= msaccess
+PDAACCESS_DEST_DIR= pdaaccess
+VJMOL_DEST_DIR=	 vjmol
+IMAGE_DEST_DIR=  vnmr/images
+PROPS_DEST_DIR=  vnmr/properties
+XML_DEST_DIR=    vnmr/templates
+PART11_DEST_DIR= vnmr/part11
+C_DEST_DIR=      vnmr/c
+ADMIN_DEST_DIR=	 vnmr/admin
+ADMIN_UI_DEST_DIR= vnmr/admin/ui
+ADMIN_UTIL_DEST_DIR= vnmr/admin/util
+ADMIN_VOBJ_DEST_DIR= vnmr/admin/vobj
+JDIR= $(JDK_DIR)
+JRE_DIR=$(JDK_DIR)/jre
+POSTGRESQL_DIR=  postgresql
+JAVA_MAIN=       VNMRFrame.java
+JAR_FILE=        vnmrj.jar
+
+CP1=$(BASE_DIR):$(BASE_DIR)/xml.jar:$(BASE_DIR)/postgresql.jar:$(BASE_DIR)/jogl.jar:$(BASE_DIR)/gluegen-rt.jar
+CP2=$(CP1):$(BASE_DIR)/jh.jar:$(BASE_DIR)/jhall.jar
+CP3=$(CP2):$(BASE_DIR)/jhbasic.jar:$(BASE_DIR)/jhtools.jar
+CP4=$(CP3):$(BASE_DIR)/jsearch.jar
+CP5=$(CP4):$(BASE_DIR)/lcaccess.jar:$(BASE_DIR)/msaccess.jar
+CP6=$(CP5):$(BASE_DIR)/pdaaccess.jar
+CLASS_PATH=$(CP6)
+CP7=$(BASE_DIR)/jmol.jar
+
+LIBS= -L/usr/X11R6/lib -lXt -lX11 -lXm \
+      -L$(JDIR)/jre/lib/i386 -R$(JDIR)/lib/i386 -ljawt
+
+IDIR=  -I$(JDIR)/include -I$(JDIR)/include/linux
+CFLAGS= -g
+CC=     gcc
+LD=     ld
+
+# PatientTableAdapter ShufObj TwoColumnPanel
+
+BO_SRC=			\
+	Access.java	\
+	ActionComponent.java	\
+	Autodir.java \
+	AvailSubTypes.java \
+	BorderDeli.java	\
+	ColorLookupTable.java	\
+	ColormapInfo.java	\
+	ComboSlider.java	\
+	EasyJTable.java		\
+	EPSGraphics.java	\
+	Exp.java  	\
+	Group.java	\
+	ID.java		\
+	ImageDirType.java \
+	ImageFileType.java \
+	IPatTabFrame.java	\
+	LcStudyType.java \
+	LockStatus.java	\
+	LoginService.java \
+	Macro.java	\
+	PanelNComp.java \
+	Param.java	\
+	PatientTableComm.java	\
+	PatientTableEvent.java	\
+	PatientTableListener.java	\
+	patienttableui.java     \
+	Plot2D.java		\
+	PlotBox.java		\
+	Plot.java		\
+	PlotPoint.java		\
+	Polyline.java		\
+	PpgmMacro.java \
+	PrinterService.java \
+	ProtocolType.java \
+	RecordData.java	  \
+	Record.java	  \
+	SearchResults.java \
+	SessionStorage.java \
+	ShimSet.java \
+	ShufflerItem.java \
+	ShufflerParam.java \
+	ShufflerService.java \
+	StatementAdapter.java \
+	StatementHistory.java \
+	StatementListener.java \
+	StudyType.java \
+	TableMap.java   \
+	TableSorter.java        \
+	TrashType.java \
+	User.java	\
+	VAnnotateBox.java	\
+	VAnnotateTable.java	\
+	VAnnotationIF.java	\
+	VAudit.java	\
+	VButton.java	\
+	VMagicButton.java	\
+	VCaptureButton.java	\
+	VCaretEntry.java	\
+	VCascadingMenu.java	\
+	VCheckBoxMenuItem.java	\
+	VCheck.java	\
+	VClockDial.java	\
+	VColorChooser.java	\
+	VComboBoxButton.java	\
+	VComboFileTable.java \
+	VContainer.java	\
+	VEditIF.java	\
+	VEntry.java	\
+	VExperimentMeter.java \
+	VFileBrowser.java \
+	VFileMenu.java \
+	VFileTable.java \
+	VFontChooser.java \
+	VGroupIF.java	\
+	VGroup.java	\
+	VGroupSave.java	\
+	VHardwareStatus.java \
+	VLabel.java	\
+	VLcStatusButton.java	\
+	VLcStatusChart.java \
+	VMagicButton.java \
+	VMakePanelsTag.java	\
+	VMenuitemIF.java	\
+	VMenu.java	\
+	VMenuLabel.java	\
+	VMessageBox.java	\
+	VMessage.java	\
+	VMsStatusButton.java	\
+	VObjAdapter.java	\
+	VObjDef.java	\
+	VObjDropHandler.java	\
+	VObjIF.java	\
+	VObj.java	\
+	VPanelTab.java	\
+	VParamArray.java	\
+	VParamCreateEntry.java	\
+	VParameter.java	\
+	VPlot.java	\
+	VPopup.java	\
+	VRadio.java	\
+	VRedoButton.java \
+	VRFMonButton.java	\
+	VScroll.java	\
+	VScrollTextPane.java	\
+	VsCurveFunction.java	\
+	VSelFileMenu.java	\
+	VSelMenu.java	\
+	VsFunction.java		\
+	VShimSet.java	\
+	VSlider.java	\
+	VSpinner.java	\
+	VSplitPane.java		\
+	VStatusButton.java \
+	VStatusChartIF.java \
+	VStatusChart.java \
+	VStatusIF.java \
+	VStyleChooser.java \
+	VSubFileMenu.java \
+	VSubMenuItem.java \
+	VSubMenu.java \
+	VTabbedPane.java	\
+	VTab.java	\
+	VTabPage.java	\
+	VTextFilePane.java	\
+	VTextFileWin.java	\
+	VText.java	\
+	VTextMsg.java	\
+	VTextPane.java	\
+	VTextUndoMgr.java \
+	VTextWin.java	\
+	VThermometer.java	\
+	VToggle.java	\
+	VToolBarButton.java	\
+	VToolBar.java	\
+	VUndoableText.java		\
+	VUndoButton.java	\
+	VUpDownButton.java	\
+	VVsControl.java	\
+	Workspace.java
+
+# CanvasBorder ContourMapUI ControlAction ControlDropTargetListener
+# DataGraphUI  ExpIFrame  ExpQueueComp  ExpTearFrame
+# ExpTopBar    Filler    Glue    ParamArray
+# PrintContainer ProcessTabPane  SaveData  SaveFileButton
+# VjMenuBar  ContourThresholdFilter  DisplayControls  ColorSetter
+# Colorable  VnmrXCanvas ExperimentIF
+
+UI_SRC=			\
+	ActionBar.java	\
+	ActionHandler.java	\
+	Annotation.java	\
+	AppIF.java	\
+	AppInstaller.java	\
+	ApplicationLabels.java	\
+	AquaTheme.java	\
+	BasicClockDialUI.java	\
+	CanvasTransferable.java	\
+	ComboBoxTitleIF.java	\
+	ComboBoxTitleUI.java	\
+	ClockDial.java		\
+	ClockDialUI.java		\
+	ControlButtonBar.java  \
+	ControlPanel.java  \
+	CutCopyPaste.java  \
+	CutCopyPasteTarget.java  \
+	CutCopyTarget.java  \
+	DisplayPalette.java  \
+	DpsArrayPan.java  \
+	DpsInfoPan.java  \
+	DraggableLabel.java \
+	DroppableList.java \
+	DummyRepaintManager.java \
+	EmeraldTheme.java \
+	EPopButton.java \
+	EPopListener.java \
+	ExpCards.java \
+	ExpControlButton.java \
+	ExpListenerIF.java \
+	ExpPanel.java  \
+	ExpPanInfo.java  \
+	ExpSelector.java \
+	ExpStatusBar.java  \
+	ExpUI.java  \
+	ExpView.java \
+	ExpViewArea.java \
+	ExpViewIF.java \
+	GradCoilIdListener.java	\
+	GraphicsToolIF.java	\
+	GraphicsWinTool.java	\
+	HeaderValRenderer.java  \
+	HeaderValue.java  \
+	HoldingArea.java  \
+	HoldingCellRenderer.java  \
+	HoldingDataModel.java  \
+	HoldingDropTargetListener.java  \
+	HoldingTable.java \
+	IntegerRangeModel.java \
+	IntroComp.java \
+	LocalRefSelection.java \
+	LoginBox.java \
+	LoginTopBar.java \
+	MasStatusListener.java \
+	MenuPanel.java \
+	MessageListenerIF.java \
+	MotifUpDownButtonUI.java	\
+	MPopButton.java \
+	NoteEntryComp.java \
+	ParamArrayPanel.java \
+	ParamArrayTable.java \
+	ParamArrayValueTable.java \
+	ParameterPanel.java \
+	ParamLayout.java \
+	ParamListenerIF.java \
+	ParamListenerUtils.java \
+	PasteTarget.java \
+	PasswordService.java	\
+	PopButton.java \
+	PopListener.java \
+	ProbeButton.java \
+	PublisherNotesComp.java \
+	PulseTool.java \
+	PushpinControler.java \
+	PushpinIF.java \
+	PushpinObj.java \
+	PushpinPanel.java \
+	PushpinTab.java \
+	QueuePanel.java \
+	RobotViewComp.java \
+	RubyTheme.java \
+	SessionShare.java \
+	Splash.java \
+	StatusListenerIF.java \
+	StatusManager.java \
+	StudyQueue.java \
+	SysToolBar.java \
+	SysToolPanel.java \
+	TabButton.java \
+	TemplateLayout.java \
+	TextImageIcon.java \
+	ThreeButtonModel.java	\
+	ToolBarLayout.java \
+	TrashCan.java \
+	TwoLineButton.java \
+	UnderlineButton.java \
+	UpDownButton.java	\
+	UpDownButtonUI.java	\
+	VjToolBar.java \
+	VAdminIF.java	\
+	VBrowser.java	\
+	VComboBasicUI.java	\
+	VComboBoxUI.java	\
+	VComboMetalUI.java	\
+	VFileDialog.java \
+	VIcon.java	\
+	VLimitListenerIF.java	\
+	VLoginPassword.java	\
+	VMenuBar.java \
+	VNMRFrame.java \
+	VnmrCanvas.java \
+	VnmrJTheme.java \
+	VnmrjIF.java \
+	VnmrjUI.java \
+	VnmrTearCanvas.java \
+	VpLayoutInfo.java \
+	VPrint.java	\
+	VPrintDialog.java \
+	VToolPanel.java \
+	VTabbedToolPanel.java   \
+	XMLToolPanel.java   \
+	RQPanel.java	\
+	ReviewQueue.java \
+	AcceleratorKeyTable.java \
+	AcceleratorKeyEditor.java
+
+JGL_SRC=		    \
+	ARBProgram.java \
+	CGLJNI.java \
+	Gears.java \
+	GLDemo.java \
+	GLRendererIF.java \
+	GLSLProgram.java \
+	GLUtil.java \
+	JGears.java \
+	JGLDef.java \
+	JGLComListenerIF.java \
+	JGLComMgr.java \
+	JGLData.java \
+	JGLDialog.java \
+	JGLFragmentShader.java \
+	JGLGraphics.java \
+	JGLRenderer.java \
+	JGLShader.java \
+	JGLShaderProgram.java \
+	JGLTexMgr.java \
+	JGLTex1DMgr.java \
+	JGLTex2DMgr.java \
+	JGLTex3DMgr.java \
+	JGLVertexShader.java \
+	JGLView.java \
+	Point3D.java \
+	Volume.java
+
+
+SHUF_SRC=			\
+	CommandDefinition.java	\
+	AddToLocatorViaThread.java \
+	DatePanel.java \
+	DateListener.java \
+	DateRangePanel.java \
+	DBStatus.java \
+	DirFilter.java  \
+	FileSystemModelBrowser.java \
+	FillDBManager.java  \
+	FillWorkspaceTable.java \
+	FillMacrosTables.java \
+	ImportDialog.java  \
+	JTreeTable.java		\
+	JTreeTableImport.java		\
+	FileSystemModel.java	\
+	FileNode.java	\
+	TreeTableModel.java	\
+	AbstractTreeTableModel.java \
+	TreeTableModelAdapter.java	\
+	AbstractCellEditor.java	\
+	LocAttrList.java \
+	LocatorBrowser.java \
+	LocatorHistory.java \
+	LocatorHistoryList.java \
+	LocatorPopup.java \
+	MergeSort.java	\
+	MatchDialog.java \
+	MountPaths.java  \
+	NotifyListener.java \
+	OneTag.java \
+	ResultDataModel.java \
+	ResultTable.java \
+	CustomStatementRemoval.java \
+	SaveCustomLocatorStatement.java \
+	SavedDirList.java \
+	SearchInfo.java \
+	ShufCellRenderer.java \
+	ShufDBManager.java \
+	Shuf.java	\
+	Shuffler.java \
+	ShufDataParam.java \
+	ShufflerToolBar.java \
+	SpotterButton.java \
+	StartSearch.java \
+	StatementElement.java \
+	StatementDefinition.java \
+	StatementView.java \
+	SymLinkMap.java \
+	TagAddRemoveDialog.java \
+	TagButton.java	    \
+	TagEditDialog.java \
+	TagList.java \
+	TrashItem.java \
+	TrashInfo.java \
+	VJFileBrowser.java \
+	VJOpenPopup.java \
+	VJSavePopup.java \
+	VJBrowserPopup.java \
+	UpdateAttributeList.java \
+	UpdateDatabase.java
+
+# LangUtil UIUtil ToolsClicker  VCheckUI
+# VDnDHandler  VnmrParameter  TmpXmlUtils
+
+UTIL_SRC=		\
+	AcqPanelUtility.java 	\
+	AcqPanelTransformer.java 	\
+	AddToolsDialog.java 	\
+	AnnotationEditor.java 	\
+	AnnotateObj.java 	\
+	ButtonIF.java 	\
+	CanvasIF.java 	\
+	CanvasOutSocket.java 	\
+	CanvasSocket.java 	\
+	CheckTreeCellRenderer.java \
+	CheckTreeManager.java \
+	CheckTreeSelectionModel.java \
+	CommandInput.java 	\
+	ContextMenu.java        \
+	CaptureImage.java	\
+	CorbaClient.java	\
+	DebugOutput.java \
+	DisplayOptions.java \
+	DoubleClicker.java     \
+	ExitStatus.java \
+	ExpButton.java \
+	FileSystemModelAdmin.java \
+	FileUtil.java \
+	Fit.java		\
+	Fmt.java	\
+	Global.java 	\
+	GridLayoutCol.java \
+	HashArrayList.java \
+	HomeFileSystemView.java	\
+	JComboButton.java  \
+	JComponentVista.java 	\
+	JTextVista.java 	\
+	JTreeTableAdmin.java \
+	LinFit.java		\
+	ListItem.java   \
+	ListItemRenderer.java \
+	Messages.java \
+	ModalDialog.java	\
+	ModalEntryDialog.java	\
+	NumericStringComparator.java \
+	SaveDataDialog.java	\
+	SaveStudyDialog.java	\
+	ModalPopup.java	\
+	ModelessPopup.java	\
+	ModelessDialog.java \
+	MemoryMonitor.java 	\
+	MessageTool.java 	\
+	ParamBoder.java 	\
+	ParamEditUtil.java 	\
+	ParamIF.java 	\
+	ParamInfo.java 	\
+	ParamInfoPanel.java 	\
+	ParamResourceBundle.java	\
+	Plotters.java 	\
+	PrinterPaper.java 	\
+	ProtocolLabelHandler.java \
+	QuotedStringTokenizer.java 	\
+	ReqparWarnDialog.java		\
+	Right.java \
+	RightsList.java \
+	SerialSocketDeviceIO.java 	\
+	SimpleH2Layout.java	\
+	SimpleVLayout.java	\
+	SocketIF.java \
+	StatusProcess.java \
+	StatusSocket.java \
+	StreamTokenizerQuotedNewlines.java \
+	StrUtil.java		\
+	SubButtonPanel.java 	\
+	SwingWorker.java \
+	TristateCheckBox.java \
+	Undo.java \
+	Util.java 	\
+	UtilB.java 	\
+	UNFile.java     \
+	VAnnChooser.java 	\
+	VAnnotatePanel.java 	\
+	VArrowIcon.java \
+	VButtonBorder.java 	\
+	VButtonIcon.java 	\
+	VButtonOvalBorder.java 	\
+	VCursor.java	\
+	VDropHandlerIF.java 	\
+	VGaphDef.java 	\
+	VGraphics.java 	\
+	Vista.java 		\
+	VJButton.java	\
+	VLabelResource.java	\
+	VnmrJHelp.java 	\
+	VnmrKey.java 	\
+	VnmrProcess.java \
+	VnmrRgb.java \
+	VObjCommandFilter.java \
+	VObjDragListener.java \
+	VobjEditorIF.java \
+	VOnOffButton.java \
+	VOvalIcon.java \
+	VPanel.java	\
+	VPDialog.java	\
+	VPropertyBundles.java	\
+	VPseudo2.java	\
+	VRectIcon.java \
+	VResizeButton.java \
+	VResourceBundle.java	\
+	VRubberBarLayout.java	\
+	VRubberPanLayout.java	\
+	VSeparator.java \
+	VSliderUI.java \
+	VSliderMetalUI.java \
+	VSliderMotifUI.java \
+	VSpaceQuotedStringTokenizer.java	\
+	VSplitListener.java \
+	VStrTokenizer.java \
+	VTabBorder.java \
+	VTextIcon.java \
+	VTipManager.java \
+	VTooltipIF.java \
+	VTitledBorder.java
+
+# UvParams
+
+LC_SRC=					\
+	LcAnalysis.java			\
+	LcConfiguration.java		\
+	LcControl.java			\
+	LcCorbaClient.java		\
+	LcCurrentMethod.java		\
+	LcData.java			\
+	LcDataListener.java		\
+	LcDataWriter.java		\
+	LcDatum.java			\
+	LcDef.java			\
+	LcEvent.java			\
+	LcFileRun.java			\
+	LcGpibModule.java		\
+	LcGraphicsPanel.java		\
+	LcInjectListener.java		\
+	LcMethod.java			\
+	LcMethodEditor.java		\
+	LcMethodParameter.java		\
+	LcMethodTableModel.java		\
+	LcMethodVarsPanel.java		\
+	LcMsg.java			\
+	LcPeak.java			\
+	LcRun.java			\
+	LcSlimIO.java			\
+	LcStatusListener.java		\
+	LcTristateButtonModel.java	\
+	LcTristateCheckBox.java		\
+	MsCorbaClient.java		\
+	MsStatus.java			\
+	PdaCorbaClient.java		\
+	UvDetector.java			\
+	VLcMethodPlot.java		\
+	VLcParamTracker.java		\
+	VLcPlot.java			\
+	VLcTableItem.java		\
+	VMsPlot.java			\
+	VPdaPlot.java			\
+	VPdaImage.java			\
+	AS430Control.java		\
+	AS430Socket.java		\
+	AutoSampler.java		
+
+# JbDataListener
+
+JB_SRC=					\
+	JbCommands.java			\
+	JbControl.java			\
+	JbDefs.java			\
+	JbIO.java			\
+	JbInputStream.java		\
+	JbInstrument.java		\
+	JbParameters.java		\
+	JbReplyListener.java		\
+	JbReplyProcessor.java
+
+CRYO_SRC=					\
+	CryoBay.java			\
+	CryoControl.java        \
+	CryoPanel.java			\
+	CryoDiagnostics.java	\
+	CryoSocketControl.java  \
+	CryoSocket.java			
+
+ADMIN_SRC=				
+
+
+ADMIN_UI_SRC=				\
+	DFFileTableModel.java		\
+	DirViewDialog.java		\
+	UserRightsPanel.java		\
+	VDetailArea.java		\
+	VItemArea1.java			\
+	VItemArea2.java			\
+	VItemAreaIF.java		\
+	VUserToolBar.java		\
+	WandaMenuBar.java		\
+	WAdministrators.java		\
+	WAutomation.java		\
+	WConvertUsers.java		\
+	WDialogHandler.java		\
+	WDicom.java			\
+	WFontColors.java		\
+	WGlobal.java			\
+	WGridLayout.java		\
+	WItem.java			\
+	WInfoStat.java			\
+	WInvestigator.java		\
+	WLocatorConfig.java		\
+	WLoginBox.java			\
+	WOperators.java			\
+	WMultiUsers.java		\
+	WPanelManager.java		\
+	WPart11Dialog.java		\
+	WPart11Notify.java		\
+	WPart11Pnl.java			\
+	WUserDefData.java		\
+	WUsersConfig.java		\
+	WTrashItem.java			\
+	WTrashCan.java
+
+# RobotActions
+
+ADMIN_UTIL_SRC=				\
+	AddRemoveTool.java		\
+	ScrollPopMenu.java		\
+	UserDirectoryDialog.java  \
+	WCurrInfo.java			\
+	WDirChooser.java		\
+	WDirTabPane.java		\
+	WFile.java			\
+	WFileUtil.java			\
+	WMessage.java			\
+	WMRUCache.java			\
+	WUtil.java			\
+	WUserUtil.java
+
+ADMIN_VOBJ_SRC=				\
+	WButton.java			\
+	WCheck.java			\
+	WColorChooser.java		\
+	WEntry.java			\
+	WGroup.java			\
+	WLabel.java			\
+	WMenu.java			\
+	WObj.java			\
+	WObjIF.java			\
+	WRadio.java			\
+	WSubMenuItem.java		\
+	WToggle.java	
+
+# ExprParser RQGroup
+
+XML_SRC=		\
+	CommandBuilder.java \
+	ElementTree.java \
+	GElement.java \
+	LayoutBuilder.java \
+	PanelTemplate.java \
+	ProtocolBuilder.java \
+	ProtocolEditor.java \
+	Reference.java \
+	RQBuilder.java \
+	RQParser.java \
+	RQTreeTableModel.java \
+	ShufflerStatementBuilder.java \
+	Template.java \
+	TreePanel.java \
+	Types.java \
+	VActionElement.java \
+	VCommandDefinition.java \
+	VElement.java \
+	VFileElement.java \
+	VObjElement.java \
+	VProtocolElement.java \
+	VStatementElement.java \
+	VStatementDefinition.java \
+	VTreeNodeElement.java
+
+PART11_SRC=			\
+	Audit.java		\
+	ComboFileTable.java	\
+	FileMenu.java 		\
+	FileTable.java 		\
+	FileTableModel.java	\
+	MenuEditor.java		\
+	UserAuditTrail.java
+
+JHELP_SRC=		\
+	jh.jar		\
+	jhall.jar	\
+	jhbasic.jar	\
+	jhtools.jar	\
+	jsearch.jar
+
+VJMOL_SRC=	\
+	VJMol.java
+
+IMAGE_SRC=		\
+	VnmrImageUtil.java
+
+SMS_SRC=                \
+	CarouselLayout.java \
+	CaroPlate.java  \
+	GenPlateIF.java \
+	GrkCompose.java \
+	GrkLayout.java  \
+	GrkObj.java     \
+	GrkParser.java  \
+	GrkPlate.java   \
+	GrkUtil.java    \
+	GrkZone.java    \
+	RackInfo.java   \
+	RackObj.java   \
+	SampleInfo.java  \
+	SmsDef.java     \
+	SmsInfoObj.java \
+	SmsInfoPanel.java   \
+	SmsLayout.java  \
+	SmsLayoutIF.java    \
+	SmsPanel.java   \
+	SmsPlate.java   \
+	SmsSample.java  \
+	SmsTray.java    \
+	SmsUtil.java    \
+	ZoneCreater.java
+
+GIF_IMAGES=		\
+    1by1.gif    \
+    1by2.gif    \
+    1col.gif \
+    1D.gif \
+    1Dphase_down.gif \
+    1Dphase.gif \
+    1Dplus.gif \
+    2by1.gif    \
+    2by2.gif    \
+    2D.gif \
+    2Dplus.gif \
+    3DaxisEye.gif \
+    3DaxisX.gif \
+    3DaxisY.gif \
+    3DaxisZ.gif \
+    3D.gif \
+    absoff.gif \
+    abson.gif \
+    AbsPalette.gif \
+    aipdrag.gif \
+    aipdragoff.gif  \
+    aipdragon.gif   \
+    aippoint.gif    \
+    back.gif    \
+    blank.gif   \
+    blend.gif \
+    blueCheck.gif   \
+    blueChildDir.gif    \
+    blueDir.gif \
+    blueFDA.gif \
+    blueFid.gif \
+    blueLink.gif    \
+    blueNoLink.gif  \
+    blueUpArrow.gif \
+    boundsbox.gif \
+    boundson.gif \
+    boxGray.gif \
+    busy.gif    \
+    busyleft.gif    \
+    busymid.gif \
+    busyright.gif   \
+    check12.gif \
+    checkblack.gif  \
+    checkblank.gif  \
+    checkgray.gif   \
+    clamp.gif \
+    closepanelB.gif \
+    closepanel.gif  \
+    colht.gif \
+	convexGrayButton.jpg    \
+    copy.gif    \
+    cut.gif     \
+    dataDump.gif    \
+    defaultPrint.gif    \
+    delete.gif  \
+    disk.gif    \
+    down11x17.gif   \
+    downArrow.gif   \
+    down.gif    \
+    downHandle.gif  \
+    dps.gif \
+    eastarrow.gif   \
+    eastResize.gif  \
+    echo.gif \
+    EluteLoop.gif   \
+    emptytrash.gif  \
+    exit.gif    \
+    flask.gif   \
+    forward.gif \
+    fromlft.gif \
+    fromrt.gif \
+    GrayPalette.gif \
+    hide.gif \
+    horizontalMove.gif  \
+    imagfid.gif \
+    intensity2.gif  \
+    intensitybtn.gif \
+    intensity.gif   \
+    LcCommand.gif   \
+    left.gif    \
+    leftHandle.gif  \
+    lines.gif \
+	lockeye.gif \
+    lock_echo.gif   \
+    lock.gif    \
+    magdisk.gif \
+    match.gif   \
+    math.gif    \
+	metal_axis_eye.gif \
+	metal_axis_locked.gif \
+	metal_back_to_front.gif \
+	metal_front_to_back.gif \
+	metal_oblique_unlocked.gif \
+	metal_oblique_locked.gif \
+	metal_next.gif \
+	metal_prev.gif \
+	metal_reset.gif \
+    middle.gif  \
+    msStatus.gif    \
+    msStatusQ1.gif  \
+    msStatusQ3.gif  \
+    next.gif \
+    noblend.gif \
+    nohide.gif \
+    northResize.gif \
+    Off.gif     \
+    On.gif      \
+    onOff2.gif  \
+    onOff.gif   \
+    opaque.gif \
+    open.gif    \
+    paste.gif   \
+    pda2dPlot.gif   \
+    pencil.gif  \
+    PhsPalette.gif \
+    points.gif \
+    polygons.gif \
+    polys.gif   \
+    prev.gif \
+    print.gif   \
+    probeError.gif  \
+    probeNone.gif   \
+    probeReady.gif  \
+    probeUntuned.gif    \
+    probeWrong.gif  \
+    pumpStatus.gif  \
+    pushinB.gif \
+    pushin.gif  \
+    pushoutB.gif    \
+    pushout.gif \
+    realfid.gif \
+    realimagfid.gif \
+    redCheck.gif    \
+    redFid.gif  \
+    redLink.gif \
+    redNoLink.gif   \
+    redo.gif    \
+    repeat_down.gif \
+    repeat.gif \
+    repeat_up.gif \
+    reset.gif \
+    resizeWin.gif   \
+    resolution.gif \
+    restore.gif \
+    return.gif  \
+    right.gif   \
+    rot_180.gif \
+    rot_270.gif \
+    rot_90.gif  \
+    rot_E-W.gif \
+    rot_NE-SW.gif   \
+    rot_N-S.gif \
+    rot_NW-SE.gif   \
+    rtBrace32.gif   \
+    southResize.gif \
+    spotter.gif \
+    StopFlow.gif    \
+    stop.gif    \
+    tag.gif     \
+    texht.gif \
+    TimeSlice.gif   \
+    trashcanFull.gif    \
+    trashcan.gif    \
+    twinWin.gif \
+    undo.gif    \
+    unlockeye.gif \
+    up11x17.gif \
+    upDownCursor.gif    \
+    up.gif      \
+    uvStatus.gif    \
+    varianBig.gif   \
+    varian.gif  \
+    varianIconSml.gif \
+    vcheck8.gif \
+    verticalMove.gif    \
+    voxels.gif \
+    vnmrjNameSml.gif \
+    westarrow.gif   \
+    westResize.gif  \
+    xparant.gif \
+    yellowCheck.gif \
+    yellowChildDir.gif  \
+    yellowDir.gif   \
+    yellowFid.gif   \
+    yellowLink.gif  \
+    yellowNoLink.gif    \
+    zcol.gif \
+    zoom.gif    \
+
+PROPS_SRC=		\
+	Options.properties \
+	Labels.properties \
+	Labels_ja.properties \
+	AdmLabels.properties \
+	AdmLabels_ja.properties \
+	ShimLabels.properties
+
+C_SRC=			\
+	vnmrjNative.c
+
+#  VnmrXCanvas.h
+
+C_HDR=			\
+	vjNative.h
+
+C_OBJ= $(C_SRC:.c=.o)
+
+OVERVIEW_HTML=overview.html
+
+BO_CLASS= $(BO_SRC:.java=.class)
+UI_CLASS= $(UI_SRC:.java=.class)
+JGL_CLASS= $(JGL_SRC:.java=.class)
+SHUF_CLASS= $(SHUF_SRC:.java=.class)
+UTIL_CLASS= $(UTIL_SRC:.java=.class)
+VJMOL_CLASS= $(VJMOL_SRC:.java=.class)
+LC_CLASS= $(LC_SRC:.java=.class)
+JB_CLASS= $(JB_SRC:.java=.class)
+CRYO_CLASS= $(CRYO_SRC:.java=.class)
+ADMIN_CLASS= $(ADMIN_SRC:.java=.class)
+ADMIN_UI_CLASS= $(ADMIN_UI_SRC:.java=.class)
+ADMIN_UTIL_CLASS= $(ADMIN_UTIL_SRC:.java=.class)
+ADMIN_VOBJ_CLASS= $(ADMIN_VOBJ_SRC:.java=.class)
+IMAGE_CLASS= $(IMAGE_SRC:.java=.class)
+XML_CLASS= $(XML_SRC:.java=.class)
+PART11_CLASS=$(PART11_SRC:.java=.class)
+SMS_CLASS= $(SMS_SRC:.java=.class)
+
+
+all:	Xml_class_src JHelp_src Postgres_class_src Jogl_class_src	\
+	Lcaccess_class_src Msaccess_class_src Jmol_class_src \
+	Pdaaccess_class_src Java_src class
+
+src:	Xml_class_src JHelp_src Postgres_class_src Jogl_class_src \
+	Lcaccess_class_src Msaccess_class_src Jmol_class_src \
+	Pdaaccess_class_src Java_src
+
+build: class native_c_src nativelib
+
+Java_src:
+	$(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(OVERVIEW_HTML)"
+
+	(mkdir -p $(UTIL_DEST_DIR) ; cp -f $(MAKEFILE) $(UTIL_DEST_DIR))
+	(cd $(UTIL_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(UTIL_SRC)")
+
+	(mkdir -p $(VJMOL_DEST_DIR) ; cp -f $(MAKEFILE) $(VJMOL_DEST_DIR))
+	(cd $(VJMOL_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(VJMOL_SRC)")
+
+	(mkdir -p $(LC_DEST_DIR) ; cp -f $(MAKEFILE) $(LC_DEST_DIR))
+	(cd $(LC_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(LC_SRC)")	
+
+	(mkdir -p $(JB_DEST_DIR) ; cp -f $(MAKEFILE) $(JB_DEST_DIR))
+	(cd $(JB_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(JB_SRC)")
+
+	(mkdir -p $(CRYO_DEST_DIR) ; cp -f $(MAKEFILE) $(CRYO_DEST_DIR))
+	(cd $(CRYO_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(CRYO_SRC)")
+
+	(mkdir -p $(BO_DEST_DIR) ; cp -f $(MAKEFILE) $(BO_DEST_DIR))
+	(cd $(BO_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(BO_SRC)")
+
+	(mkdir -p $(UI_DEST_DIR) ; cp -f $(MAKEFILE) $(UI_DEST_DIR) )
+	(cd $(UI_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(UI_SRC)")
+
+	(mkdir -p $(SHUF_DEST_DIR) ; cp -f $(MAKEFILE) $(SHUF_DEST_DIR))
+	(cd $(SHUF_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(SHUF_SRC)")
+
+	(mkdir -p $(JGL_DEST_DIR) ; cp -f $(MAKEFILE) $(JGL_DEST_DIR))
+	(cd $(JGL_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(JGL_SRC)")
+
+	(mkdir -p $(ADMIN_DEST_DIR) ; cp -f $(MAKEFILE) $(ADMIN_DEST_DIR))
+	(cd $(ADMIN_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(ADMIN_SRC)")
+
+	(mkdir -p $(ADMIN_UI_DEST_DIR) ; cp -f $(MAKEFILE) $(ADMIN_UI_DEST_DIR))
+	(cd $(ADMIN_UI_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(ADMIN_UI_SRC)")
+
+	(mkdir -p $(ADMIN_UTIL_DEST_DIR) ; cp -f $(MAKEFILE) $(ADMIN_UTIL_DEST_DIR))
+	(cd $(ADMIN_UTIL_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(ADMIN_UTIL_SRC)")
+
+	(mkdir -p $(ADMIN_VOBJ_DEST_DIR) ; cp -f $(MAKEFILE) $(ADMIN_VOBJ_DEST_DIR))
+	(cd $(ADMIN_VOBJ_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(ADMIN_VOBJ_SRC)")
+
+	(mkdir -p $(PROPS_DEST_DIR) ; cp -f $(MAKEFILE) $(PROPS_DEST_DIR) )
+	(cd $(PROPS_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(PROPS_SRC)")
+
+	(mkdir -p $(SMS_DEST_DIR) ; cp -f $(MAKEFILE) $(SMS_DEST_DIR) )
+	(cd $(SMS_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(SMS_SRC)")
+
+	(mkdir -p $(IMAGE_DEST_DIR) ; cp -f $(MAKEFILE) $(IMAGE_DEST_DIR))
+	(cd $(IMAGE_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(IMAGE_SRC)")
+	(cd $(IMAGE_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getGifs)
+
+	(mkdir -p $(XML_DEST_DIR) ; cp -f $(MAKEFILE) $(XML_DEST_DIR))
+	(cd $(XML_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(XML_SRC)")
+
+	(mkdir -p $(PART11_DEST_DIR) ; cp -f $(MAKEFILE) $(PART11_DEST_DIR))
+	(cd $(PART11_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(PART11_SRC)")
+
+Xml_class_src: 
+	($(MAKE) -ef $(MAKEFILE) getXmlParser "XML_PARSER=xml.jar")
+
+Jogl_class_src: 
+	($(MAKE) -ef $(MAKEFILE) getJogl "JOGL=jogl.jar")
+	($(MAKE) -ef $(MAKEFILE) getJogl "JOGL=gluegen-rt.jar")
+
+JHelp_src: 
+	($(MAKE) -ef $(MAKEFILE) getJHelp)
+
+Postgres_class_src: 
+	($(MAKE) -ef $(MAKEFILE) getPostgresql "POSTGRESQL=postgresql.jar")
+
+Lcaccess_class_src: 
+	($(MAKE) -ef $(MAKEFILE) getLcaccess "LCACCESS=lcaccess")
+
+Msaccess_class_src: 
+	($(MAKE) -ef $(MAKEFILE) getMsaccess "MSACCESS=msaccess")
+
+Pdaaccess_class_src: 
+	($(MAKE) -ef $(MAKEFILE) getPdaaccess "PDAACCESS=pdaaccess")
+
+Jmol_class_src:
+	($(MAKE) -ef $(MAKEFILE) getJmol "JMOL=jmol")
+
+native_c_src: 
+	@(mkdir -p $(C_DEST_DIR) ; cp -f $(MAKEFILE) $(C_DEST_DIR) )
+	@(cd $(C_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getCSrc )
+
+class: 
+	(cd $(UTIL_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+	 "J_CLASS=$(UTIL_CLASS) " )
+	 @echo
+
+	(cd $(VJMOL_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) \
+	CLASS_PATH=$(CLASS_PATH):$(CP7) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+	"J_CLASS=$(VJMOL_CLASS) " )
+	@echo
+
+	(cd $(LC_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+	 "J_CLASS=$(LC_CLASS) " )
+	 @echo
+
+	(cd $(JB_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+	 "J_CLASS=$(JB_CLASS) " )
+	 @echo
+	 
+	 (cd $(CRYO_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+	 "J_CLASS=$(CRYO_CLASS) " )
+	 @echo
+
+	(cd $(BO_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+	 "J_CLASS=$(BO_CLASS) " )
+	 @echo
+
+
+	(cd $(UI_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+	 "J_CLASS=$(UI_CLASS) " )
+	 @echo
+
+	(cd $(JGL_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+         "J_CLASS=$(JGL_CLASS) " )
+	 @echo
+
+	(cd $(SHUF_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+         "J_CLASS=$(SHUF_CLASS) " )
+	 @echo
+
+	(cd $(ADMIN_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+         "J_CLASS=$(ADMIN_CLASS) " )
+	 @echo
+
+	(cd $(ADMIN_UTIL_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+         "J_CLASS=$(ADMIN_UTIL_CLASS) " )
+	 @echo
+
+	(cd $(ADMIN_UI_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+         "J_CLASS=$(ADMIN_UI_CLASS) " )
+	 @echo
+
+	(cd $(ADMIN_VOBJ_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+         "J_CLASS=$(ADMIN_VOBJ_CLASS) " )
+	 @echo
+
+	(cd $(SMS_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+         "J_CLASS=$(SMS_CLASS) " )
+	 @echo
+
+	(cd $(XML_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+         "J_CLASS=$(XML_CLASS) " )
+	 @echo
+
+	(cd $(PART11_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+         "J_CLASS=$(PART11_CLASS) " )
+	 @echo
+
+	(cd $(IMAGE_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+         "J_CLASS=$(IMAGE_CLASS) " )
+	@echo
+
+	jar cf $(JAR_FILE) \
+	    com/* org/* javax/* sunw/* \
+	    $(BO_DEST_DIR)/*class \
+	    $(JGL_DEST_DIR)/*class \
+	    $(SHUF_DEST_DIR)/*class \
+	    $(XML_DEST_DIR)/*class \
+	    $(UI_DEST_DIR)/*class \
+	    $(UTIL_DEST_DIR)/*class \
+	    $(LC_DEST_DIR)/*class \
+	    $(JB_DEST_DIR)/*class \
+	    $(CRYO_DEST_DIR)/*class \
+	    $(LCACCESS_DEST_DIR)/*.class \
+	    $(MSACCESS_DEST_DIR)/*.class \
+	    $(PDAACCESS_DEST_DIR)/*.class \
+	    $(ADMIN_UI_DEST_DIR)/*class \
+	    $(ADMIN_UTIL_DEST_DIR)/*class \
+	    $(ADMIN_VOBJ_DEST_DIR)/*class \
+	    $(PART11_DEST_DIR)/*class \
+	    $(IMAGE_DEST_DIR)/*class \
+	    $(SMS_DEST_DIR)/*class \
+	    $(IMAGE_DEST_DIR)/*.gif $(IMAGE_DEST_DIR)/*.jpg \
+	    $(PROPS_DEST_DIR)/*.properties \
+	    $(POSTGRESQL_DIR)/*class \
+	    $(POSTGRESQL_DIR)/util/*class \
+	    $(POSTGRESQL_DIR)/jdbc2/*class
+
+	rm -f vnmrj.jar.std
+	ln -s vnmrj.jar vnmrj.jar.std
+
+	jar cf vjmol.jar \
+	    $(VJMOL_DEST_DIR)/*.class 
+
+	@echo +++++++ DONE makevnmrj +++++++
+
+jarfile:
+	jar cf $(JAR_FILE) \
+	    com/* org/* javax/* sunw/* \
+	    $(BO_DEST_DIR)/*class \
+	    $(JGL_DEST_DIR)/*class \
+	    $(SHUF_DEST_DIR)/*class \
+	    $(XML_DEST_DIR)/*class \
+	    $(UI_DEST_DIR)/*class \
+	    $(UTIL_DEST_DIR)/*class \
+	    $(LC_DEST_DIR)/*class \
+	    $(JB_DEST_DIR)/*class \
+	    $(CRYO_DEST_DIR)/*class \
+	    $(LCACCESS_DEST_DIR)/*.class \
+	    $(MSACCESS_DEST_DIR)/*.class \
+	    $(PDAACCESS_DEST_DIR)/*.class \
+	    $(ADMIN_UI_DEST_DIR)/*class \
+	    $(ADMIN_UTIL_DEST_DIR)/*class \
+	    $(ADMIN_VOBJ_DEST_DIR)/*class \
+	    $(PART11_DEST_DIR)/*class \
+	    $(IMAGE_DEST_DIR)/*class \
+	    $(SMS_DEST_DIR)/*class \
+	    $(IMAGE_DEST_DIR)/*.gif $(IMAGE_DEST_DIR)/*.jpg \
+	    $(PROPS_DEST_DIR)/*.properties \
+	    $(POSTGRESQL_DIR)/*class \
+	    $(POSTGRESQL_DIR)/util/*class \
+	    $(POSTGRESQL_DIR)/jdbc2/*class
+
+	rm -f $(JAR_FILE).std
+	ln -s $(JAR_FILE) $(JAR_FILE).std
+
+classclean: 
+	(cd $(UTIL_DEST_DIR) ; rm -f *.class )
+	(cd $(VJMOL_DEST_DIR) ; rm -f *.class )
+	(cd $(LC_DEST_DIR) ; rm -f *.class )
+	(cd $(JB_DEST_DIR) ; rm -f *.class )
+	(cd $(BO_DEST_DIR) ; rm -f *.class )
+	(cd $(UI_DEST_DIR) ; rm -f *.class )
+	(cd $(JGL_DEST_DIR) ; rm -f *.class )
+	(cd $(SHUF_DEST_DIR) ; rm -f *.class )
+	(cd $(ADMIN_UTIL_DEST_DIR) ; rm -f *.class )
+	(cd $(ADMIN_UI_DEST_DIR) ; rm -f *.class )
+	(cd $(ADMIN_VOBJ_DEST_DIR); rm -f *.class )
+	(cd $(SMS_DEST_DIR) ; rm -f *.class )
+	(cd $(XML_DEST_DIR) ; rm -f *.class )
+	(cd $(PART11_DEST_DIR) ; rm -f *.class )
+	(cd $(IMAGE_DEST_DIR) ; rm -f *.class )
+
+binclean:
+	(cd $(C_DEST_DIR) ; rm -f $(C_OBJ) libvnmrj.so )
+
+clean: classclean binclean
+
+javaDoc javadoc: Java_src
+	rm -fr html
+	mkdir html
+	@echo
+	javadoc -J-Xmx128m -private -breakiterator -windowtitle "vnmrj" \
+	-overview overview.html -classpath $(CLASS_PATH):../ -d html \
+	vnmr.admin.ui		\
+	vnmr.admin.util		\
+	vnmr.admin.vobj		\
+	vnmr.bo			\
+	vnmr.images		\
+	vnmr.lc			\
+	vnmr.lc.jumbuck		\
+	vnmr.cryo	\
+	vnmr.part11		\
+	vnmr.sms		\
+	vnmr.templates		\
+	vnmr.ui			\
+	vnmr.ui.shuf		\
+	vnmr.util
+
+Buildclass: $(J_CLASS)
+	@echo "Buildclass:" $(shell pwd)
+
+nativelib: 
+	@(cd $(C_DEST_DIR) ; make -f $(MAKEFILE) libvnmrj.so)
+	@(cp $(C_DEST_DIR)/libvnmrj.so .)
+
+#	@(cd $(C_DEST_DIR) ; makevjlib)
+
+libvnmrj.so : $(C_OBJ)
+	(umask 2; $(LD) -G  $(C_OBJ) -o libvnmrj.so $(LIBS))
+
+$(C_OBJ): $(@:.o=.c) $(C_HDR)
+	(umask 2; $(CC) -c $(CFLAGS) -I. $(IDIR) $(@:.o=.c) )
+
+getJavaSrc: $(J_SRC)
+
+getGifs: $(GIF_IMAGES)
+
+getXmlParser: $(XML_PARSER)
+
+getJogl: $(JOGL)
+
+getJHelp: $(JHELP_SRC)
+
+getPostgresql: $(POSTGRESQL)
+
+getLcaccess: $(LCACCESS).jar $(LCACCESS).sync
+
+getMsaccess: $(MSACCESS).jar $(MSACCESS).sync
+
+getPdaaccess: $(PDAACCESS).jar $(PDAACCESS).sync
+
+getJmol: $(JMOL).jar
+
+getCSrc: $(C_SRC) $(C_HDR) makevjlib.sh
+
+#-----------------------------------------------------
+
+$(J_SRC) : % :$(VNMRJ_SCCS_SRC)%
+	$(SCCS_JSRC_GET) $@
+
+$(J_CLASS): $(@:.class=.java)
+	(umask 2; javac -J-Xmx256m  -classpath $(CLASS_PATH) $(@:.class=.java))
+
+Buildjmolclass: $(@:.class=.java)
+	(umask 2; javac  -classpath $(CLASS_PATH):$(CP7) $(@:.class=.java))
+
+$(GIF_IMAGES) : % :$(IMAGE_DIR)/%
+	cp -f $(IMAGE_DIR)/$@ $@
+
+$(XML_PARSER) $(JHELP_SRC) $(POSTGRESQL) $(JOGL): % :$(VNMRJ_SCCS_SRC)%
+	$(SCCS_JSRC_GET) $@
+	jar xf $@
+
+$(LCACCESS).jar: % :$(VNMRJ_SCCS_SRC)%
+	$(SCCS_JSRC_GET) $@
+
+$(LCACCESS).sync: $(@:.sync=.jar)
+	jar xf $(@:.sync=.jar); touch $@
+
+$(MSACCESS).jar : % :$(VNMRJ_SCCS_SRC)%
+	$(SCCS_JSRC_GET) $@
+
+$(MSACCESS).sync: $(@:.sync=.jar)
+	jar xf $(@:.sync=.jar); touch $@
+
+$(PDAACCESS).jar : % :$(VNMRJ_SCCS_SRC)%
+	$(SCCS_JSRC_GET) $@
+
+$(PDAACCESS).sync : % :$(@:.sync=.jar)%
+	jar xf $(@:.sync=.jar); touch $@
+
+$(JMOL).jar : % :$(VNMRJ_SCCS_SRC)%
+	$(SCCS_JSRC_GET) $@
+
+$(C_SRC) : % :$(VNMRJ_SCCS_SRC)%
+	$(SCCS_JSRC_GET) $@
+
+$(C_HDR) : % :$(VNMRJ_SCCS_SRC)%
+	$(SCCS_JSRC_GET) $@
+
+makevjlib.sh : % :$(VNMRJ_SCCS_SRC)%
+	@($(SCCS_JSRC_GET) $@)
+	@(cp -f makevjlib.sh makevjlib)
+	@(chmod -f +x makevjlib)

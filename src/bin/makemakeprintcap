@@ -1,0 +1,20 @@
+#---PAID sccs home---
+SDIR=$(sccsdir)/bin/SCCS/s.
+SGET=sccs -d$(sccsdir)/bin get
+FILE=makeprintcap
+
+#---normal operational compile flags
+CFLAGS= -c -O
+
+#---debugging with DBXTOOL compile flags
+#CFLAGS= -c -g
+
+#---object modules needed for "makeprintcap"
+makeprintcap: $(FILE).o
+	(umask 2; cc -o $(FILE) $(FILE).o)
+              
+makeprintcap.o: $(FILE).c
+	(umask 2; cc $(CFLAGS)  $(FILE).c)
+
+makeprintcap.c: $(SDIR)$(FILE).c
+	$(SGET) $(FILE).c

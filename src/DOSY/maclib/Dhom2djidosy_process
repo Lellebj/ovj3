@@ -1,0 +1,4 @@
+wft2d(1)
+rotate foldj
+if auto='n' then dconi('again') endif
+

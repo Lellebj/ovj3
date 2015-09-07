@@ -1,0 +1,46 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#
+# makevxrTool  make file
+# make -f makevxrTool,  creates vxrTool for PAID
+#
+
+# ----- PAID sccs home ----
+SCCSDIR=$(sccsdir)
+BSCCS=$(SCCSDIR)/bin/SCCS/s.
+BGET = sccs -p$(SCCSDIR)/bin/SCCS get
+SGET = sccs -p$(SCCSDIR)/scripts/SCCS get
+
+#-- Normal operational compile flags
+CFLAGS= -c -O
+SCFLAGS= -S -O
+
+#-- Debugging with DBXTOOL ccompile flags
+#CFLAGS= -c -g
+#SCFLAGS= -S -g
+
+#------------------------------------------------------------------------
+#---  object modules needed for "enter"
+#------------------------------------------------------------------------
+OBJ=                      \
+                vxrTool.o 
+
+
+vxrTool: $(OBJ)
+	(umask 2; cc -o vxrTool $(OBJ) \
+		-lsuntool -lsunwindow -lpixrect  )
+
+SOLARIS IRIX AIX:
+	$(SGET) vxrTool.sh
+	mv -f vxrTool.sh vxrTool
+
+vxrTool.o : vxrTool.c
+	(umask 2; cc $(CFLAGS) vxrTool.c  )
+
+vxrTool.c : $(BSCCS)vxrTool.c
+	$(BGET) vxrTool.c

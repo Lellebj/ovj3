@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="gems_ghosts" author="ATP" investigator=""
+    application="imaging" rfcoil="main" anatomy="ATP" time_created="20040601T101129"
+    parfile="gems_ghosts" apptype="im2D" scans="gems_ghosts" seqfil="gems">
+  <protocol title="gems_ghosts" type="protocol">
+    <action  type="LIB" status="Ready" title="gems_ghosts" exp="gems_ghosts" time="26 sec" macro="sqexp('gems_ghosts')" data="" />
+  </protocol>
+</template>

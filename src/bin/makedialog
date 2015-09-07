@@ -1,0 +1,104 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+SHELL=/bin/sh
+
+MAKEFILE= makedialog
+
+SCCSDIR= $(sccsdir)
+OBJDIR= undefined
+
+REV_DATE=$(VNMR_REV_DATE)
+
+SRCDIR= $(sourcedir)
+DIALOG_SRC_DIR= $(sourcedir)/sysbin/
+VNMR_SRC_DIR= $(sourcedir)/sysvnmr/
+
+DIALOG_SCCS_DIR= $(SCCSDIR)/bin/SCCS/s.
+VNMR_SCCS_DIR= $(SCCSDIR)/vnmr/SCCS/s.
+
+DIALOG_LN= ln -s $(DIALOG_SRC_DIR)$(@)
+VNMR_LN= ln -s $(VNMR_SRC_DIR)$(@)
+
+DIALOG_SGET= sccs -p$(SCCSDIR)/bin/SCCS get
+VNMR_SGET= sccs -p$(SCCSDIR)/vnmr/SCCS get
+
+DIALOG_GET= $(DIALOG_LN)
+VNMR_GET= $(VNMR_LN)
+
+CFLAGS= -DSUN -O
+OPENWINHOME=/usr/openwin
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) -c
+LPCOMPILE.c= $(CC) $(LPCFLAGS) $(CPPFLAGS) -c
+LINK.c= $(CC) $(LDFLAGS) 
+
+OW_LIBS = -lXol -lXt -lX11 -lacqcomm -ll -lm
+
+
+DIALOG_SRC=		\
+	dialog.c	\
+	dialog_parse.c
+
+DIALOG_HDR=		\
+	dialog.h
+
+VNMR_HDR=		\
+	vglide.h
+
+DIALOG_ICON=		\
+	dialog.icon
+
+DIALOG_OBJ= $(DIALOG_SRC:.c=.o)
+
+std : $$(MAKEFILE)
+	@( $(MAKE) -ef $(MAKEFILE) ow ; )
+	@echo "makedialog  Complete."
+
+ow :  Source
+	@($(MAKE) -e -f $(MAKEFILE)                    \
+        "LDFLAGS= -L$(OPENWINHOME)/lib -L$(sun4objdir)/proglib/vnmr -R$(OPENWINHOME)/lib:/vnmr/lib" \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	dialog )
+
+SOLARIS : $$(MAKEFILE)
+	@( $(MAKE) -ef $(MAKEFILE) sol_ow ; )
+	@echo "makedialog  Complete."
+
+sol_ow : Source
+	@($(MAKE) -e -f $(MAKEFILE)                    \
+        "LDFLAGS= -L$(OPENWINHOME)/lib -L$(solobjdir)/proglib/ncomm -R$(OPENWINHOME)/lib:/vnmr/lib" \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	dialog )
+
+dialog: $(DIALOG_OBJ)
+	(umask 2; $(LINK.c) -o $@ $(DIALOG_OBJ) \
+                $(OW_LIBS) )
+
+Source:
+	@( cd $(DIALOG_SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+	     "DIALOG_SRC_DIR= $(DIALOG_SCCS_DIR)"             \
+	     "DIALOG_GET= $(DIALOG_SGET)"                     \
+	     "VNMR_GET= $(VNMR_SGET)"                     \
+	     src )
+
+src:  $(DIALOG_SRC) $(DIALOG_HDR) $(DIALOG_ICON) $(VNMR_HDR)
+	@echo  Sources up to date...
+
+dialog.o: $(@:.o=.c) dialog.h dialog.icon vglide.h
+	(umask 2; $(CC) -c $(CFLAGS) -I. -I$(OPENWINHOME)/include  dialog.c)
+
+dialog_parse.o: $(@:.o=.c) dialog.h
+	(umask 2; $(CC) -c $(CFLAGS) -I. -I$(OPENWINHOME)/include dialog_parse.c)
+
+
+$(DIALOG_SRC) $(DIALOG_HDR) $(DIALOG_ICON) : $$(DIALOG_SRC_DIR)$$(@)
+	$(DIALOG_GET) $@
+
+$(VNMR_HDR) : $$(VNMR_SRC_DIR)$$(@)
+	$(VNMR_GET) $@
+

@@ -1,0 +1,372 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+SHELL=/bin/sh
+
+MAKEFILE= makevconfig
+
+SCCSDIR= $(sccsdir)
+OBJDIR= undefined
+binSCCS= $(SCCSDIR)/bin/SCCS/s.
+UNMRLIB= $(OBJDIR)/proglib/vnmr/unmrlib.a
+MAGICLIB= $(OBJDIR)/proglib/vnmr/magiclib.a
+CFLAGS= -DSUN -O
+COMPILE.c= $(CC) $(CFLAGS) -c
+
+
+REV_DATE=$(VNMR_REV_DATE)
+
+
+SRCDIR= $(sourcedir)
+SRC_DIR= $(sourcedir)/sysbin/
+VNMR_SRC_DIR= $(SRCDIR)/sysvnmr/
+ACQPROC_SRC_DIR= $(SRC_DIR)
+BIN_SRC_DIR= $(SRC_DIR)
+XRACQ_SRC_DIR= $(SRC_DIR)
+SV_SRC_DIR= $(BIN_SRC_DIR)sv/
+XV_SRC_DIR= $(BIN_SRC_DIR)ow/
+MT_SRC_DIR= $(BIN_SRC_DIR)motif/
+
+VNMR_SCCS_DIR= $(SCCSDIR)/vnmr/SCCS/s.
+ACQPROC_SCCS_SRC=$(SCCSDIR)/acqproc/SCCS/s.
+BIN_SCCS_DIR= $(SCCSDIR)/bin/SCCS/s.
+XRACQ_SCCS_SRC=$(SCCSDIR)/xracq/SCCS/s.
+SV_SCCS_DIR= $(SCCSDIR)/sunview/SCCS/s.
+XV_SCCS_DIR= $(SCCSDIR)/xview/SCCS/s.
+MT_SCCS_DIR= $(SCCSDIR)/motif/SCCS/s.
+
+VNMR_LN= ln -s $(VNMR_SRC_DIR)$(@)
+ACQPROC_LN = ln -s $(ACQPROC_SRC_DIR)$(@)
+BIN_LN= ln -s $(BIN_SRC_DIR)$(@)
+XRACQ_LN = ln -s $(XRACQ_SRC_DIR)$(@)
+SV_LN= ln -s $(SV_SRC_DIR)$$(@)
+XV_LN= ln -s $(XV_SRC_DIR)$$(@)
+MT_LN= ln -s $(MT_SRC_DIR)$$(@)
+
+ACQPROC_SGET= sccs -p$(SCCSDIR)/acqproc/SCCS get
+BIN_SGET= sccs -p$(SCCSDIR)/bin/SCCS get
+XRACQ_SGET = sccs -p$(SCCSDIR)/xracq/SCCS get
+SV_SGET= sccs -p$(SCCSDIR)/sunview/SCCS get
+XV_SGET= sccs -p$(SCCSDIR)/xview/SCCS get
+MT_SGET= sccs -p$(SCCSDIR)/motif/SCCS get
+
+BIN_GET= $(BIN_LN)
+VNMR_GET= $(VNMR_LN)
+ACQPROC_GET = $(ACQPROC_LN)
+XRACQ_GET= $(XRACQ_LN)
+SV_GET= $(SV_LN)
+XV_GET= $(XV_LN)
+MT_GET= $(MT_LN)
+
+WIN_GET= undefined
+WIN_SRC_DIR= $(BIN_SRC_DIR)sv/
+
+LDFLAGS=
+SV_WIN_LIBS= -lsuntool -lsunwindow -lpixrect
+XV_WIN_LIBS= -lxview -lolgx -lX11
+MT_WIN_LIBS= -lXm -lXt -lX11
+
+WIN_LN_SRC= dummy.c
+WIN_SRC= dummy.c
+
+VCONFIG_SRC=		\
+	vconfig.c	\
+	vconfig_console.c \
+	system_panel.c	\
+	rf_panel.c	\
+	grad_panel.c 	\
+	special_stuff.c	\
+	basic_stuff.c	\
+	vnmr_dummy.c
+
+VCONFIG_HDR=		\
+	interface.h	\
+	grad_panel.h	\
+	rf_panel.h	\
+	system_panel.h	\
+	vconfig.h
+
+VCONFIG_WIN_HDR=	\
+	vconfig_win.h
+
+VCONFIG_WIN_SRC=	\
+	vconfig_win.c
+
+VCONFIG_WIN_OBJ=$(VCONFIG_WIN_SRC:.c=.o)
+
+VNMR_HDR=		\
+	group.h		\
+	symtab.h	\
+	variables.h	\
+	vnmrsys.h
+
+ACQPROC_SRC=		\
+	console_data.c
+
+ACQPROC_HDR=		\
+	config.h	\
+	console_data.h	\
+	sram.h
+
+#  acqproc source file config.h needs SUN_HAL.h
+
+XRACQ_HDR=		\
+	SUN_HAL.h
+
+VCONFIG_OBJ= $(VCONFIG_SRC:.c=.o)
+
+ACQPROC_OBJ= $(ACQPROC_SRC:.c=.o)
+
+ALLSRC= $(VCONFIG_SRC) $(VCONFIG_HDR) $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR) \
+	$(ACQPROC_SRC) $(ACQPROC_HDR) $(XRACQ_HDR)
+COMMONSRC= $(VCONFIG_SRC) $(VCONFIG_HDR) $(ACQPROC_SRC) $(ACQPROC_HDR) $(XRACQ_HDR)
+
+std : $$(MAKEFILE) 
+	@( $(MAKE) -ef $(MAKEFILE) "`uname -m`" ; )
+	@echo "makevconfig  Complete."
+
+sun4 sun4c sun4m sparc : sv ow
+	@echo "sun4 sv & ow vconfig Complete"
+
+sun3 sun3x : sv
+	@echo "sun3 vconfig Complete"
+	
+
+# 000261453100 is return by rdibm when uname -m invoked 
+000261453100 : AIX
+	@echo "IBM vconfig Complete"
+
+
+#  Note:  For Window/GUI targets, remove the Window/GUI objects
+#         to insure correct support compiled for correct target.
+#
+#         Remove the Window/GUI source if it is a Link; retain it
+#         if not.  The developer will be able to modify the window
+#         program and test the result.  If not under development,
+#         the source code should be a Link and the make process
+#         will select the correct version.
+#
+#         The find command needs a separate semicolon to terminate
+#         the exec option.  Other semicolons serve to separate shell
+#         commands in one complex shell command which make is to see
+#         as one command.  For targets sv and ow, make sees three
+#         commands, an rm command, a shell program and a recursive make
+
+sv : SV_src Source
+	rm -f $(VCONFIG_WIN_OBJ)
+	@for window_prog in $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR) ;	   \
+	 do								   \
+		find . -name $${window_prog} -type l -exec rm {} \; ;	   \
+	 done
+	$(MAKE) -e -f $(MAKEFILE)					   \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"CFLAGS= $(CFLAGS)"							   \
+	"WIN_LN_SRC= $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR)"		   \
+	"WIN_LIBS= $(SV_WIN_LIBS)"					   \
+	"WIN_GET= ln -s $(SV_SRC_DIR)"					   \
+	"WIN_SRC_DIR= $(SV_SRC_DIR)" vconfig
+
+ow : XV_src Source
+	rm -f $(VCONFIG_WIN_OBJ)
+	@for window_prog in $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR) ;	   \
+	 do								   \
+		find . -name $${window_prog} -type l -exec rm {} \; ;	   \
+	 done
+	$(MAKE) -e -f $(MAKEFILE)					   \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"CFLAGS= $(CFLAGS) -I$(OPENWINHOME)/include"			   \
+	"LDFLAGS= -Bstatic -L$(OPENWINHOME)/lib" 			   \
+	"WIN_LN_SRC= $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR)"		   \
+	"WIN_LIBS= $(XV_WIN_LIBS)"					   \
+	"WIN_GET= ln -s $(XV_SRC_DIR)"					   \
+	"WIN_SRC_DIR= $(XV_SRC_DIR)" vconfig_ow
+
+AIX : MT_src Source
+	@for window_prog in $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR) ;        \
+         do                                                                \
+                find . -name $${window_prog} -type l -exec rm {} \; ;      \
+         done
+	$(MAKE) -e -f $(MAKEFILE)                                          \
+        "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+        "CFLAGS= $(CFLAGS) "                       \
+        "LDFLAGS= "                        \
+        "WIN_LN_SRC= $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR)"                \
+        "WIN_LIBS= $(MT_WIN_LIBS)"                                         \
+        "WIN_GET= ln -s $(MT_SRC_DIR)"                                     \
+        "WIN_SRC_DIR= $(MT_SRC_DIR)" vconfig_ibm
+	mv vconfig_ibm_ibm vconfig
+
+IRIX : MT_src Source
+	@for window_prog in $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR) ;        \
+         do                                                                \
+                find . -name $${window_prog} -type l -exec rm {} \; ;      \
+         done
+	$(MAKE) -e -f $(MAKEFILE)                                          \
+        "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+        "CFLAGS= $(CFLAGS) -cckr"                       \
+        "LDFLAGS= "                        \
+        "WIN_LN_SRC= $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR)"                \
+        "WIN_LIBS= $(MT_WIN_LIBS)"                                         \
+        "WIN_GET= ln -s $(MT_SRC_DIR)"                                     \
+        "WIN_SRC_DIR= $(MT_SRC_DIR)" vconfig_sgi
+	mv vconfig_sgi_sgi vconfig
+
+owdyn : XV_src Source
+	rm -f $(VCONFIG_WIN_OBJ)
+	@for window_prog in $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR) ;	   \
+	 do								   \
+		find . -name $${window_prog} -type l -exec rm {} \; ;	   \
+	 done
+	$(MAKE) -e -f $(MAKEFILE)					   \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"CFLAGS= $(CFLAGS) -I$(OPENWINHOME)/include"			   \
+	"LDFLAGS= -L$(OPENWINHOME)/lib" 				   \
+	"WIN_LN_SRC= $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR)"		   \
+	"WIN_LIBS= $(XV_WIN_LIBS)"					   \
+	"WIN_GET= ln -s $(XV_SRC_DIR)"					   \
+	"WIN_SRC_DIR= $(XV_SRC_DIR)" vconfig_ow
+
+SOLARIS : XV_src Source
+	rm -f $(VCONFIG_WIN_OBJ)
+	@for window_prog in $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR) ;	   \
+	 do								   \
+		find . -name $${window_prog} -type l -exec rm {} \; ;	   \
+	 done
+	$(MAKE) -e -f $(MAKEFILE)					   \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" 			   \
+	"CFLAGS= $(CFLAGS) -DSOLARIS -DOWTOOLKIT_WARNING_DISABLED -I$(OPENWINHOME)/include"	   	   \
+	"OBJDIR=$(solobjdir)"						   \
+	"UNMRLIB= $(solobjdir)/proglib/vnmr/unmrlib.ow.a"		   \
+	"LDFLAGS= -L$(OPENWINHOME)/lib -R$(OPENWINHOME)/lib" 		   \
+	"WIN_LN_SRC= $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR)"		   \
+	"WIN_LIBS= $(XV_WIN_LIBS)"					   \
+	"WIN_GET= ln -s $(XV_SRC_DIR)"					   \
+	"WIN_SRC_DIR= $(XV_SRC_DIR)" vconfig_ow_sun4
+	@mv vconfig_ow_sun4 vconfig
+
+vconfig vconfig_ow : Source
+	@( if ( test `arch` = "sun4" ); then                               \
+             objpath=$(sun4objdir) ;                                       \
+           else                                                            \
+             objpath=$(sun3objdir) ;                                       \
+           fi ;                                                            \
+           $(MAKE) -e -f $(MAKEFILE) "OBJDIR=$$objpath" $(@)_`arch` )
+
+vconfig_ibm : Source
+	$(MAKE) -e -f $(MAKEFILE) "OBJDIR=$(ibmobjdir)" $(@)_ibm
+
+vconfig_sgi : Source
+	($(MAKE) -e -f $(MAKEFILE) "OBJDIR=$(sgiobjdir)" $(@)_sgi)
+
+lint : $(ALLSRC) $(VNMR_HDR)
+	lint $(VCONFIG_SRC)
+
+vconfig_sun3 vconfig_sun4 vconfig_ow_sun3 vconfig_ow_sun4 vconfig_ibm_ibm vconfig_sgi_sgi:  $(VCONFIG_OBJ) $(VCONFIG_WIN_OBJ) \
+	$(ACQPROC_OBJ) revdate.o
+	cc $(LDFLAGS) -o $@ revdate.o $(VCONFIG_OBJ) $(VCONFIG_WIN_OBJ) $(ACQPROC_OBJ) \
+	$(MAGICLIB) $(UNMRLIB) $(MAGICLIB) $(WIN_LIBS) -lm
+
+from_dot_o_files:
+	cc $(LDFLAGS) -o $@ revdate.o $(VCONFIG_OBJ) $(VCONFIG_WIN_OBJ) $(ACQPROC_OBJ) \
+	vfilesys.o tools.o variables1.o pvars.o assign.o symtab.o allocate.o $(WIN_LIBS) -lm
+
+
+# This object is always compiled, VNMR_REV_ID & VNMR_REV_DATE are envirionment
+# variables and COMDATE is a makefile define passed to the makefile via a recusive
+# make call or from vmake itself.
+# REVISION_ID typically - "VERSION 4.2 REVISION A"
+# REVISION_DATE typically - "Aug. 17, 1993"
+# COMPDATE typically - "Compiled: 8/17/92 15:45"
+#
+revdate.o	: revdate.c doit
+	(umask 2; $(COMPILE.c) -DREVISION_ID='"$(VNMR_REV_ID)"' -DREVISION_DATE='"$(REV_DATE)"' -DCOMPDATE='"$(COMDATE)"' $(@:.o=.c) )
+
+revdate.c	:
+	$(VNMR_GET) $@
+
+doit :
+		
+#-----------------------------------------------------------------------------
+
+vconfig.o : vconfig.c vconfig.h group.h vnmrsys.h
+
+vconfig_win.o : vconfig_win.c system_panel.h rf_panel.h interface.h vconfig_win.h vconfig.h
+
+vconfig_console.o : vconfig_console.c console_data.h interface.h system_panel.h rf_panel.h grad_panel.h
+
+system_panel.o : system_panel.c system_panel.h vconfig.h interface.h group.h variables.h vnmrsys.h
+
+rf_panel.o : rf_panel.c rf_panel.h vconfig.h interface.h vnmrsys.h group.h
+
+grad_panel.o : grad_panel.c grad_panel.h vconfig.h interface.h vnmrsys.h group.h
+
+special_stuff.o : special_stuff.c group.h
+
+basic_stuff.o : basic_stuff.c vconfig.h group.h symtab.h variables.h vnmrsys.h
+
+console_data.o : console_data.c config.h console_data.h sram.h SUN_HAL.h
+
+$(VNMR_HDR):
+	$(VNMR_GET) $@
+
+Source:
+	@( cd $(BIN_SRC_DIR); $(MAKE) -e -f $(MAKEFILE)	\
+             "BIN_SRC_DIR= $(BIN_SCCS_DIR)"		\
+             "BIN_GET= $(BIN_SGET)"			\
+             "ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)"	\
+	     "ACQPROC_GET= $(ACQPROC_SGET)"		\
+             "XRACQ_SRC_DIR= $(XRACQ_SCCS_SRC)"		\
+	     "XRACQ_GET= $(XRACQ_SGET)"			\
+              src )
+ 
+SV_src :
+	( cd $(SV_SRC_DIR); $(MAKE) -e -f ../$(MAKEFILE)	\
+	     "WIN_SRC= $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR)"	\
+	     "WIN_SRC_DIR= $(SV_SCCS_DIR)" \
+	     "WIN_GET= $(SV_SGET)" \
+               win_src )
+ 
+XV_src :
+	( cd $(XV_SRC_DIR); $(MAKE) -e -f ../$(MAKEFILE)	\
+	     "WIN_SRC= $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR)"	\
+	     "WIN_SRC_DIR= $(XV_SCCS_DIR)" \
+	     "WIN_GET= $(XV_SGET)" \
+               win_src )
+
+MT_src :
+	( cd $(MT_SRC_DIR); $(MAKE) -e -f ../$(MAKEFILE)    \
+             "WIN_SRC= $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR)"   \
+             "WIN_SRC_DIR= $(MT_SCCS_DIR)" \
+             "WIN_GET= $(MT_SGET)" \
+             win_src )
+
+#  no special action required for src and win_src targets
+
+src: $(COMMONSRC)
+	@echo source files for vconfig up to date
+
+win_src : $(VCONFIG_WIN_SRC) $(VCONFIG_WIN_HDR)
+	@echo Win Sources up to date...
+
+$(VCONFIG_SRC) $(VCONFIG_HDR): $$(BIN_SRC_DIR)$$(@)
+	$(BIN_GET) $@
+
+$(ACQPROC_SRC) $(ACQPROC_HDR) : $$(ACQPROC_SRC_DIR)$$(@)
+	$(ACQPROC_GET) $@
+
+$(XRACQ_SRC) $(XRACQ_HDR) : $$(XRACQ_SRC_DIR)$$(@)
+	$(XRACQ_GET) $@
+
+#  Define this macro when you want to link sources
+
+$(WIN_LN_SRC): $$(WIN_SRC_DIR)$$(@)
+	$(WIN_GET)$@ $@
+
+#  Define this macro when you want to get sources out of SCCS
+
+$(WIN_SRC): $$(WIN_SRC_DIR)$$(@)
+	$(WIN_GET) $@

@@ -1,0 +1,41 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makeusrwt  make file
+# make -f makeusrwt,  creates usrwt for PAID
+#
+
+ROOT=$(sccsdir)
+
+binSCCS=$(ROOT)/bin/SCCS/s.
+
+BINGET = sccs -p$(ROOT)/bin/SCCS get
+
+#-- Normal operational compile flags
+CFLAGS= -c -O -m32
+
+#-- Debugging with DBXTOOL ccompile flags
+#CFLAGS= -c -g
+
+#------------------------------------------------------------------------
+#--- object that is needed for user weighting functions
+#------------------------------------------------------------------------
+LINUX all std: usrwt.o
+
+usrwt.o       : usrwt.c		\
+		weight.h
+	(umask 2; cc $(CFLAGS) usrwt.c  )
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+
+weight.h : $(binSCCS)weight.h
+	$(BINGET) weight.h
+
+usrwt.c : $(binSCCS)usrwt.c
+	$(BINGET) usrwt.c

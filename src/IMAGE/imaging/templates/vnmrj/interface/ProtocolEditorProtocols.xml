@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template element="panel" etype="system" name="ProtocolEditor" >
+    <label loc="16 8" size="64 24"
+     	font="Heading2"
+      	style="Heading2"
+      	point="Heading2"
+      	fg="Heading2"
+        value="Title" 
+    />
+    <entry loc="104 8" size="184 24" 
+		bg="white"
+        key="title"
+        keyval=""
+    />
+    <label loc="16 40" size="64 24" 
+     	font="Heading2"
+      	style="Heading2"
+      	point="Heading2"
+      	fg="Heading2"
+        value="Type" 
+    />
+    <entry loc="104 40" size="184 24" 
+		bg="white"
+        key="type"
+        keyval=""
+    />
+</template>

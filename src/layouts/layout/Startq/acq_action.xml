@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ! @(#)sample_action.xml 3.2 03/26/04 Copyright (c) 1998-2004 Agilent Technologies All Rights Reserved
+ !
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<actionpanel>
+  <group size="480 20" fg="" bg="" border="None" side="Top"
+	vq="appmode" show="$VALUE=(appmode&lt;&gt;'walkup')"
+    justify="Left" tab="no" reference="acq_action" useref="no" >
+    <button loc="0 0" size="100 20" font="" style="Heading2" point=""
+        fg="" bg="" label="Setup Hardware" vc="su" statpar="status"
+        statshow="Idle Ready" 
+        />
+    <button loc="200 0" size="80 20" font="" style="Heading2" point=""
+        fg="" bg="" label="Clear Q" vc="walkupQ('refresh')" enabled="yes"
+        />
+    <button loc="280 0" size="80 20" font="" style="Heading2" point=""
+        fg="" bg="" label="Start Q" vc="walkupQ('setup')" enabled="yes"
+        />
+    <button loc="360 0" size="80 20" font="" style="Heading2" point=""
+        fg="" bg="" label="Cancel" vc="walkupQ('logout')" enabled="yes"
+        vq="system seqfil"
+        />
+  </group>
+  <group size="480 20" fg="" bg="" border="None" side="Top"
+        vq="appmode" show="$VALUE=(appmode='walkup')"
+    justify="Left" tab="no" reference="acq_action" useref="no" >
+    <button loc="0 0" size="100 20" font="" style="Heading2" point=""
+        fg="" bg="" label="Setup Hardware" vc="su" statpar="status"
+        statshow="Idle Ready"
+        />
+  </group>
+</actionpanel>

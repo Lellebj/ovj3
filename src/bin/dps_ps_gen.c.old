@@ -1,0 +1,2118 @@
+/* 
+* Varian Assoc.,Inc. All Rights Reserved.
+* This software contains proprietary and confidential
+* information of Varian Assoc., Inc. and its contributors.
+* Use, disclosure and reproduction is prohibited without
+* prior consent.
+*/
+
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#define   paramLen	32
+#define   DELAY          1
+#define   GPULSE	 2
+#define   MAXPATH	128
+#define   CMDLEN	128
+
+char   *cmd_3[] = {"add", "dbl", "hlv", "sub"};
+char   *cmd_4[] = {"decr", "divn", "incr", "mod2", "mod4", "modn", 
+		   "mult", "pwrf", "loop"};
+char   *cmd_5[] = {"delay", "pulse", "abort", "endif", "power", "decon",
+   		   "xgate", "ipwrf", "tsadd", "tssub", "tsdiv", "ttadd",
+		   "ttsub", "ttdiv", "sp1on", "sp2on"};
+char   *cmd_6[] = {"decpwr", "assign", "rlpwrf", "status", "idelay",
+		   "ipulse", "ifzero", "elsenz", "xmtron", "decoff",
+		   "dec2on", "dec3on", "sp1off", "sp2off", "var1on",
+		   "var2on", "rcvron", "ttmult", "offset", "vdelay",
+		   "tsmult" }; 
+
+char   *cmd_7[] = {"obspwrf", "decpwrf", "rlpower", "hsdelay", "rgpulse",
+		   "G_Delay", "G_Pulse", "endloop", "acquire", "xmtroff",
+		   "dec2off", "dec3off", "var1off", "txphase", "rcvroff",
+		   "getelem", "dcphase", "G_Power", "var2off" };
+
+char   *cmd_8[] = {"obspower", "decpower", "dec2pwrf", "dec3pwrf",
+		   "gradient", "obspulse", "simpulse", "decpulse",
+		   "irgpulse", "spinlock", "decphase", "declvlon",
+/*
+		   "irgpulse", "spinlock", "dps_show", "decphase", "declvlon",
+*/
+		   "stepsize", "obsprgon", "decprgon", "incdelay",
+		   "settable"};
+char   *cmd_9[] = {"dec2power", "dec3power", "rgradient", "vgradient",
+		   "iobspulse", "idecpulse", "dec2pulse", "dec3pulse",
+		   "sim3pulse", "sim4pulse", "dec2prgon", "dec3prgon",
+		   "rotorsync", "xmtrphase", "declvloff", "obsprgoff",
+		   "dec2phase", "apovrride", "initdelay", "loadtable",
+		   "decprgoff"};
+char   *cmd_10[]= {"decrgpulse","idec2pulse","zgradpulse","dcplrphase",
+		   "phaseshift","dec2prgoff"};
+char   *cmd_11[] = {"shapedpulse", "idecrgpulse", "endhardloop", "dec2rgpulse",
+		    "dec3rgpulse", "decspinlock", "dcplr2phase", "dcplr3phase",
+		    "rotorperiod", "setreceiver"};
+char   *cmd_12[] = {"shaped_pulse", "idec2rgpulse", "idec3rgpulse",
+		    "dec2spinlock", "dec3spinlock"};
+char   *cmd_13[] = {"starthardloop", "setdivnfactor", "sync_on_event"};
+char   *cmd_14[] = {"shapedgradient"};
+char   *cmd_15[] = {"decshaped_pulse", "simshaped_pulse"};
+char   *cmd_16[] = {"dec2shaped_pulse", "dec3shaped_pulse", "sim3shaped_pulse", 
+		    "sim4shaped_pulse", "clearapdatatable", "setautoincrement"};
+char   *cmd_18[] = {"shaped_2D_gradient"};
+
+FILE           *fin,
+               *fout;
+char           *str_in;
+char           *tempnam();
+char            s_token[1024];
+char            cmd_name[CMDLEN];
+char            cmd_spare[CMDLEN];
+char            input[256];
+char            source1[MAXPATH];
+char            source2[MAXPATH];
+char            tmpstr[CMDLEN];
+int             stat_cmd;
+int             obspul;
+int             dummy;
+int             simpul;
+int             acquire;
+int             image;
+int             image_ps;
+int             image_pi;
+int             G_stmt;
+int             slash;
+int             abort_cmd;
+int             noArgument;
+int             spinlock;
+int             zgrad;
+int             newline;
+int             dps,
+                def;
+int             lp,
+                rp;
+int             phase_2;
+int             exist;
+int             conver_1;
+int             p_flag;
+int             ptri,
+                ptrn,
+                ptrs,
+                ptrx,
+                ptrt;
+int             prog,
+                comment;
+int             prog1;
+int             special;
+int             lheader,
+                rheader;
+int             quotMark;
+int             compareStmt;
+int		dpsShow;
+static int	multi_stmts;
+struct routine
+{
+   char            name[paramLen];
+   struct routine *next;
+};
+struct routine *s_rout,
+               *t_rout,
+               *p_rout;
+
+char            argArray[1024];
+int             argPtrs[32];
+int             argNum;
+
+
+
+main(argc, argv)
+int             argc;
+char          **argv;
+{
+   char            tmp_file1[MAXPATH], tmp_file2[MAXPATH];
+   char            lib_path[MAXPATH];
+   int             new_stat;
+   int             cmd;
+   int             read_newline;
+
+   if (argc <= 1)
+   {
+      fin = fopen("s2pul.c", "r");
+   }
+   else
+   {
+      strcpy(source1, argv[1]);
+      strncpy(source2, argv[1], (strlen(argv[1]) - 2));
+      source2[strlen(argv[1]) -2] = '\0';
+      fin = fopen(argv[1], "r");
+   }
+   if (argc <= 2)
+      sprintf(lib_path, "$vnmrsystem/psg");
+   else
+      sprintf(lib_path, "%s", argv[2]);
+   conver_1 = 0;
+   if (argc > 3)
+   {
+      if (strcmp(argv[3], "1") == 0)
+	 conver_1 = 1;		/* first phase of conversion  */
+   }
+
+   if (fin == NULL)
+   {
+      fprintf(stderr, "can not open psg source file %s\n", argv[1]);
+      exit(0);
+   }
+   sprintf(tmp_file1, "%s", tempnam("/tmp", "dps"));
+   sprintf(tmp_file2, "%s.c", tmp_file1);
+   fout = fopen(tmp_file1, "w");
+   if (fout == NULL)
+   {
+      fprintf(stderr, "dps_ps_gen:  can not open file for psg \n");
+      exit(0);
+   }
+   fprintf(fout, "\n#ifndef LINT\n");
+   comment = 0;
+   phase_2 = 0;
+   p_flag = 0;
+   cmd_spare[0] = '\0';
+   cmd = 0;
+   new_stat = 1;
+   s_rout = NULL;
+   prog = 0;
+   ptri = 0;
+   quotMark = 0;
+   compareStmt = 0;
+   slash = 0;
+   special = 0;
+   lp = 0;
+   rp = 0;
+   prog1 = 1;
+   while (fgets(input, 256, fin) != NULL)
+   {
+      new_stat = 1;
+      str_in = input;
+      lheader = 0;
+      rheader = 0;
+      if (input[0] == '#')
+      {
+	 def = 1;
+	 p_flag = 0;
+	 lp = 0;
+	 rp = 0;
+      }
+      else
+	 def = 0;
+      if (slash)
+      {
+	 def = 1;
+	 slash = 0;
+      }
+      if (comment)
+      {
+	 if (!eatcomment())
+	    continue;
+      }
+      for (;;)
+      {
+	 newline = 0;
+	 if (!prog)
+	 {
+	    findprog();
+	    if (newline)
+	       break;
+	 }
+	 modify();
+	 if (newline)
+	    break;
+      }
+   }
+   fprintf(fout, "\n#endif\n");
+   fclose(fout);
+   fclose(fin);
+   if (s_rout->next != NULL)	/* if there is subroutine */
+   {
+      fin = fopen(tmp_file1, "r");
+      if ((fout = fopen(tmp_file2, "w")) == NULL)
+      {
+	 fprintf(stderr, "can not open file for second phase\n");
+	 exit(0);
+      }
+      ptri = 0;
+      s_token[0] = '\0';
+      phase_2 = 1;
+      while (fgets(input, 256, fin) != NULL)
+      {
+	 str_in = input;
+	 modify();
+      }
+      fclose(fout);
+      fclose(fin);
+      unlink(tmp_file1);
+   }
+   else
+   {
+      sprintf(cmd_name, "mv %s  %s", tmp_file1, tmp_file2);
+      system(cmd_name);
+   }
+   if (conver_1)
+   {
+      sprintf(input, "cc -O -I%s %s -c 2>>errmsg", lib_path, tmp_file2);
+      system(input);
+      sprintf(input, "mv %s.o  psg2.o", &tmp_file1[5]); 
+      system(input);
+      unlink(tmp_file2);
+   }
+   else
+   {
+      sprintf(input, "cat %s %s > %sdps.c", source1, tmp_file2, source2);
+      system(input);
+      unlink(tmp_file2);
+   }
+}
+
+
+cmdcheck(str)
+char           *str;
+{
+   char            token[CMDLEN];
+   int             length,
+                   loop;
+
+   strcpy(token, str);
+   length = strlen(token);
+   switch (length)
+   {
+      case 3:
+	 for (loop = 0; loop < 4; loop++)
+	 {
+	    if (strcmp(token, cmd_3[loop]) == 0)
+	    {
+			changename();
+			return(0);
+	    }
+	 }
+	 return (0);
+	 break;
+
+      case 4:
+	 for (loop = 0; loop < 9; loop++)
+	 {
+	    if (strcmp(token, cmd_4[loop]) == 0)
+	    {
+	       if (loop < 8)
+	       {
+			changename();
+			return(0);
+	       }
+	       Detach_cmd();
+	       if (loop == 8)	/* loop */
+	       {
+		  special = 1;
+		  fprintf(fout, "DPSprint(\" LF_");
+	       }
+	       else
+		  dummy = 1;
+	       return (1);
+	    }
+	 }
+	 return (0);
+	 break;
+
+      case 5:
+	 for (loop = 0; loop < 16; loop++)
+	 {
+	    if (strcmp(token, cmd_5[loop]) == 0)
+	    {
+	       if (loop == 4 || loop == 7)	/* power, ipwrf */
+	       {
+		 changename();
+		 return(0);
+	       }
+	       Detach_cmd();
+	       switch (loop) {
+		case  0:  /*  delay  */
+			fprintf(fout, "DPSprint(\" D_");
+			break; 
+		case  1:  /*  pulse  */
+		  	fprintf(fout, "DPSprint(\" P_");
+			break; 
+		case  2:  /*  abort  */
+		  	fprintf(fout, "abort(0)");
+		  	abort_cmd = 1;
+			break; 
+		case  3:  /*  endif  */
+		  	special = 1;
+		  	fprintf(fout, "DPSprint(\" XED");
+			break; 
+		case  5:  /*  decon  */
+		  	noArgument = 1;
+		  	fprintf(fout, "DPSprint(\"\\n H1  1.0 ");
+			break; 
+		case  6:  /*  xgate  */
+			fprintf(fout, "DPSprint(\" K_");
+			break; 
+		default:
+		  	dummy = 1;
+			break; 
+		}
+	       return (1);
+	    }
+	 }
+	 return (0);
+	 break;
+      case 6:
+	 for (loop = 0; loop < 21; loop++)
+	 {
+	    if (strcmp(token, cmd_6[loop]) == 0)
+	    {
+	       if (loop <= 2)   /* assign , decpwr , rlpwrf*/
+	       {
+			changename();
+			return(0);
+	       }
+	       Detach_cmd();
+	       switch (loop) {
+		case  3:    /* status */
+		  stat_cmd = 1;
+		  fprintf(fout, "DPSprint(\"\\n status  ");
+		  break;
+		case  4:    /* idelay */
+		  fprintf(fout, "DPSprint(\" D_");
+		  break;
+		case  5:    /* ipulse */
+		  fprintf(fout, "DPSprint(\" P_");
+		  break;
+		case  6:    /* ifzero */
+		  special = 1;
+		  fprintf(fout, "DPSprint(\"\\n IF_");
+		  break;
+		case  7:    /* elsenz */
+		  special = 1;
+		  fprintf(fout, "DPSprint(\" XEN");
+		  break;
+		case  8:    /* xmtron */
+		  noArgument = 1;
+		  fprintf(fout, "DPSprint(\"\\n Hx  1.0 ");
+		  break;
+		case  9:    /* decoff */
+		  noArgument = 1;
+		  fprintf(fout, "DPSprint(\"\\n H1  0.0 ");
+		  break;
+		case  10:    /* dec2on */
+		  noArgument = 1;
+		  fprintf(fout, "DPSprint(\"\\n H2  1.0 ");
+		  break;
+		case 11:    /* dec3on */
+		  noArgument = 1;
+		  fprintf(fout, "DPSprint( \"\\n H3  1.0 ");
+		  break;
+		default:
+		  dummy = 1;
+		  break;
+		}
+	       return (1);
+	    }
+	 }
+	 return (0);
+	 break;
+      case 7:
+	 for (loop = 0; loop < 19; loop++)
+	 {
+	    if (strcmp(token, cmd_7[loop]) == 0)
+	    {
+	       if (loop < 3)	/* obspwrf,...rlpower */
+	       {
+		 changename();
+		 return(0);
+	       }
+	       if (loop == 6)  /*  G_Pulse */
+		  return(0);
+	       Detach_cmd();
+	       switch (loop) {
+		case  3:     /* hsdelay */
+		  fprintf(fout, "DPSprint( \" D_");
+		  break;
+		case  4:     /* rgpulse */
+		  fprintf(fout, "DPSprint( \" P_");
+		  break;
+		case  5:     /* G_Delay */
+		  G_stmt = DELAY;
+		  break;
+		case  6:     /* G_Pulse */
+		  G_stmt = GPULSE;
+		  return(0);
+		  break;
+		case  7:     /* endloop */
+		  special = 1;
+		  fprintf(fout, "DPSprint( \" XEF");
+		  break;
+		case  8:     /* acquire */
+		  acquire = 1;        /* it needs two arguments */ 
+		  multi_stmts = 1;
+		  fprintf(fout, " { DPSprint( \" AC_");
+		  break;
+		case  9:     /* xmtroff */
+		  noArgument = 1;
+		  fprintf(fout, "DPSprint( \"\\n Hx  0.0 ");
+		  break;
+		case  10:     /* dec2off */
+		  noArgument = 1;
+		  fprintf(fout, "DPSprint( \"\\n H2  0.0 ");
+		  break;
+		case  11:     /* dec3off */
+		  noArgument = 1;
+		  fprintf(fout, "DPSprint( \"\\n H3  0.0 ");
+		  break;
+		default:
+		  dummy = 1;
+		  break;
+		}
+	       return (1);
+	    }
+	 }
+	 return (0);
+	 break;
+      case 8:
+	 for (loop = 0; loop < 16; loop++)
+	 {
+	    if (strcmp(token, cmd_8[loop]) == 0)
+	    {
+	       if (loop < 5)	/* obspower, ...gradient */
+	       {
+			changename();
+			return(0);
+	       }
+	       Detach_cmd();
+	       if (loop == 5)	/* obspulse  */
+	       {
+		  obspul = 1;
+		  fprintf(fout, "DPSprint( \" P_");
+	       }
+	       else if (loop == 6)	/* simpulse */
+	       {
+		  simpul = 1;
+		  multi_stmts = 1;
+		  fprintf(fout, " { DPSprint( \" S_");
+	       }
+	       else if (loop == 7)	/* decpulse */
+		  fprintf(fout, "DPSprint( \" W_");
+	       else if (loop == 8)	/* irgpulse */
+		  fprintf(fout, "DPSprint( \" P_");
+	       else if (loop == 9)	/* spinlock */
+	       {
+		  fprintf(fout, "DPSprint( \" B1_");
+		  spinlock = 1;
+	       }
+/***
+	       else if (loop == 10)
+	       {
+		  dpsShow = 1;
+		  dps_show_proc();
+	       }
+***/
+	       else
+		  dummy = 1;
+	       return (1);
+	    }
+	 }
+	 return (0);
+	 break;
+      case 9:
+	 for (loop = 0; loop < 21; loop++)
+	 {
+	    if (strcmp(token, cmd_9[loop]) == 0)
+	    {
+	       if (loop < 4) /* dec2power,... ,vgradient */
+	       {
+			changename();
+			return(0);
+	       }
+	       Detach_cmd();
+	       switch (loop) {
+		case  4:    /* iobspulse */
+		  obspul = 1;
+		  fprintf(fout, "DPSprint( \" P_");
+		  break;
+		case  5:    /* idecpulse */
+		  fprintf(fout, "DPSprint( \" W_");
+		  break;
+		case  6:    /* dec2pulse */
+		  fprintf(fout, "DPSprint( \" W2_");
+		  break;
+		case  7:    /* dec3pulse */
+		  fprintf(fout, "DPSprint( \" W3_");
+		  break;
+		case  8:    /* sim3pulse */
+		  simpul = 2;
+		  multi_stmts = 1;
+		  fprintf(fout, " { DPSprint( \" S3_");
+		  break;
+		case  9:    /* sim4pulse */
+		  simpul = 3;
+		  multi_stmts = 1;
+		  fprintf(fout, " { DPSprint( \" S4_");
+		  break;
+		default:
+		  dummy = 1;
+		  break;
+	        }
+	       return (1);
+	    }
+	 }
+	 return (0);
+	 break;
+
+      case 10:
+	 for (loop = 0; loop < 6; loop++)
+	 {
+	    if (strcmp(token, cmd_10[loop]) == 0)
+	    {
+	       Detach_cmd();
+	       switch (loop) {
+		case  0:       /* decrgpulse */
+		  	fprintf(fout, "DPSprint( \" W_");
+			break;
+		case  1:       /* idec2pulse */
+		  	fprintf(fout, "DPSprint( \" W2_");
+			break;
+		case  2:       /* zgradpulse */
+		  	fprintf(fout, "DPSprint( \" GZ_");
+			zgrad = 1;
+			break;
+		default:
+			dummy = 1;
+			break;
+	        }
+	       return (1);
+	    }
+	 }
+	 return (0);
+	 break;
+      case 11:
+	 for (loop = 0; loop < 10; loop++)
+	 {
+	    if (strcmp(token, cmd_11[loop]) == 0)
+	    {
+	       Detach_cmd();
+	       if (loop == 0)	/* shapedpulse */
+	       {
+		  fprintf(fout, "DPSprint( \" PM_%%s ");
+		  image = 2;
+	       }
+	       else if (loop == 1)	/* idecrgpulse */
+		  fprintf(fout, "DPSprint( \" W_");
+	       else if (loop == 2)	/* endhardloop */
+	       {
+		  special = 1;
+		  fprintf(fout, "DPSprint( \" XEH");
+	       }
+	       else if (loop == 3)	/* dec2rgpulse */
+		  fprintf(fout, "DPSprint( \" W2_");
+	       else if (loop == 4)	/* dec3rgpulse */
+		  fprintf(fout, "DPSprint( \" W3_");
+	       else if (loop == 5)	/* decspinlock */
+		{
+		  fprintf(fout, "DPSprint( \" B2_");
+		  spinlock = 1;
+		}
+	       else
+		  dummy = 1;
+	       return (1);
+	    }
+	 }
+	 return (0);
+	 break;
+
+      case 12:
+	 for (loop = 0; loop < 5; loop++)
+	 {
+	    if (strcmp(token, cmd_12[loop]) == 0)
+	    {
+	       Detach_cmd();
+	       if (loop == 0)	/* shaped_pulse */
+	       {
+		  image = 2;
+		  fprintf(fout, "DPSprint( \" PM_%%s ");
+	       }
+	       else if (loop == 1)	/* idec2rgpulse */
+		  fprintf(fout, "DPSprint( \" W2_");
+	       else if (loop == 2)	/* idec3rgpulse */
+		  fprintf(fout, "DPSprint( \" W3_");
+	       else if (loop == 3)	/* dec2spinlock */
+		{
+		  fprintf(fout, "DPSprint( \" B3_");
+		  spinlock = 1;
+		}
+	       else if (loop == 4)	/* dec3spinlock */
+		{
+		  fprintf(fout, "DPSprint( \" B4_");
+		  spinlock = 1;
+		}
+	       else
+		  dummy = 1;
+	       return (1);
+	    }
+	 }
+	 return (0);
+	 break;
+
+      case 13:
+	 for (loop = 0; loop < 3; loop++)
+	 {
+	    if (strcmp(token, cmd_13[loop]) == 0)
+	    {
+	       Detach_cmd();
+	       if (loop == 0)	/* starthardloop */
+	       {
+		  special = 1;
+		  fprintf(fout, "DPSprint( \" LH_");
+	       }
+	       else
+		  dummy = 1;
+	       return (1);
+	    }
+	 }
+	 return (0);
+	 break;
+
+      case 14:
+	 if (strcmp(token, cmd_14[0]) == 0) /* shapedgradient */
+         {
+		changename();
+		return(0);
+	 }
+	 return (0);
+	 break;
+	    
+      case 15:
+	 for (loop = 0; loop < 2; loop++)
+	 {
+	    if (strcmp(token, cmd_15[loop]) == 0)
+	    {
+	       Detach_cmd();
+	       if (loop == 0)	/* decshaped_pulse */
+	       {
+		  image = 2;
+		  fprintf(fout, "DPSprint( \" WM_%%s ");
+	       }
+	       else if (loop == 1)   /* simshaped_pulse */
+	       {
+		  image_ps = 4;
+		  image_pi = 2;
+		  multi_stmts = 1;
+		  fprintf(fout, " { DPSprint( \" SM_%%s %%.9f SM_%%s %%.9f \""); 
+	       }
+	       return (1);
+	    }
+	 }
+	 return (0);
+	 break;
+
+      case 16:
+	 for (loop = 0; loop < 6; loop++)
+	 {
+	    if (strcmp(token, cmd_16[loop]) == 0)
+	    {
+	       Detach_cmd();
+	       switch(loop) {
+		case 0:         /* dec2shaped_pulse */
+		  image = 2;
+		  fprintf(fout, "DPSprint( \" WM2_%%s ");
+		  break;
+		case 1:         /* dec3shaped_pulse */
+		  image = 2;
+		  fprintf(fout, "DPSprint( \" WM3_%%s ");
+		  break;
+		case 2:         /* sim3shaped_pulse */
+		  image_ps = 6;
+		  image_pi = 3;
+		  multi_stmts = 1;
+		  fprintf(fout, " { DPSprint( \" SM3_%%s %%.9f SM3_%%s %%.9f  SM3_%%s %%.9f\\n\""); 
+		  break;
+		case 3:         /* sim4shaped_pulse */
+		  image_ps = 8;
+		  image_pi = 4;
+		  multi_stmts = 1;
+		  fprintf(fout, " { DPSprint( \" SM4_%%s %%.9f SM4_%%s %%.9f  SM4_%%s %%.9f SM4_%%s %%.9f\\n\""); 
+		  break;
+	        default:
+	           dummy = 1;
+		  break;
+	       }
+	       return (1);
+	    }
+	 }
+	 return (0);
+	 break;
+
+      case 18:
+	 if (strcmp(token, cmd_18[0]) == 0) /* shaped_2D_gradient */
+         {
+		changename();
+		return(0);
+	 }
+	 return (0);
+	 break;
+
+      default:
+	 return (0);
+	 break;
+   }
+}
+
+
+
+/*   to search for the beginning of  procedure  */
+findprog()
+{
+
+   ptrn = 0;
+   for (;;)
+   {
+      if ('a' <= *str_in && *str_in <= 'z')
+	 cmd_name[ptrn++] = *str_in;
+      else if ('A' <= *str_in && *str_in <= 'Z')
+	 cmd_name[ptrn++] = *str_in;
+      else if ('0' <= *str_in && *str_in <= '9')
+	 cmd_name[ptrn++] = *str_in;
+      else if (*str_in == '_')
+	 cmd_name[ptrn++] = *str_in;
+      else if (ptrn != 0)
+      {
+	 cmd_name[ptrn] = '\0';
+	 ptrn = 0;
+      }
+      switch (*str_in)
+      {
+	 case '/':
+	    if (*(str_in + 1) == '*')
+	    {
+	       comment = 1;
+	       str_in = str_in + 2;
+	       ptrn = 0;
+	       cmd_name[0] = '\0';
+	       if (!eatcomment())
+		  return;
+	    }
+	    else
+	    {
+	       s_token[ptri++] = *str_in;
+	       cmd_name[0] = '\0';
+	       ptrn = 0;
+	       str_in++;
+	    }
+	    break;
+	 case '\\':
+	    if (def)
+	       slash = 1;
+	    s_token[ptri++] = *str_in;
+	    cmd_name[0] = '\0';
+	    ptrn = 0;
+	    str_in++;
+	    break;
+	 case '\t':
+	 case ' ':
+	    s_token[ptri++] = *str_in;
+	    str_in++;
+	    if (ptrn != 0)
+	    {
+	       cmd_name[ptrn] = '\0';
+	       ptrn = 0;
+	    }
+	    break;
+
+	 case '\0':
+	 case '\n':
+	    newline = 1;
+	    s_token[ptri++] = '\n';
+	    if (def)
+	    {
+	       s_token[ptri] = '\0';
+	       if (conver_1)
+		  fprintf(fout, "%s", s_token);
+	       ptri = 0;
+	       s_token[0] = '\0';
+	       return;
+	    }
+	    if (ptrn != 0)
+	    {
+	       cmd_name[ptrn] = '\0';
+	       ptrn = 0;
+	    }
+	    return;
+
+	 case ';':
+	    s_token[ptri++] = *str_in;
+	    str_in++;
+	    if (!p_flag)
+	    {
+	       s_token[ptri] = '\0';
+	       if (conver_1)
+		  fprintf(fout, "%s", s_token);
+	       ptri = 0;
+	       s_token[0] = '\0';
+	       cmd_spare[0] = '\0';
+	    }
+	    break;
+
+	 case '=':
+	    s_token[ptri++] = *str_in;
+	    str_in++;
+	    p_flag = 0;
+	    cmd_spare[0] = '\0';
+	    break;
+
+	 case '(':
+	    p_flag = 1;
+	    s_token[ptri++] = *str_in;
+	    str_in++;
+	    lp++;
+	    if (ptrn != 0)
+	       cmd_name[ptrn] = '\0';
+	    if (lp - rp == 1)
+	    {
+	       adjustment();
+	       if (strlen(cmd_name) > 0)
+		  strcpy(cmd_spare, cmd_name);
+	    }
+	    break;
+
+	 case ')':
+	    s_token[ptri++] = *str_in;
+	    rp++;
+	    str_in++;
+	    if (rp == lp && p_flag)
+	       p_flag = 2;
+	    else
+	    {
+	       if (p_flag)
+		  p_flag = 1;
+	       else
+		  p_flag = 0;
+	    }
+	    break;
+
+	 case '{':
+	    s_token[ptri++] = *str_in;
+	    str_in++;
+	    if (p_flag == 2)
+	    {
+	       if (prog1)
+	       {
+		  fprintf(fout, "\nextern  FILE   *dpsdata;\n");
+		  prog1 = 0;
+	       }
+	       if (strlen(cmd_spare) > 0)
+	       {
+		  strcpy(cmd_name, cmd_spare);
+		  prog = 1;
+		  exist = 0;
+		  p_rout = s_rout;
+		  while (p_rout != NULL)
+		  {
+		     if (strcmp(p_rout->name, cmd_name) == 0)
+		     {
+			exist = 1;
+			break;
+		     }
+		     if (p_rout->next != NULL)
+			p_rout = p_rout->next;
+		     else
+			break;
+		  }
+		  if (!exist)
+		  {
+		     t_rout = (struct routine *)
+			malloc(sizeof(struct routine));
+		     strcpy(t_rout->name, cmd_name);
+		     t_rout->next = NULL;
+		     if (s_rout == NULL)
+			s_rout = t_rout;
+		     else
+			p_rout->next = t_rout;
+		  }
+		  changename();
+		  s_token[ptri++] = '\n';
+		  s_token[ptri] = '\0';
+		  fprintf(fout, "%s", s_token);
+		  ptri = 0;
+		  s_token[0] = '\0';
+		  lp = 0;
+		  rp = 0;
+		  ptrn = 0;
+		  cmd_spare[0] = '\0';
+		  p_flag = 0;
+		  return;
+	       }
+	       else
+	       {
+		  ptri = 0;
+		  s_token[0] = '\0';
+		  ptrn = 0;
+		  lp = 0;
+		  rp = 0;
+		  cmd_name[0] = '\0';
+	       }
+	    }
+	    break;
+	 default:
+	    s_token[ptri++] = *str_in;
+	    str_in++;
+	    break;
+      }
+   }
+}
+
+
+
+/*  to comsume the comment and set the string pointer behind the comment  */
+int 
+eatcomment()
+{
+   for (;;)
+   {
+      if (*str_in == '\n' || *str_in == '\0')
+      {
+	 newline = 1;
+	 return (0);
+      }
+      if (*str_in++ == '*')
+      {
+	 if (*str_in == '/')
+	 {
+	    str_in++;
+	    comment = 0;
+	    return (1);
+	 }
+      }
+   }
+}
+
+
+/*   add "X_"  to the subroutine name  */
+changename()
+{
+   int             count;
+   int             tt,
+                   pn;
+
+   count = 0;
+   pn = strlen(cmd_name);
+   ptrt = pn - 1;
+   ptrx = ptri + 1;
+   ptrs = ptri - 1;
+   ptri = ptri + 2;
+   while (ptrs >= 0)
+   {
+      s_token[ptrx] = s_token[ptrs];
+      ptrx--;
+      if (s_token[ptrs] == cmd_name[ptrt])
+      {
+	 count++;
+	 ptrt--;
+      }
+      else
+      {
+	 count = 0;
+	 ptrt = pn - 1;
+      }
+      if (count == pn)
+      {
+	 s_token[ptrx--] = '_';
+	 s_token[ptrx] = 'x';
+	 return;
+      }
+      ptrs--;
+   }
+}
+
+
+
+modify()
+{
+   int  exist;
+   int	bslash;
+
+   ptrn = 0;
+   bslash = 0;
+   for (;;)
+   {
+      if ('a' <= *str_in && *str_in <= 'z')
+	 cmd_name[ptrn++] = *str_in;
+      else if ('A' <= *str_in && *str_in <= 'Z')
+	 cmd_name[ptrn++] = *str_in;
+      else if ('0' <= *str_in && *str_in <= '9')
+	 cmd_name[ptrn++] = *str_in;
+      else if (*str_in == '_')
+	 cmd_name[ptrn++] = *str_in;
+      else if (ptrn != 0)
+      {
+	 cmd_name[ptrn] = '\0';
+	 ptrn = 0;
+      }
+      if (bslash > 0)
+         bslash--;
+      switch (*str_in)
+      {
+	 case '/':
+	    if (*(str_in + 1) == '*')
+	    {
+	       comment = 1;
+	       str_in = str_in + 2;
+	       ptrn = 0;
+	       cmd_name[0] = '\0';
+	       if (!eatcomment())
+		  return;
+	    }
+	    else
+	    {
+	       s_token[ptri++] = *str_in;
+	       str_in++;
+	    }
+	    break;
+         case '\\':
+            s_token[ptri++] = *str_in;
+            str_in++;
+            if(bslash)
+                bslash = 0;
+            else
+                bslash = 2;
+            break;
+	 case '"':
+	    s_token[ptri++] = *str_in;
+            if (!(*(str_in-1) == '\'' && *(str_in+1) == '\'') && !bslash)
+            {
+                  if (quotMark)
+                       quotMark = 0;
+                  else
+                       quotMark = 1;
+            }
+            str_in++;
+            break;
+
+	 case '?':
+	    s_token[ptri++] = *str_in;
+	    if (!quotMark && (*(str_in - 1) != '\'' && *(str_in+1) != '\''))
+            {
+	    	s_token[ptri] = '\0';
+	    	fprintf(fout, "%s", s_token);
+	    	ptri = 0;
+	    	s_token[0] = '\0';
+                compareStmt++;
+	    }
+	    str_in++;
+	    break;
+
+	 case ',':
+	 case ':':
+	 case ';':
+	    s_token[ptri++] = *str_in;
+	    str_in++;
+	    s_token[ptri] = '\0';
+	    fprintf(fout, "%s", s_token);
+	    ptri = 0;
+	    s_token[0] = '\0';
+	    if(multi_stmts)
+	    {
+		  fprintf(fout, " } ");
+		  multi_stmts = 0;
+	    }
+	    break;
+
+	 case '\0':
+	    s_token[ptri++] = '\0';
+	 case '\n':
+	    s_token[ptri++] = '\n';
+	    if (phase_2)
+	    {
+	       s_token[ptri++] = '\0';
+	       fprintf(fout, "%s", s_token);
+	       ptri = 0;
+	       s_token[0] = '\0';
+	    }
+	    newline = 1;
+	    return;
+	    break;
+
+	 case '(':
+	    s_token[ptri++] = *str_in;
+	    str_in++;
+	    if (ptrn != 0)
+	       cmd_name[ptrn] = '\0';
+	    if (phase_2 && !quotMark)
+	    {
+	       exist = 0;
+	       p_rout = s_rout;
+	       while (p_rout != NULL)
+	       {
+		  if (strcmp(p_rout->name, cmd_name) == 0)
+		  {
+		     exist = 1;
+		     break;
+		  }
+		  if (p_rout->next != NULL)
+		     p_rout = p_rout->next;
+		  else
+		     break;
+	       }
+	       if (exist)
+		  changename();
+	    }
+	    else if (strlen(cmd_name) > 0 && !quotMark)
+	    {
+	       dummy = 0;
+	       stat_cmd = 0;
+	       obspul = 0;
+	       abort_cmd = 0;
+	       simpul = 0;
+	       acquire = 0;
+	       special = 0;
+	       slash = 0;
+	       image = 0;
+	       image_ps = 0;
+	       image_pi = 0;
+	       spinlock = 0;
+	       zgrad = 0;
+	       G_stmt = 0;
+	       multi_stmts = 0;
+	       noArgument = 0;
+	       dpsShow = 0;
+	       if (cmdcheck(cmd_name) == 1)
+	       {
+		  if (!dpsShow)
+		  {
+		     getargument();
+		  }
+		  clearcmd();
+	       }
+	    }
+	    ptrn = 0;
+	    cmd_name[0] = '\0';
+	    break;
+
+	 case '{':
+	    prog++;
+	    s_token[ptri++] = *str_in;
+	    str_in++;
+	    break;
+
+	 case '}':
+	    s_token[ptri++] = *str_in;
+	    str_in++;
+	    if (phase_2)
+	       break;
+	    if (prog)
+	    {
+	       s_token[ptri++] = '\n';
+	       s_token[ptri++] = '\0';
+	       fprintf(fout, "%s\n", s_token);
+	    }
+	    ptri = 0;
+	    ptrn = 0;
+	    s_token[0] = '\0';
+	    lp = 0;
+	    rp = 0;
+	    p_flag = 0;
+	    cmd_spare[0] = '\0';
+	    prog--;
+	    break;
+	 default:
+	    s_token[ptri++] = *str_in;
+	    str_in++;
+	    break;
+      }
+   }
+}
+
+
+
+/*   to retrieve the arguments of the PSG function  */
+getargument()
+{
+   int             argptr;
+   char            argstr[CMDLEN];
+   char            parmstrs[5][CMDLEN];
+   int             pl,
+                   pr;
+   int             G_arg1, G_arg2;
+
+   argptr = 0;
+   ptri--;
+   G_arg1 = G_arg2 = 0;
+   while (ptri >= 0)
+   {
+      if (s_token[ptri] == ';' || s_token[ptri] == '?' || s_token[ptri] == ':')
+      {
+	 s_token[ptri + 1] == '\0';
+	 if (strlen(s_token) > 0)    /* print out the previous statement */	
+	    fprintf(fout, "%s\n", s_token); 
+	 break;
+      }
+      ptri--;
+   }
+   ptri = 0;
+   s_token[0] = '\0';
+   pr = 0;
+   pl = 0;
+   for (;;)
+   {
+      switch (*str_in)
+      {
+	 case '(':
+	    pl++;
+	    argstr[argptr++] = *str_in;
+	    str_in++;
+	    break;
+	 case ')':
+	    pr++;
+	    if (pl >= pr)
+	    {
+	       argstr[argptr++] = *str_in;
+	       str_in++;
+	       break;
+	    }
+	 case ',':
+	    if (pl > pr)
+	    {
+	       argstr[argptr++] = *str_in;
+	       str_in++;
+	       break;
+	    }
+	    else
+	    {
+	       argstr[argptr] = '\0';
+	       if (abort_cmd)
+	       {
+		  abort_cmd = 0;
+		  return;
+	       }
+	       chkarg(argstr, parmstrs[0]);
+	       if (dummy)
+		  fprintf(fout, "DPSprint( \" dummy %%.9f  \\n\", pw)");
+	       else if (noArgument)
+		  fprintf(fout, " \")");
+	       else if (stat_cmd)
+		  fprintf(fout, " %s %%.9f \",pw)", parmstrs[0]);
+	       else if (special)
+		  fprintf(fout, "%s  \")", parmstrs[0]);
+	       else if (obspul)
+		  fprintf(fout, "pw  %%.9f \", pw)");
+	       else if (G_stmt)
+               {
+		    if (G_stmt == DELAY)
+                    {
+			if (G_arg1)
+                        {
+			     if (strlen(parmstrs[0]) > 0)
+                             {
+		                fprintf(fout, "DPSprint( \" D_");
+		                if (strlen(argstr) < paramLen - 1)
+		                     fprintf(fout, "%s ", parmstrs[0]);
+		                fprintf(fout, " %%.9f \", %s)", argstr);
+                             }
+			     G_stmt = 0;
+			     return;
+                        }
+			else
+                        {
+                             if (strcmp(parmstrs[0], "DELAY_TIME") == 0)
+				 G_arg1 = 1;
+                             else if (pr > pl)
+			     {
+			         G_stmt = 0;
+                                 return;
+			     }
+                        }
+                    }
+		    else   /*  G_Pulse  */
+                    {
+			if (G_arg1 == 1)
+                        {
+			     if (strlen(argstr) > 0)
+                             {
+			          strcpy(parmstrs[2], parmstrs[0]);
+				  G_arg1 = 2;
+                             }
+			     else
+			     {
+			         G_stmt = 0;
+                                 return;
+			     }
+                        }
+			else if (G_arg2 == 1)
+                        {
+			     if (strlen(argstr) > 0)
+                             {
+			          strcpy(parmstrs[3], parmstrs[0]);
+			          strcpy(parmstrs[4], argstr);
+				  G_arg2 = 2;
+                             }
+			     else
+			     {
+			         G_stmt = 0;
+                                 return;
+			     }
+                        }
+			else 
+                        {
+                             if (strcmp(argstr, "PULSE_DEVICE") == 0)
+				 G_arg1 = 1;
+                             else if (strcmp(argstr, "PULSE_WIDTH") == 0)
+				 G_arg2 = 1;
+                             else if (pr > pl)
+			     {
+			         G_stmt = 0;
+                                 return;
+			     }
+                        }
+                        if(G_arg1 == 2 && G_arg2 == 2)
+                        {
+                             if (strcmp(parmstrs[2], "TODEV") == 0)
+		                fprintf(fout, "DPSprint( \" P_");
+                             else if (strcmp(parmstrs[2], "DODEV") == 0)
+		                fprintf(fout, "DPSprint( \" W_");
+                             else if (strcmp(parmstrs[2], "DO2DEV") == 0)
+		                fprintf(fout, "DPSprint( \" W2_");
+			     else
+			     {
+			         G_stmt = 0;
+                                 return;
+			     }
+		             if (strlen(parmstrs[3]) < paramLen - 1)
+		                     fprintf(fout, "%s ", parmstrs[3]);
+		             fprintf(fout, "  %%.9f \", %s)", parmstrs[4]);
+			     G_stmt = 0;
+                             return;
+                        }
+                    }
+		    adjust2();
+		    argstr[0] = '\0';
+		    argptr = 0;
+		    pl = 0;
+		    pr = 0;
+		    continue;
+	       }
+	       else if (image) /* shaped_pulse or decshaped_pulse */
+	       {
+                  if (image == 2)
+		  	fprintf(fout, " %%.9f \", %s,", argstr);
+		  else
+		  {
+		  	fprintf(fout, "%s)", argstr);
+			image = 0;
+			return;
+		  }	
+		  adjust2();
+		  image--;
+		  argstr[0] = '\0';
+		  argptr = 0;
+		  simpul = 0;
+		  acquire = 0;
+		  pl = 0;
+		  pr = 0;
+		  continue;
+	       }
+	       else if (image_ps) /* simshaped_pulse,sim3shaped_pulse.. */
+	       {
+		  if (image_ps > image_pi)
+		  {	
+			strcpy(parmstrs[image_ps-image_pi], argstr);
+			image_ps--;
+		  }
+		  else
+		  {
+		  	fprintf(fout, ", %s", parmstrs[image_ps]);
+		  	fprintf(fout, ", %s", argstr);
+			image_ps--;
+			image_pi--;
+		  }
+		  if(image_ps == 0)
+		  {
+		  	fprintf(fout, ")");
+			return;
+	 	  }
+		  adjust2();
+		  argstr[0] = '\0';
+		  argptr = 0;
+		  pl = 0;
+		  pr = 0;
+		  continue;
+	       }
+	       else if (zgrad)
+	       {
+		  if (zgrad == 1)
+		  {
+			strcpy(tmpstr, argstr);
+			zgrad++;
+		  }
+		  else
+		  {
+			fprintf(fout, "%s  %%.9f  %%.9f \\n\", %s, %s)",
+				  parmstrs[0], argstr, tmpstr);
+			zgrad = 0;
+			return;
+		  }
+		  adjust2();
+		  argstr[0] = '\0';
+		  argptr = 0;
+		  pl = 0;
+		  pr = 0;
+		  continue;
+	       }
+	       else if (spinlock)
+	       {
+		  if (spinlock == 1)
+		  {
+		     fprintf(fout, "%%s %%.9f %%d \", ");
+		     fprintf(fout, "%s, ", argstr);
+		  }
+		  else if (spinlock == 2)
+		     fprintf(fout, "%s, ", argstr);
+		  else if (spinlock == 5)
+		  {
+		     fprintf(fout, "%s)", argstr);
+			spinlock = 0;
+			return;
+	 	  }
+		  spinlock++;
+		  adjust2();
+		  argstr[0] = '\0';
+		  argptr = 0;
+		  pl = 0;
+		  pr = 0;
+		  continue;
+	       }
+	       else
+	       {
+		  if (strlen(argstr) < paramLen - 1)
+		       fprintf(fout, "%s ", parmstrs[0]);
+		  fprintf(fout, " %%.9f \", %s)", argstr);
+		  if (simpul || acquire)
+		  {
+		     fprintf(fout, ";\n      ", argstr);
+		     adjust1();
+		     argstr[0] = '\0';
+		     argptr = 0;
+		     acquire = 0;
+		     pl = 0;
+		     pr = 0;
+		     continue;
+		  }
+	       }
+	       return;
+	    }
+	    break;
+	 case '\0':
+	 case '\n':
+	    if (fgets(input, 256, fin) == NULL)
+	    {
+	       fprintf(stderr, " syntax error, abort!\n");
+	       exit(0);
+	    }
+	    str_in = input;
+	    break;
+	 case '\t':
+	 case ' ':
+	    str_in++;
+	    break;
+
+	 default:
+	    argstr[argptr++] = *str_in;
+	    str_in++;
+	    break;
+      }
+   }
+}
+
+
+chkarg(source, target)
+   char  *source, *target;
+{
+	int  times;
+	char *spare;
+
+	spare = target;
+	times = 0;
+	while(*source != '\0')
+	{
+		if (*source != '"')
+			*target++ = *source++;
+		else
+		{
+			source++;
+			if (times == 0)
+			{
+				target = spare;
+				times++;
+			}
+			else
+				break;
+		}
+	}
+	*target = '\0';
+}
+
+
+/*    to comsume the rest part of PSG command call  */
+clearcmd()
+{
+   int  pl, pr;
+
+   pl = pr = 0;
+   for (;;)
+   {
+      switch (*str_in) {
+	 case '(':
+	    pl++;
+	    str_in++;
+	    break;
+	 case ')':
+	    pr++;
+	    str_in++;
+	    if (pl < pr)
+	        return;
+	    break;
+	 case ':':
+	    if (pl <= pr)
+	        return;
+	    str_in++;
+	    break;
+	 case ';':
+	    if (pl == pr)
+	        return;
+	    str_in++;
+	    break;
+	    
+	 case '\0':
+	 case '\n':
+	    if (fgets(input, 256, fin) == NULL)
+	    {
+	       fprintf(stderr, " syntax error, abort!\n");
+	       exit(0);
+	    }
+	    str_in = input;
+	    break;
+	 default:
+	    str_in++;
+	    break;
+      }
+
+      if (*str_in == ';')
+      {
+	 str_in++;
+	 return;
+      }
+      if (*str_in == '\n' || *str_in == '\0')
+      {
+	 if (fgets(input, 256, fin) == NULL)
+	 {
+	    fprintf(stderr, " syntax error, abort!\n");
+	    exit(0);
+	 }
+	 str_in = input;
+      }
+   }
+}
+
+
+
+/*   set the string pointer to the next argument for simpulse  */
+adjust1()
+{
+   for (;;)
+   {
+      switch (*str_in)
+      {
+	 case ',':
+	    str_in++;
+	    if (simpul)
+            {
+	       fprintf(fout, "   DPSprint( \"  S%d_", simpul);
+	       simpul--;
+            }
+	    else if (acquire)
+	       fprintf(fout, "   DPSprint( \"  AC_");
+	    return;
+	 case '\0':
+	 case '\n':
+	    if (fgets(input, 256, fin) == NULL)
+	    {
+	       fprintf(stderr, " syntax error, abort!\n");
+	       exit(0);
+	    }
+	    str_in = input;
+	    break;
+	 default:
+	    str_in++;
+	    break;
+      }
+   }
+}
+
+
+
+/*   set the string pointer to the next argument   */
+adjust2()
+{
+   for (;;)
+   {
+      switch (*str_in)
+      {
+	 case ',':
+	    str_in++;
+	    return;
+	 case '\0':
+	 case '\n':
+	    if (fgets(input, 256, fin) == NULL)
+	    {
+	       fprintf(stderr, " syntax error, abort!\n");
+	       exit(0);
+	    }
+	    str_in = input;
+	    break;
+	 default:
+	    str_in++;
+	    break;
+      }
+   }
+}
+
+
+adjustment()
+{
+   int             leng,
+                   loop,
+                   index;
+   char            temp[512];
+
+   index = ptri - 1;
+   while (index >= 0)
+   {
+      if (s_token[index] == ';')
+	 break;
+      else
+	 index--;
+   }
+   if (index >= 0)
+   {
+      strncpy(temp, s_token, index + 1);
+      temp[index+1] = '\0';
+      if (conver_1)
+      	 fprintf(fout, "%s", temp);
+      loop = 0;
+      index++;
+      while (index < ptri)
+	 s_token[loop++] = s_token[index++];
+      ptri = loop;
+   }
+}
+
+
+
+Detach_cmd()
+{
+   int             cmd_len,
+                   loop,
+                   found,
+                   i,
+                   index;
+
+   cmd_len = strlen(cmd_name);
+   index = ptri - 1;
+   while (index >= 0)
+   {
+      if (s_token[index] == cmd_name[cmd_len - 1])
+      {
+	 i = index;
+	 found = 0;
+	 for (loop = cmd_len - 1; loop >= 0; loop--)
+	 {
+	    if (s_token[i] != cmd_name[loop])
+	       break;
+	    if (loop == 0)
+	    {
+	       found = 1;
+	       break;
+	    }
+	    i--;
+	 }
+	 if (found)
+	 {
+	    s_token[i] = '\0';
+	    fprintf(fout, "%s", s_token);
+	    return;
+	 }
+      }
+      index--;
+   }
+}
+
+
+get_args()
+{
+   int  argptr;
+   int  pl, pr;
+   int  bl, br;
+   int  quot, slash;
+
+   argNum = 0;
+   argptr = 0;
+   argPtrs[0] = 0;
+
+   pr = 0;
+   pl = 0;
+   br = 0;
+   bl = 0;
+   quot = 0;
+   slash = 0;
+   for (;;)
+   {
+      switch (*str_in)
+      {
+         case '(':
+            if (!quot)
+                pl++;
+            argArray[argptr++] = *str_in;
+            str_in++;
+            slash = 0;
+            break;
+         case ')':
+            if (!quot)
+                pr++;
+            if (pl >= pr)
+            {
+                argArray[argptr++] = *str_in;
+                str_in++;
+            }
+            else
+	    {
+                argArray[argptr++] = '\0';
+                argNum++;
+                argPtrs[argNum] = argptr;
+                str_in++;
+                return;
+            }
+            slash = 0;
+            break;
+         case ',':
+            if (pl > pr || bl != br || quot)
+            {
+                argArray[argptr++] = *str_in;
+                str_in++;
+            }
+            else
+            {
+                argArray[argptr++] = '\0';
+                argNum++;
+                argPtrs[argNum] = argptr;
+                str_in++;
+            }
+            slash = 0;
+            break;
+         case '\0':
+         case '\n':
+            if (fgets(input, 1023, fin) == NULL)
+            {
+                fprintf(stderr, " syntax error, abort!\n");
+                exit(0);
+            }
+            str_in = input;
+            slash = 0;
+            break;
+         case '\t':
+         case ' ':
+            if (quot)
+                argArray[argptr++] = *str_in;
+            str_in++;
+            slash = 0;
+            break;
+
+         case '[':
+            if (!quot)
+                bl++;
+            argArray[argptr++] = *str_in;
+            str_in++;
+            slash = 0;
+            break;
+         case ']':
+            if (!quot)
+                br++;
+            argArray[argptr++] = *str_in;
+            str_in++;
+            slash = 0;
+            break;
+         case '"':
+            if (!slash)
+            {
+                if(!quot)
+                    quot = 1;
+                else
+                    quot = 0;
+            }
+            argArray[argptr++] = *str_in;
+            str_in++;
+            slash = 0;
+            break;
+         default:
+            argArray[argptr++] = *str_in;
+            str_in++;
+            slash = 0;
+            break;
+      }
+   }
+}
+
+char * clean_str(num)
+int	num;
+{
+	char  *data, *d2;
+
+	data = &argArray[0] + argPtrs[num];
+	while (*data == '"')
+		data++;
+	d2 = data;
+	while (*d2 != '"' && *d2 != '\0')
+		d2++;
+	*d2 = '\0';
+	return(data);
+}
+	
+#define PULSE  1
+#define SHAPED 2
+
+int
+show_pulse(type)
+int     type;
+{
+	char  *which, *label, *val;
+
+	if (argNum < 4)
+	      return(0);
+	which = clean_str(1);
+	if (strcmp(which, "obs") == 0)
+	{
+	     if (type == PULSE)
+	        fprintf(fout, "DPSprint(\" P_");
+	     else if (type == SHAPED)
+	        fprintf(fout, "DPSprint(\" PM_");
+	}
+	else if (strcmp(which, "dec2") == 0)
+	{
+	     if (type == PULSE)
+	        fprintf(fout, "DPSprint(\" W2_");
+	     else if (type == SHAPED)
+	        fprintf(fout, "DPSprint(\" WM2_");
+	}
+	else if (strcmp(which, "dec3") == 0)
+	{
+	     if (type == PULSE)
+	        fprintf(fout, "DPSprint(\" W3_");
+	     else if (type == SHAPED)
+	        fprintf(fout, "DPSprint(\" WM3_");
+	}
+	else if (strcmp(which, "dec") == 0)
+	{
+	     if (type == PULSE)
+	        fprintf(fout, "DPSprint(\" W_");
+	     else if (type == SHAPED)
+	        fprintf(fout, "DPSprint(\" WM_");
+	}
+	else
+	     return(0);
+	label = clean_str(2);
+	val = &argArray[0] + argPtrs[3];
+	fprintf(fout, "%s  %%.9f \\n\", %s)", label, val);
+	return(1);
+}
+	    
+
+int
+show_simpulse(type)
+int     type;
+{
+	char  *label, *val_1, *val_2;
+
+	if (argNum < 5)
+	      return(0);
+	label = clean_str(1);
+	if (type == PULSE)
+	    fprintf(fout, "DPSprint(\" S_%s %%.9f ", label);
+	else if (type == SHAPED)
+	    fprintf(fout, "DPSprint(\" SM_%s %%.9f ", label);
+	label = clean_str(3);
+	if (type == PULSE)
+	    fprintf(fout, "S1_%s %%.9f ", label);
+	else if (type == SHAPED)
+	    fprintf(fout, "SM_%s %%.9f ", label);
+	val_1 = &argArray[0] + argPtrs[2];
+	val_2 = &argArray[0] + argPtrs[4];
+	fprintf(fout, "\\n\", %s, %s)", val_1, val_2);
+	return(1);
+}
+
+
+int
+show_sim3pulse(type)
+int     type;
+{
+	char  *label, *val_1, *val_2, *val_3;
+
+	if (argNum < 7)
+	      return(0);
+	label = clean_str(1);
+	if (type == PULSE)
+	    fprintf(fout, "DPSprint(\" S3_%s %%.9f ", label);
+	else if (type == SHAPED)
+	    fprintf(fout, "DPSprint(\" SM3_%s %%.9f ", label);
+	label = clean_str(3);
+	if (type == PULSE)
+	    fprintf(fout, "S2_%s %%.9f ", label);
+	else if (type == SHAPED)
+	    fprintf(fout, "SM3_%s %%.9f ", label);
+	label = clean_str(5);
+	if (type == PULSE)
+	    fprintf(fout, "S1_%s %%.9f ", label);
+	else if (type == SHAPED)
+	    fprintf(fout, "SM3_%s %%.9f ", label);
+	val_1 = &argArray[0] + argPtrs[2];
+	val_2 = &argArray[0] + argPtrs[4];
+	val_3 = &argArray[0] + argPtrs[6];
+	fprintf(fout, "\\n\", %s, %s, %s)", val_1, val_2, val_3);
+	return(1);
+}
+
+int
+show_zgradpulse()
+{
+	char  *label, *val;
+
+	if (argNum < 3)
+	      return(0);
+	label = clean_str(2); /* delay */
+	val = &argArray[0] + argPtrs[1];
+	fprintf(fout, "DPSprint( \" GZ_%s %%.9f %%.9f \\n\", %s, %s)", label, label, val);
+	return(1);
+}
+
+copy_args()
+{
+	int	n;
+	char  *label;
+
+	n = 1;
+	while (n < argNum)
+	{
+	    label = &argArray[0] + argPtrs[n];
+	    if (n == 1)
+	         fprintf(fout, "%s", label);
+	    else
+	         fprintf(fout, ", %s", label);
+	    n++;
+	}
+	fprintf(fout, ")");
+}
+
+dps_show_proc()
+{
+	char   *type, *label;
+
+	get_args();
+	ptri = 0;
+	
+	if (argNum < 2)
+	{
+	     fprintf(fout, "DPSprint(\" dummy pw\\n\")");
+	     return;
+	}
+	type = clean_str(0);
+	if (strcmp(type, "delay") == 0)
+	{
+	     label =  &argArray[0] + argPtrs[1];
+	     fprintf(fout, "DPSprint( \" D_%s %%.9f \\n\", %s)", label, label);
+	     return;
+	}
+	if (strcmp(type, "pulse") == 0)
+	{
+	     if (!show_pulse(PULSE))
+	         fprintf(fout, "DPSprint(\" dummy pw\\n\")");
+	     return;
+	}
+	if (strcmp(type, "shapedpulse") == 0)
+	{
+	     if (!show_pulse(SHAPED))
+	         fprintf(fout, "DPSprint(\" dummy pw\\n\")");
+	     return;
+	}
+	if (strcmp(type, "simpulse") == 0)
+	{
+	     if (!show_simpulse(PULSE))
+	         fprintf(fout, "DPSprint(\" dummy pw\\n\")");
+	     return;
+	}
+	if (strcmp(type, "simshapedpulse") == 0)
+	{
+	     if (!show_simpulse(SHAPED))
+	         fprintf(fout, "DPSprint(\" dummy pw\\n\")");
+	     return;
+	}
+	if (strcmp(type, "sim3pulse") == 0)
+	{
+	     if (!show_sim3pulse(PULSE))
+	         fprintf(fout, "DPSprint(\" dummy pw\\n\")");
+	     return;
+	}
+	if (strcmp(type, "sim3shapedpulse") == 0)
+	{
+	     if (!show_sim3pulse(SHAPED))
+	         fprintf(fout, "DPSprint(\" dummy pw\\n\")");
+	     return;
+	}
+
+	if (strcmp(type, "zgradpulse") == 0)
+	{
+	     if (!show_zgradpulse())
+	         fprintf(fout, "DPSprint(\" dummy pw\\n\")");
+	     return;
+	}
+
+	if (strcmp(type, "vgradient") == 0)
+	{
+	     fprintf(fout, "x_vgradient(");
+	     copy_args();
+	     return;
+	}
+	if (strcmp(type, "rgradient") == 0)
+	{
+	     fprintf(fout, "x_rgradient(");
+	     copy_args();
+	     return;
+	}
+	if (strcmp(type, "gradient") == 0)
+	{
+	     fprintf(fout, "x_gradient(");
+	     copy_args();
+	     return;
+	}
+
+	if (strcmp(type, "shapedgradient") == 0)
+	{
+	     fprintf(fout, "x_shapedgradient(");
+	     copy_args();
+	     return;
+	}
+	if (strcmp(type, "shaped_2D_gradient") == 0)
+	{
+	     fprintf(fout, "x_shaped_2D_gradient(");
+	     copy_args();
+	     return;
+	}
+	if (strcmp(type, "shaped2Dgradient") == 0)
+	{
+	     fprintf(fout, "x_shaped_2D_gradient(");
+	     copy_args();
+	     return;
+	}
+	fprintf(fout, "DPSprint(\" dummy pw\\n\")");
+}
+

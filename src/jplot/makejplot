@@ -1,0 +1,108 @@
+# 
+# Copyright (c) 1991-1994 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+SCCSJDIR= $(sccsjdir)
+SCCS_SRC_DIR= $(SCCSJDIR)/jplot/SCCS/s.
+SCCS_GET= sccs -p$(SCCSJDIR)/jplot/SCCS get
+
+MAKEFILE= makejplot
+
+TARGET_DIR="./"
+IDIR= -I/usr/java/include -I/usr/java/include/solaris
+CFLAGS= -G
+OPS=-g
+
+C_SRC= plot_config.c
+C_HDR=  PlotConfig.h PlotFile.h
+
+C_OBJ= $(C_SRC:.c=.o)
+
+LIBDIR= $(solobjdir)/proglib/vnmr
+
+JAVAC=javac -deprecation
+
+JAVA_LIST=  \
+	PlotConfig.java \
+	PlotRgb.java \
+	PlotText.java \
+	PlotUtil.java \
+	DrawRegion.java \
+	EditItemIF.java \
+	Format.java     \
+	LinkedList.java \
+	PlotDefines.java \
+	PlotEditButton.java \
+	PlotEditTool.java \
+	PlotFile.java    \
+	PlotIF.java    \
+	PlotItemPref.java \
+	PlotMisItem.java  \
+	PlotObj.java     \
+	PlotPref.java    \
+	PlotSave.java    \
+	PlotSocket.java    \
+	RegionEdit.java  \
+	TextInput.java   \
+	TextProcess.java   \
+	PlotMenuNode.java   \
+	ToVnmrSocket.java   \
+	PlotHelp.java   \
+	PlotArrowDraw.java
+
+ICON_LIST=  \
+	plot_arrowL.icon  \
+	plot_arrowR.icon  \
+	plot_erase.icon   \
+	plot_eraseAll.icon \
+	plot_line.icon    \
+	plot_pref.icon    \
+	plot_printer.icon \
+	plot_rectangle.icon  \
+	plot_text.icon
+
+CLASS_OBJ= $(JAVA_LIST:.java=.class)
+
+std :
+	@( $(MAKE) -ef $(MAKEFILE) SOLARIS ; )
+
+src :  $(JAVA_LIST)
+	@echo  Sources up to date...
+
+SOLARIS : $$(MAKEFILE) src
+	rm -f *.class
+	@( $(MAKE) -ef $(MAKEFILE)  sol_class; )
+	@echo "makejplot  Complete."
+
+test : $$(MAKEFILE) src
+	@( $(MAKE) -ef $(MAKEFILE)  sol_class; )
+	@echo "makejplot  Complete."
+	cp jplot.jar /vnmr/java
+
+sol_lib : $(C_OBJ)
+	@(umask 2; cc -G -R/vnmr/lib  -L$(LIBDIR) $(C_OBJ) -lacqcomm -o libjplot.so )
+	@echo "make lib  Complete."
+
+sol_class : $(CLASS_OBJ)
+	jar -cf jplot.jar *class
+	@echo "make jplot classes  Complete."
+
+$(C_SRC) $(C_HDR) : $$(SCCS_SRC_DIR)$$(@)
+	$(SCCS_GET) $@
+
+$(JAVA_LIST) : $$(SCCS_SRC_DIR)$$(@)
+	$(SCCS_GET) $@
+
+$(ICON_LIST) : $$(SCCS_SRC_DIR)$$(@)
+	$(SCCS_GET) $@
+
+plot_config.o: $(C_SRC) $(C_HDR)
+	(umask 2; $(CC) -c $(CFLAGS) -I. $(IDIR) plot_config.c)
+
+$(CLASS_OBJ): $$(@:.class=.java)
+	(umask 2; $(JAVAC) $(@:.class=.java) )
+

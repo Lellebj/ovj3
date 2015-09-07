@@ -1,0 +1,18 @@
+"@(#)Doneshot_nugmap 17.2 01/19/04 Copyright (c) 1991-1995 Agilent Technologies All Rights Reserved."
+
+"*******************************************************"
+" Doneshot_nugmap -						"
+
+/*
+-- Attributes for parlib/Doneshot_nugmap.par --
+P_LOCK  : 
+apptype : dosy2D
+modules : par2D presat gradient dosy2D
+wrtp    : 
+setup   : Doneshot_nugmap_setup
+*/
+
+"*******************************************************"
+
+cpsetup($0)
+

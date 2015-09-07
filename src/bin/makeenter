@@ -1,0 +1,362 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+# makeenter  make file
+# make -f makeenter,  creates enter for PAID
+#
+
+MAKEFILE= makeenter
+
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+VNMRDIR=$(vnmrdir)
+REV_DATE=$(VNMR_REV_DATE)
+
+OPENWINHOME=/usr/openwin
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+#SRC_DIR=./
+SRC_DIR=$(SRCDIR)/sysbin/
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+# ----- PAID sccs home ----
+SCCSDIR=$(sccsdir)
+JSCCS=$(SCCSDIR)/bin/SCCS/s.
+ENTER_SRC_DIR=$(SCCSDIR)/bin/SCCS/s.
+XVIEW_GUI_SRC_DIR= $(SRC_DIR)ow/
+SVIEW_GUI_SRC_DIR= $(SRC_DIR)sv/
+MOTIF_GUI_SRC_DIR= $(SRC_DIR)motif/
+
+GUI_SRC_DIR= $(SVIEW_GUI_SRC_DIR)
+
+JGET = sccs -p$(SCCSDIR)/bin/SCCS get
+ENTER_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get
+SVIEW_GUI_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)sunview/SCCS get
+XVIEW_GUI_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)xview/SCCS get
+MOTIF_GUI_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)motif/SCCS get
+
+XVIEW_GUI_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)xview/SCCS/s.
+SVIEW_GUI_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)sunview/SCCS/s.
+MOTIF_GUI_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)motif/SCCS/s.
+
+
+XVIEW_GUI_LN = ln -s $(XVIEW_GUI_SRC_DIR)$(@)
+SVIEW_GUI_LN = ln -s $(SVIEW_GUI_SRC_DIR)$(@)
+MOTIF_GUI_LN = ln -s $(MOTIF_GUI_SRC_DIR)$(@)
+
+
+SVIEW_GUI_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)sunview/SCCS get
+XVIEW_GUI_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)xview/SCCS get
+MOTIF_GUI_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)motif/SCCS get
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+CFLAGS= -O -DBSDACQ -fsingle
+LPCFLAGS= -O4 -fsingle -dalign
+CPPFLAGS= -DSUN -DBSDACQ
+LDFLAGS=  -O
+ASMCPP.s= /lib/cpp -P $(CPPFLAGS) $(TARGET_ARCH)
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LPCOMPILE.c= $(CC) $(LPCFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(LDFLAGS) $(TARGET_ARCH)
+
+#----  default source extraction to links -------
+
+#----  default source extraction to links -------
+ENTER_GET= $(ENTER_SGET)
+
+GUI_GET= $(SVIEW_GUI_SGET)
+GUI_SRC_DIR= $(SVIEW_GUI_SRC_DIR)
+
+LIBS = -lsuntool -lsunwindow -lpixrect -ll -lm
+
+XLIBS = -lxview -lolgx -lX11 -ll -lm
+
+#-- Normal operational compile flags
+CFLAGS= -c -O
+SCFLAGS= -S -O
+
+#-- Debugging with DBXTOOL ccompile flags
+#CFLAGS= -c -g
+#SCFLAGS= -S -g
+
+# This will keep the IBM happy
+WIN_SRC= a1.c
+WIN_OBJ= a1.o
+WIN_LN_SRC= dummy.c
+
+#  Note:  The OpenWindow programs borrow the SunView asm icon file.
+#         This make file variable is defined for target "ow"; otherwise
+#         it is left undefined.  We then refer to it as a make file
+#         variable so the "sv" target will ignore this target while the
+#         "ow" target uses it to make the icon file.
+
+ASM_ICON=    undefined
+
+#------------------------------------------------------------------------
+#---  object modules needed for "enter"
+#------------------------------------------------------------------------
+
+ENTER_HDR=                      \
+		enter.h
+
+ENTER_SRC=			\
+		enter.c		\
+		e_lock.c	\
+		e_menu.c
+
+ENTER_OBJ=$(ENTER_SRC:.c=.o)
+
+
+# ---- SunView GUI Sources ------------------------------
+
+SV_WIN_HDR=			\
+		asm.icon
+
+SV_WIN_SRC=			\
+		enter_win.c
+
+SV_WIN_OBJ= $(SV_WIN_SRC:.c=.o)
+
+# ---- OpenWindows GUI source ------------------------------
+
+OW_WIN_SRC= 			\
+		enter_win.c
+
+OW_WIN_OBJ= $(OW_WIN_SRC:.c=.o)
+
+# ---- Motif  GUI source ------------------------------
+
+MOTIF_WIN_HDR=			\
+		asm.icon
+
+MOTIF_WIN_SRC= 			\
+		enter_win.c
+
+MOTIF_WIN_OBJ= $(MOTIF_WIN_SRC:.c=.o)
+
+#---- All Sources and headers required for compilation -----
+COMMON_SRC= $(ENTER_SRC) $(ENTER_HDR) 
+
+ALLSRC= $(COMMON_SRC) $(SV_WIN_SRC) $(SV_WIN_HDR)
+
+ALLOBJ= $(ENTER_OBJ) $(SV_WIN_OBJ)
+ 
+COMMON_OBJ= $(ENTER_OBJ) 
+
+#---------------------------------------------------------------
+
+sparc sun3: ow
+
+
+#sv : $$(MAKEFILE) SV_src Source
+sv : SV_src Source
+	-( rm -f $(OW_WIN_SRC) $(ALLOBJ) ; $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"CFLAGS= -O -fsingle -DBSDACQ" \
+	"LPCFLAGS= -O4 -fsingle -dalign " \
+	"WIN_SRC= $(SV_WIN_SRC) $(SV_WIN_HDR)" \
+	"WIN_OBJ= $(SV_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(SVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(SVIEW_GUI_SRC_DIR)$$(@)" \
+	"GUI_TYPE=sv" \
+	   enter; )
+	@echo "NMR_ID SPARC Enter SunView libraries complete -------------------"
+
+# SunView icon files are used by XView (OpenWindows) i.e. use of SV_src
+
+ow : $$(MAKEFILE) SV_src OW_src Source
+	( rm -f $(SV_WIN_SRC) $(ALLOBJ) ; $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"CFLAGS= -O -fsingle -DBSDACQ -I$(OPENWINHOME)/include" \
+	"CPPFLAGS= -DSUN -DX11" \
+	"LPCFLAGS= -O4 -fsingle -dalign " \
+	"LDFLAGS= -L$(OPENWINHOME)/lib" \
+	"ASM_ICON= asm.icon" \
+	"WIN_SRC= $(OW_WIN_SRC)" \
+	"WIN_OBJ= $(OW_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lxview -lolgx -lXt -lX11 -ll -lm" \
+	"GUI_TYPE=ow" \
+         enter_ow; )
+	@echo "NMR_ID SPARC Enter XView libraries complete ---------------------"
+
+owdyn : $$(MAKEFILE) SV_src OW_src Source
+	( rm -f $(SV_WIN_SRC) $(ALLOBJ) ; $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"CFLAGS= -O  -fsingle -DBSDACQ -I$(OPENWINHOME)/include" \
+	"CPPFLAGS= -DSUN -DX11" \
+	"LPCFLAGS= -O4 -fsingle -dalign " \
+	"LDFLAGS= -L$(OPENWINHOME)/lib" \
+	"WIN_SRC= $(OW_WIN_SRC)" \
+	"WIN_OBJ= $(OW_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lxview -lolgx -lXt -lX11 -ll -lm" \
+	"GUI_TYPE=ow" \
+         enter_ow; )
+	@echo "NMR_ID SPARC Enter XView libraries complete ---------------------"
+# AIX & IRIX untested as of 11-13-92
+
+AIX : $$(MAKEFILE) MOTIF_src Source
+	( $(MAKE) -f $(MAKEFILE) \
+	"CFLAGS= -O -fsingle -DSUN $(COPTIONS) -D_NO_PROTO" \
+	"LPCFLAGS= -O -fsingle $(COPTIONS)"	\
+	"CPPFLAGS= -DSUN -DAIX -DX11 -DMOTIF" \
+	"TARGET_ARCH=-DIBM" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"GUI_COM_SRC_DIR= $(MOTIF_GUI_SRC_DIR)" \
+	"GUI_COM_GET= ln -s $(MOTIF_GUI_SRC_DIR)$$(@)" \
+	"WIN_SRC= $(MOTIF_WIN_SRC) $(MOTIF_WIN_HDR)" \
+	"WIN_OBJ= $(MOTIF_WIN_OBJ) $(COM_X_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(MOTIF_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(MOTIF_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lXm -lXt -lX11" \
+ 	  enter )
+	@echo "NMR_ID IBM AIX Enter complete --------------------------"
+
+IRIX : $$(MAKEFILE) MOTIF_src Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS= -O -cckr -prototypes -float -D_BSD_COMPAT -DIRIX $(COPTIONS)" \
+	"LPCFLAGS= -O $(COPTIONS)"	\
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF -D_NO_PROTO" \
+	"TARGET_ARCH=-DIRIX" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"GUI_COM_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_COM_GET= ln -s $(XVIEW_GUI_SRC_DIR)" \
+	"WIN_LN_SRC= $(MOTIF_WIN_SRC) $(MOTIF_WIN_HDR)" \
+	"WIN_OBJ= $(MOTIF_WIN_OBJ) $(COM_X_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(MOTIF_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(MOTIF_GUI_SRC_DIR)" \
+	"LIBS = -lXm -lXt -lX11" \
+ 	  enter )
+	@echo "NMR_ID SGI MOTIF libraries complete --------------------------"
+
+# SOLARIS doesn't make SunView programs; therefore, the asm icon file is
+# not linked into the current working directory in the process of making
+# SunView stuff.  To avoid the resuling failure to find asm.icon, we
+# define the symbol ASM_ICON for the child make process
+
+SOLARIS : $$(MAKEFILE) OW_src Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS= -O -fsingle -DBSDACQ -I$(OPENWINHOME)/include" \
+	"LPCFLAGS= -O $(COPTIONS)"	\
+	"CPPFLAGS= -DSUN -DX11 -DSOLARIS" \
+	"TARGET_ARCH=" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"GUI_COM_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_COM_GET= ln -s $(XVIEW_GUI_SRC_DIR)" \
+	"LDFLAGS= -L$(OPENWINHOME)/lib -R $(OPENWINHOME)/lib" \
+	"ASM_ICON= asm.icon" \
+	"WIN_SRC= $(OW_WIN_SRC)" \
+	"WIN_OBJ= $(OW_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lxview -lolgx -lXt -lX11 -ll -lm -lnsl" \
+ 	  enter )
+	@echo "NMR_ID SOLARIS OW libraries complete --------------------------"
+
+
+
+enter enter_ow : $(ENTER_OBJ) $(WIN_OBJ)
+	(umask 2; $(CC) $(LDFLAGS) -o $@ $(ENTER_OBJ) $(WIN_OBJ) \
+		$(LIBS) )
+
+$(ENTER_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE)	\
+               src)
+ 
+SV_src :
+	( cd $(SRC_DIR)sv; $(MAKE) -e -f ../$(MAKEFILE)	\
+	     "SVIEW_GUI_SRC_DIR= $(SVIEW_GUI_SCCS_SRC)" \
+	     "SVIEW_GUI_GET= $(SVIEW_GUI_SGET)"	\
+	     "WIN_SRC= $(SV_WIN_SRC) $(SV_WIN_HDR)" \
+	     "GUI_SRC_DIR= $(SVIEW_GUI_SCCS_SRC)" \
+	     "GUI_GET= $(SVIEW_GUI_SGET)" \
+               win_src)
+
+OW_src :
+	( cd $(SRC_DIR)ow; $(MAKE) -e -f ../$(MAKEFILE)	\
+	     "XVIEW_GUI_SRC_DIR= $(XVIEW_GUI_SCCS_SRC)" \
+	     "XVIEW_GUI_GET= $(XVIEW_GUI_SGET)"	\
+	     "WIN_SRC= $(OW_WIN_SRC)" \
+	     "GUI_SRC_DIR= $(XVIEW_GUI_SCCS_SRC)" \
+	     "GUI_GET= $(XVIEW_GUI_SGET)" \
+	   win_src)
+
+# Since IBM can't stand a null target even if not used, we pass a dummy value to
+#  WIN_OBJ so errors and weird stuff (like trying to compile *.icon files will
+#  not happen.
+#MOTIF_src :
+#	( cd $(SRC_DIR)motif; $(MAKE) -f ../$(MAKEFILE)	\
+#	     "WIN_SRC= $(MOTIF_WIN_SRC) $(MOTIF_WIN_HDR)" \
+#	     "WIN_OBJ= graphics_win.o" \
+#	     "GUI_SRC_DIR= $(MOTIF_GUI_SCCS_SRC)" \
+#	     "GUI_GET= $(MOTIF_GUI_SGET)" \
+#		win_src)
+#
+MOTIF_src :
+	( cd $(SRC_DIR)motif; $(MAKE) -e -f ../$(MAKEFILE)	\
+	     "MOTIF_GUI_SRC_DIR= $(MOTIF_GUI_SCCS_SRC)" \
+	     "MOTIF_GUI_GET= $(MOTIF_GUI_SGET)"	\
+	     "WIN_SRC= $(MOTIF_WIN_SRC) $(MOTIF_WIN_HDR)" \
+	     "GUI_SRC_DIR= $(MOTIF_GUI_SCCS_SRC)" \
+	     "GUI_GET= $(MOTIF_GUI_SGET)" \
+	   win_src)
+#--- Recursive Targets ------------------------------
+
+src : $$(MAKEFILE) $(COMMON_SRC)
+	@echo Sources up to date...
+
+win_src : $$(MAKEFILE) $(WIN_SRC)
+	@echo Sources up to date...
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+#$(ENTER_SRC) $(ENTER_HDR) : $(JSCCS)$@
+#	$(ENTER_SGET) $@
+
+
+# $(ENTER_SRC) $(ENTER_HDR) : $$(ENTER_SRC_DIR)$$(@)
+$(COMMON_SRC) : $$(ENTER_SRC_DIR)$$(@)
+	$(ENTER_GET) $@
+
+$(WIN_SRC) : $$(GUI_SRC_DIR)$$(@)
+	$(GUI_GET) $@
+
+#---- special link command target is needed for SGI since one can not pass
+#     a MACRO=$$(@) construct, (syntax error)
+#
+$(WIN_LN_SRC) : $$(GUI_SRC_DIR)$$(@)
+	$(GUI_GET)$@ $@
+
+$(ASM_ICON) : $$(SVIEW_GUI_SRC_DIR)$$(@)
+	$(SVIEW_GUI_LN) $@
+
+#-------------------------------------
+$(MAKEFILE) :
+	$(ENTER_SGET) $@
+
+enter.o : asm.icon
+enter.o : enter.h
+enter.o : enter.c
+

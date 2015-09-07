@@ -1,0 +1,330 @@
+# @(#)makescripts 22.1 03/24/08 Copyright (c) 1991-2005 Agilent Technologies All Rights Reserved
+# 
+# Copyright (c) 1991-1996 Agilent Technologies All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Agilent Technologies and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#
+# makescripts  make file
+#
+# make -f makescripts
+# make -f makescripts SOLARIS
+# make -f makescripts WIN
+# make -f makescripts clean - 	remove all executables 
+
+MAKEFILE= makescripts
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir & vnmrdir are environment variables 
+# sccsdir -> SCCS directory 
+# vnmrdir -> vnmr directory 
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+VNMRDIR=$(vnmrdir)
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+SRC_DIR=$(SRCDIR)/sysscripts/
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+CFLAGS= -O
+CPPFLAGS=
+LDFLAGS=
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+
+
+SCRIPTS_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----
+SCRIPTS_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)scripts/SCCS/s.
+
+
+#--- Link Commands for Sources Needed in the Working Directory. -------
+SCRIPTS_LN = ln -s $(SCRIPTS_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed In True Source Dir.  -------
+SCRIPTS_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)scripts get
+
+#----  default source extraction to links -------
+SCRIPTS_GET= $(SCRIPTS_LN)
+
+#------------------------------------------------------------------------
+#---- standalone scripts ----
+#------------------------------------------------------------------------
+COMMON_SRC=			\
+		Vn.sh		\
+		S99pgsql.sh	\
+		adddevices.sh	\
+		arAuditing.sh	\
+		at.sh		\
+		atrecord.sh	\
+		atregbuilt.sh	\
+		autoloadcd.sh	\
+		booleanpreen.sh	\
+		bootr.sh	\
+		calcramp.sh	\
+		change_hd.sh	\
+		checkspace.sh	\
+		chksudocmd.sh	\
+		combiplate.sh	\
+		convertgeom.sh	\
+		create_pgsql_user.sh	\
+		cryoclient.sh	\
+		dbsetup.sh	\
+		dbupdate.sh	\
+		enter.sh	\
+		finish_load.sh	\
+		fixpsg.sh	\
+		getXrecon.sh	\
+		getgroup.sh	\
+		getoptions.sh	\
+		gsetacq.sh	\
+		getuserinfo.sh	\
+		ins_vnmr.sh	\
+		installdecomp.sh	\
+		isetacq.sh	\
+		lsetacq.sh	\
+		lnvsetacq.sh	\
+                lnvsetacq2.sh	\
+                restore3x.sh    \
+		slimSetacq.sh   \
+		isjpsgup.sh	\
+		i_vnmr1.sh	\
+		i_vnmr3.sh	\
+		i_vnmr4.sh	\
+		jsetacq.sh	\
+		jdeluser.sh	\
+		jtestgroup.sh	\
+		jtestuser.sh	\
+		jvnmruser.sh	\
+		S99scanlog.sh	\
+		scanlog.sh	\
+		setupscanlog.sh	\
+		kill_insvnmr.sh	\
+		killft3d.sh	\
+		killjpsg.sh	\
+		killstat.sh	\
+		loadkernel.sh	\
+		loadvnmr.sh	\
+		loadcd.sh	\
+		loadcd2.sh	\
+		loginpassword.sh	\
+		loginpasswordcheck.sh	\
+		loginpasswordVJ.sh	\
+		makeuser.sh	\
+		makesuacqproc.sh \
+		makevnmr1.sh	\
+		makevnmr2.sh	\
+		managedb.sh	\
+		managelnxdev.sh	\
+		mkvnmrjadmin.sh	\
+		nvsetacq.sh	\
+		patchinstall.sh	\
+		patchremove.sh	\
+		p_install.sh	\
+		p_remove.sh	\
+		protopub.sh	\
+		psggen.sh	\
+		rc.vnmr.sh	\
+		readbrutape.sh	\
+		readme.txt	\
+		remoteloadbootstrap.sh \
+		roadkill.sh	\
+		rmipcs.sh	\
+		rvnmrj.sh	\
+		rvnmrx.sh	\
+		seqgen.sh	\
+		setGgrp.sh	\
+		setacq.sh	\
+		setether.sh	\
+		setgem.sh	\
+		setimg.sh	\
+		filecheck.sh	\
+		setnoether.sh	\
+		setuni.sh	\
+		setuserpsg.sh	\
+		solpatchupdate.sh	\
+		solsetup.sh	\
+		spingen.sh	\
+		status.sh	\
+		sudoins.sh	\
+		tryquitjpsg.sh	\
+		updateuser.sh	\
+		execkillacqproc.sh	\
+		auconvert.sh	\
+		aureduce.sh	\
+		auevent.sh	\
+		auinit.sh	\
+		aupurge.sh	\
+		aupw.sh	\
+		auredt.sh	\
+		makeP11checksums.sh	\
+		killau.sh	\
+		killch.sh	\
+		ckDaemon.sh	\
+		vbg.sh		\
+		vjhelp.sh	\
+		volstart.sh	\
+                volstartpatch.sh \
+		vnmr.sh		\
+		vnmr2sc.sh	\
+		vnmrj.sh	\
+		vnmrj.img.sh	\
+		vnmredit.sh	\
+		vnmr_accounting.sh	\
+		vnmr_cdump.sh	\
+		vnmr_color.sh	\
+		vnmr_explib.sh	\
+		vnmr_gs.sh	\
+		vnmr_ihelp.sh	\
+		vnmr_jadmin.sh	\
+		vnmr_jplot.sh	\
+		vnmr_gilson.sh	\
+		vnmr_setgauss.sh \
+		vnmr_showfit.sh	\
+		vnmr_singleline.sh \
+		vnmr_spinner.sh \
+		vnmr_temp.sh \
+		vnmr_textedit.sh \
+		vnmr_uname.sh	\
+		vnmr_usemark.sh	\
+		vnmr_vi.sh	\
+		vnmrlp.sh	\
+		vnmrplot.sh	\
+		vnmrprint.sh	\
+		vnmrsetup.sh	\
+		vnmrshell.sh	\
+		vwAutoScript.sh	\
+		vwScript.sh	\
+		vwScriptPPC.sh	\
+		vxrTool.sh	\
+		wtgen.sh	\
+		xseqpreen.sh	\
+		dicom_store.sh	\
+		dicom_ping.sh	\
+		config_768AS.sh	\
+		setup_768AS.sh	\
+		temp_768AS.sh	\
+		stat_768AS.sh	\
+		designer_768AS.sh \
+		robocmd_768AS.sh  \
+		sensor_768AS.sh   \
+		gilson_768AS.sh   \
+		toolbar_768AS.sh  \
+		robotester_768AS.sh  \
+		protune.sh
+
+SUNOS_SRC=			\
+		set68881.sh	\
+		setfloat.sh	\
+		setfpa.sh	\
+		setsparc.sh	\
+		termcap
+
+SOLARIS_SRC=
+
+WIN_SRC=			\
+		groupadd.sh	\
+		isAdmin.sh	\
+		isroot.sh	\
+		useradd.sh	\
+		usermod.sh	\
+		userdel.sh	
+
+WIN_BAT_SRC=			\
+		rundbsetup.bat	\
+		runmanagedb.bat	\
+		rundbdata.bat	\
+		runasscript.vbs \
+		nopwdexp.vbs	 \
+		uninstallvj.bat
+		
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(COMMON_SRC) $(SUNOS_SRC) $(SOLARIS_SRC) $(WIN_SRC) $(WIN_BAT_SRC)
+
+COMMON_EXEC= $(COMMON_SRC:.sh=)
+SUNOS_EXEC= $(SUNOS_SRC:.sh=)
+SOLARIS_EXEC= $(SOLARIS_SRC:.sh=)
+WIN_EXEC= $(WIN_SRC:.sh=)
+WIN_BAT_EXEC= $(WIN_BAT_SRC)
+#LINTFILES= $(ALLSRC:.c=.ln)
+LIBS= -lm
+
+#--- PAID Targets ------------------------------------------
+
+std : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE) \
+	  "TARGET_ARCH=-D`arch` -D`mach`" \
+	  $(COMMON_EXEC) $(SUNOS_EXEC)
+	@echo "NMR_ID Scripts complete ------------------------------------"
+
+AIX : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE) \
+	  "TARGET_ARCH=-DAIX" \
+	  $(COMMON_EXEC) $(SUNOS_EXEC)
+	@echo "NMR_ID Scripts complete ------------------------------------"
+
+IRIX : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE) \
+	  "TARGET_ARCH=-DIRIX" \
+	  $(COMMON_EXEC) $(SUNOS_EXEC)
+	@echo "NMR_ID Scripts complete ------------------------------------"
+
+SOLARIS : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE) \
+	  $(COMMON_EXEC) $(SOLARIS_EXEC)
+	@echo "NMR_ID Scripts complete ------------------------------------"
+
+WINDOWS : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE) \
+	  $(COMMON_EXEC) $(WIN_EXEC) $(WIN_BAT_EXEC)
+	chmod 755 $(WIN_BAT_EXEC)
+	@echo "NMR_ID Scripts complete ------------------------------------"
+
+dbx :
+	@echo "NMR_ID DBX Scripts not supported ---------------------------"
+
+prof :
+	@echo "NMR_ID profiling Scripts not supported ---------------------"
+
+fpa :
+	@echo "NMR_ID fpa Scripts not supported ---------------------------"
+
+
+clean :
+	rm -f $(COMMON_EXEC) $(SUNOS_EXEC) $(SOLARIS_EXEC) $(WIN_EXEC) $(WIN_BAT_EXEC)
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+	     "SCRIPTS_SRC_DIR= $(SCRIPTS_SCCS_SRC)" \
+	     "SCRIPTS_GET= $(SCRIPTS_SGET)" \
+	      src )
+
+#---- Recursive Targets ------------------------------------------------
+
+src : $$(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(SCRIPTS_SGET) $@
+	( cd $(SRC_DIR); $(SCRIPTS_SGET) $@ )
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(COMMON_SRC) $(SUNOS_SRC) $(SOLARIS_SRC) $(WIN_SRC) : $$(SCRIPTS_SRC_DIR)$$(@)
+	$(SCRIPTS_GET) $@
+
+$(WIN_BAT_SRC) : $$(SCRIPTS_SRC_DIR)$$(@)
+	$(SCRIPTS_SGET) $@ 

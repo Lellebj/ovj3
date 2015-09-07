@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template macro="RQaction" visiblecolumns="4">
+  <column header="name" class="treetable" width="200"/>
+  <column header="group" class="string" style="Bold" size="14" width="60"/>
+  <column header="display" class="check" width="46"/>
+  <column header="images" class="string" size="14" width="60"/>
+  <column header="frames" class="string" size="14" width="60"/>
+  <column header="sort" class="check" width="80"/>
+  <column header="slices" class="string" size="14" width="80"/>
+  <column header="echoes" class="string" size="14" width="80"/>
+  <column header="array" class="string" size="14" width="80"/>
+  <column header="ns" class="string" color="blue" size="14" width="80"/>
+  <column header="ne" class="string" color="blue" size="14" width="80"/>
+  <column header="na" class="string" color="blue" size="14" width="80"/>
+</template>

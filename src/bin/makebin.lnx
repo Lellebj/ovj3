@@ -1,0 +1,155 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+#  To add a new standalone program, add its name to STANDALONE_SRC
+#
+#  To add a new program that uses a makefile, add its name to
+#  MAKEFILE_PRG
+#
+
+MAKEFILE= makebin.lnx
+
+#-- Normal operational compile flags
+CFLAGS= -O2 -Wall
+CPPFLAGS= -O2 -Wall -m32
+LDFLAGS=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) -c
+LINK.c= $(CC) $(CPPFLAGS) $(LDFLAGS) 
+ 
+# sccsdir is an environment variable
+SCCSDIR=$(sccsdir)
+
+PROJCAT=
+
+#--- SCCS Sources ----
+BIN_SCCS_SRC = $(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+BIN_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get
+
+MAKE = make
+
+#----  programs stored as executables in SCCS  -------
+STANDALONE_EXEC = convert libMagick.so	\
+		  expect
+
+# These all compile under LINUX. It is not clear that all are needed.
+STANDALONE_SRC_NOT_CLEAR =		\
+		eatchar.c	\
+		eccsend.c	\
+		fm_shuffle.c	\
+		getchoices.c	\
+		gin_setup.c	\
+		makeprintcap.c	\
+		psfilter.c	\
+		rmsAddData.c	\
+		unix_vxr.c	\
+		vxr_unix.c
+
+# These are needed by LINUX
+STANDALONE_SRC =		\
+		convertbru.c	\
+		expfit.c	\
+		fileowner.c	\
+		findLinks.c	\
+		expandphase.c	\
+		fitspec.c	\
+		loginvjpassword.c	\
+		PboxAdapter.c   \
+		readsctables.c	\
+		setGifAspect.c	\
+		spins.c
+
+STANDALONE_PRG = $(STANDALONE_SRC:.c=)
+
+ACQ_STANDALONE_SRC =		\
+		cptoconpar.c	\
+		startmekillme.c
+
+ACQ_STANDALONE_PRG = $(ACQ_STANDALONE_SRC:.c=)
+
+MAKEFILE_LIST_NOT_CLEAR =	\
+		makeejectthecdrom	\
+		makedecomp	\
+		makesend2vnmr	\
+		makefm_calshim	\
+		makeeccTool	\
+		makevxrTool	\
+		makeportrait	\
+		makexdcvt	\
+		makeeditdevices \
+		makebanner	\
+		makecpos_cvt	\
+		makelogplane	\
+		makegconfig	\
+		makevconfig	\
+		makevnmr_confirmer	\
+		makeinssol	\
+		makeshowconsole	\
+		makeihwinfo	\
+                makeimcalc	\
+                makeimfit	\
+                makefontselect	\
+                makeconvertcmx	\
+		makeecc		\
+		makekillroboproc
+
+#
+# nvlocki was removed from MAKEFILE_PRG. It is compiled separately
+# for NDDS 4.1 and 3.1 compatibility
+#
+MAKEFILE_PRG =	\
+		deencode	\
+		dps_ps_gen	\
+		diffparams	\
+		diffshims	\
+		imagemath	\
+		p11		\
+		pbox		\
+		pulsetool	\
+		gshim		\
+                tabc		\
+		usrwt
+
+MAKEFILE_PRG_LNX = $(patsubst %,make%.lnx,$(MAKEFILE_PRG))
+
+ACQ_MAKEFILE_PRG =	\
+                Probe_edit	\
+		showconsole	\
+		send2vnmr	\
+		killroboproc
+
+ACQ_MAKEFILE_PRG_LNX = $(patsubst %,make%.lnx,$(ACQ_MAKEFILE_PRG))
+
+LINUX std : Source $(STANDALONE_PRG) $(ACQ_STANDALONE_PRG) $(MAKEFILE_PRG) $(ACQ_MAKEFILE_PRG)
+	@echo "makebin Complete."
+
+MACOS : MacSource $(STANDALONE_PRG) $(MAKEFILE_PRG)
+	@echo "makebin Complete."
+
+Source : $(MAKEFILE) $(STANDALONE_SRC) $(ACQ_STANDALONE_SRC) $(MAKEFILE_PRG_LNX) $(ACQ_MAKEFILE_PRG_LNX)
+	@echo Sources up to date...
+
+MacSource : $(MAKEFILE) $(STANDALONE_SRC) $(MAKEFILE_PRG_LNX)
+	@echo Sources up to date...
+
+.PHONY: $(MAKEFILE_PRG)
+
+$(STANDALONE_PRG) $(ACQ_STANDALONE_PRG): %:  %.c
+	$(LINK.c) -o $@ $< -lm
+
+$(MAKEFILE_PRG) $(ACQ_MAKEFILE_PRG):
+	make -e -f  make$@.lnx LINUX
+
+
+$(MAKEFILE) \
+$(MAKEFILE_PRG_LNX) \
+$(ACQ_MAKEFILE_PRG_LNX) \
+$(ACQ_STANDALONE_SRC) \
+$(STANDALONE_SRC): %:$(BIN_SCCS_SRC)%
+	$(BIN_SGET) $@

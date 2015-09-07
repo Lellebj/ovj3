@@ -1,0 +1,41 @@
+import os
+
+# targets
+fdf2niftiTarget = 'fdf2nifti'
+
+# we need to specify an absolute path so this SConstruct file
+# can be called from any other SConstruct file
+cwd = os.getcwd()
+
+gslLibPath = os.path.join(cwd, os.pardir, os.pardir, 
+               '3rdParty','supportLibs','gsllibs')
+
+# source files
+fdf2niftiFileList = ['main_fdf2nifti.c']
+
+# build environment
+fdf2niftiEnv = Environment(CCFLAGS = '-O2 -Wall',
+                  LINKFLAGS = '-Wl,-rpath,/vnmr/lib ',
+                  LIBS    = ['gsl',
+                             'gslcblas',
+                             'm'])
+
+
+# actual builds
+fdf2nifti = fdf2niftiEnv.Program(target = fdf2niftiTarget,
+                       source = [fdf2niftiFileList],
+                       LIBPATH = [gslLibPath],
+                       LIBS   = ['gsl',
+				'gslcblas',
+				'm'])
+
+# define with absolute path where built files will be copied
+vnmrInstallPath = os.path.join(cwd, os.pardir, os.pardir, os.pardir, 'vnmr', 'bin')
+
+# make sure the path(s) exist
+if not os.path.exists(vnmrInstallPath):
+   os.makedirs(vnmrInstallPath)
+
+fdf2niftiEnv.AddPostAction(fdf2nifti,
+                      Action(Copy(vnmrInstallPath, os.path.join(cwd, fdf2niftiTarget))))
+

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="advanced" element="elements">
+      <selfilemenu size="150 24" style="PlainText" bg="default"
+        label="Make a selection"
+        vq="plotter" vc="plotter='$VALUE'" set="$VALUE=plotter"
+        file="$VALUE=userdir+'/persistence/plotters'"
+        />
+</template>
+

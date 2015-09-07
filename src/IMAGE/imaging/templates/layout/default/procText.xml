@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template name="procText" element="pages" type="processing" >
+  <group size="776 256" style="Heading2" label="Text Output"
+    bg="transparent"
+    border="None"
+    side="Top"
+    justify="Right"
+    tab="yes"
+    reference="procText"
+    useref="no"
+    expanded="yes"
+    >
+    <button loc="624 8" size="112 32" style="Heading1"
+      label="Clear Text"
+      vc="clear"
+      />
+    <textfile loc="8 8" size="600 248" style="StdPar"
+      vq="alphatext"
+      set="alphatextname:$VALUE"
+      editable="no"
+      wrap="yes"
+      />
+  </group>
+</template>

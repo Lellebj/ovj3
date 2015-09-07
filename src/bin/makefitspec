@@ -1,0 +1,186 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#
+# fitspec make file		Author:  Greg Brissey  9/21/88
+#
+#
+# make -f makefitspec
+# make -f makefitspec fpa,  creates Floating Point Accelerator fitspec
+#
+
+MAKEFILE= makefitspec
+
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+VNMRDIR=$(vnmrdir)
+
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+#SRC_DIR=../
+SRC_DIR=$(SRCDIR)/sysbin/
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+CFLAGS= -O -fsingle
+CPPFLAGS=
+LDFLAGS=
+ASMCPP.s= /lib/cpp -P $(CPPFLAGS) $(TARGET_ARCH)
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+ 
+BIN_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----  
+BIN_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+BIN_LN = ln -s $(BIN_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+BIN_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get
+ 
+#----  default source extraction to links -------
+BIN_GET= $(BIN_LN)
+
+LIBS = -ll -lm
+
+#------------------------------------------------------------------------
+#--- fitspec source 
+#------------------------------------------------------------------------
+FITSPEC_SRC= 			\
+		fitspec.c
+
+FITSPEC_OBJ= $(FITSPEC_SRC:.c=.o)
+
+#---  Header files needed by fitspec -------
+FITSPEC_HDR=
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(FITSPEC_SRC) $(FITSPEC_HDR)
+ 
+#LINTFILES= $(ALLSRC:.c=.ln)
+
+#--- make Targets ----------------------------------------------
+std : $$(MAKEFILE) 
+	@( $(MAKE) -ef $(MAKEFILE) "`uname -m`" ; )
+
+sun4u sun4 sun4c sun4m sparc : fpc
+	@echo "sun4 fitspec Complete"
+
+sun3 sun3x : fpc fpa
+	@echo "sun3 fpc & fpa fitspec Complete"
+	
+# 000261453100 is return by rdibm when uname -m invoked 
+000261453100 : AIX
+
+all : $$(MAKEFILE) Source  fpc fpa
+
+AIX : $$(MAKEFILE) Source  fpc_aix
+
+IRIX : $$(MAKEFILE) Source  fpc_irix
+
+SOLARIS: $$(MAKEFILE) Source
+	@make -f $(MAKEFILE) fitspec
+	@echo fitspec for Solaris complete
+
+fpc : $$(MAKEFILE) Source
+	@( $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	   fitspec; )
+	@echo fitspec complete
+
+fpc_aix : $$(MAKEFILE) Source
+	@( $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-DSUN" \
+	"CFLAGS=-O -DAIX" \
+	   fitspec; )
+	@echo fitspec complete
+
+fpc_irix : $$(MAKEFILE) Source
+	@( $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-DIRIX" \
+	"CFLAGS=-cckr -O" \
+	   fitspec; )
+	@echo fitspec complete
+
+dbx : Source
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 fitspec_dbx; )
+
+prof: Source
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -pg" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	  fitspec_p; )
+
+fpa : $$(MAKEFILE) Source
+	@(export FLOAT_OPTION; FLOAT_OPTION=ffpa; \
+	$(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -ffpa -Dfpa -DFPA" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+ 	  fitspec_fpa)
+	@echo fitspec_fpa complete
+
+dbxfpa : Source
+	(export FLOAT_OPTION; FLOAT_OPTION=ffpa; \
+	$(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g -ffpa -Dfpa -DFPA" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	fitspec_fpadbx)
+
+proffpa: Source
+	(export FLOAT_OPTION; FLOAT_OPTION=ffpa; \
+	$(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -pg -ffpa -Dfpa -DFPA" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	fitspec_fpap)
+
+
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	@( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+             "BIN_SRC_DIR= $(BIN_SCCS_SRC)"   \
+             "BIN_GET= $(BIN_SGET)" 		\
+               src)
+ 
+#--- Recursive Targets ------------------------------
+
+src : $$(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+
+fitspec fitspec_fpa fitspec_dbx fitspec_fpadbx \
+fitspec_p fitspec_fpap :  $$(FITSPEC_OBJ)
+	-(umask 2; \
+	$(LINK.c) -o $@ $(FITSPEC_OBJ) $(LIBS)  )
+
+rmobj :
+	rm -f fitspec.o
+
+#--- Object Targets ---------------------------
+
+fitspec.o	: $(@:.o=.c)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) :
+	$(BIN_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(FITSPEC_SRC) $(FITSPEC_HDR) : $$(BIN_SRC_DIR)$$(@)
+	$(BIN_GET) $@
+

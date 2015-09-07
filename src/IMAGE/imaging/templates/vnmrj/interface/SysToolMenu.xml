@@ -1,0 +1,37 @@
+<mainmenu>
+<!--
+ !
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+    <button  style="Heading2"
+      vc="vnmrjcmd('LOC protocolBrowser')"
+      enabled="yes"
+      decor1="No"
+      fg="Heading3"
+      icon="protocolBrowse.gif"
+      toolTip="Protocol Browser"
+      />
+    <button  font="Heading3"
+      style="Heading3"
+      vc="M@cancel"
+      enabled="yes"
+      decor1="No"
+      fg="Heading3"
+      icon="forbidden_24.gif"
+      toolTip="Cancel Command"
+      />
+    <button  font="Heading3"
+      style="Heading3"
+      vc="cppause('stop')"
+      enabled="yes"
+      decor1="No"
+      fg="Heading3"
+      icon="Stop_24.gif"
+      toolTip="Stop Acquisition"
+      />
+</mainmenu>

@@ -1,0 +1,79 @@
+# Copyright (c) Varian Assoc., Inc.  All Rights Reserved.
+.KEEP_STATE:
+
+# Directories for SCCS
+SCCS_DIR=$(sccsdir)/ib
+
+LIBREV = 1.1
+IB_REV=
+
+CHDR =	f2c.h
+
+CSRC =	a7sst.c \
+	c7vfn.c \
+	d7tpr.c \
+	d7upd.c \
+	f7hes.c \
+	g7lit.c \
+	g7qts.c \
+	i1mach.c \
+	i7mdcn.c \
+	itsum.c \
+	ivset.c \
+	l7itv.c \
+	l7ivm.c \
+	l7mst.c \
+	l7nvr.c \
+	l7sqr.c \
+	l7srt.c \
+	l7svn.c \
+	l7svx.c \
+	l7tsq.c \
+	l7tvm.c \
+	l7vml.c \
+	n2cvp.c \
+	n2f.c \
+	n2g.c \
+	n2lrd.c \
+	n2rdp.c \
+	o7prd.c \
+	parck.c \
+	q7apl.c \
+	q7rad.c \
+	r1mach.c \
+	r7mdc.c \
+	rldst.c \
+	rn2g.c \
+	s7lup.c \
+	s7lvm.c \
+	stopx.c \
+	v2axy.c \
+	v2nrm.c \
+	v7cpy.c \
+	v7dfl.c \
+	v7scl.c \
+	v7scp.c
+
+COBJ = $(CSRC:.c=.o)
+
+OPT=-O
+debug := OPT=-g
+
+default debug: libport3.a libport3.so
+
+libport3.a: $(COBJ)
+	ar -r $@ `lorder $(COBJ) | tsort`
+
+libport3.so: $(COBJ)
+	ld -G -o $@.$(LIBREV) $(COBJ)
+	rm -f $@
+	ln -s $@.$(LIBREV) $@
+
+$(COBJ) : $$(@:.o=.c) $(CHDR)
+	$(COMPILE.c) $(OPT) $<
+
+# SCCS extraction.
+$(CSRC) $(CHDR) : \
+	$(SCCS_DIR)/SCCS/s.$$@
+	sccs -d $(SCCS_DIR) get $(IB_REV) $@
+

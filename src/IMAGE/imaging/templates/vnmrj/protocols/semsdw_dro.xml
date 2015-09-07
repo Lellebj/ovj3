@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="semsdw_dro" author="varian" investigator=""
+    application="imaging" rfcoil="main" anatomy="" time_created="20071120T112235"
+    parfile="semsdw_dro" apptype="im2D" scans="semsdw_dro" seqfil="semsdw">
+  <protocol title="semsdw_dro" type="protocol">
+    <action  type="LIB" status="Ready" title="semsdw_dro" exp="semsdw_dro" lock="off" time="2 min, 8 sec" macro="sqexp('semsdw_dro')" data="" />
+  </protocol>
+</template>

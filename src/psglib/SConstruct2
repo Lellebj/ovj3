@@ -1,0 +1,204 @@
+import os
+import sys
+import shutil
+
+# MAC -> darwin, Linux -> linux2
+platform = sys.platform
+
+# we need to specify an absolute path so this SConstruct file
+# can be called from any other SConstruct file
+cwd = os.getcwd()
+
+# library dependancies
+ncommPath = os.path.join(cwd, os.pardir, 'ncomm')
+#SConscript(os.path.join(ncommPath, 'SConstruct'))
+cmd='cd ../ncomm;scons'
+os.system(cmd)
+
+# dependancies
+binPath = os.path.join(cwd, os.pardir, 'bin')
+#SConscript(os.path.join(binPath, 'SConstruct'))
+cmd='cd ../bin;scons -f SConstruct.dps_ps_gen'
+os.system(cmd)
+
+psgPath = os.path.join(cwd, os.pardir, 'psg')
+
+nvpsgPath = os.path.join(cwd, os.pardir, 'nvpsg')
+#SConscript(os.path.join(nvpsgPath, 'SConstruct'))
+cmd='cd ../nvpsg;scons'
+os.system(cmd)
+
+vnmrPath   = os.path.join(cwd, os.pardir, 'vnmr')
+
+acodeHeaderPath = os.path.join(cwd, os.pardir,'xracq')
+
+#header files  to create symlink  to  psg
+headerFiles  =  [ 'oopc.h',
+                  'abort.h',
+                  'power.h',
+                  'apdelay.h',
+                  'wetfuncs.h',
+                  'Pbox_psg.h',
+                  'prescan.h']
+
+
+#function to create symlink
+def symlink(src, dest):
+   if not os.path.exists(dest):
+      try:
+         os.symlink(src, dest)
+      except:
+         print "Can't link %s." % src
+
+#create symlink for the header file from psg to xrach
+symlink(os.path.join(acodeHeaderPath,'acodes.h'),os.path.join(psgPath,'acodes.h'))
+
+#create symlink for the header file from psg to nvpsg 
+for i in range(len(headerFiles)):
+        symlink(os.path.join(psgPath,headerFiles[i]),os.path.join(nvpsgPath,headerFiles[i]))
+
+
+symlink(os.path.join(nvpsgPath,'chempack.h'),os.path.join(psgPath,'chempack.h'))
+
+
+# build environments
+seqLibEnv = Environment(CCFLAGS    = '-O -m32',
+                        CPPDEFINES = ['LINUX', 'NESSIE'],
+                        LINKFLAGS  = '-O -m32 -Wl,-rpath,/vnmr/lib',
+                        CPPPATH    = [psgPath])
+                                      
+nvseqLibEnv = Environment(CPPFLAGS   = '-O -m32 -Wall -Wno-return-type -Wno-implicit-int -Wno-unused-variable -Wno-switch -Wno-format-security',
+                          CPPDEFINES = ['LINUX', 'NESSIE', 'NVPSG', 'codeint=int', 'codelong=int'],
+                          LINKFLAGS  = '-O -m32 -Wl,-rpath,/vnmr/lib',
+                          LINK       = 'g++',
+                          CPPPATH    = [nvpsgPath,psgPath])
+
+# custom builder for dps_ps_gen
+nvbld = Builder(action = os.path.join(cwd, os.pardir, 'bin', 'dps_ps_gen') + \
+                       ' -DDPS -DNVPSG -I$CPPPATH $SOURCE  \" \" 2')
+bld = Builder(action = os.path.join(cwd, os.pardir, 'bin', 'dps_ps_gen') + \
+                       ' -DDPS -I$CPPPATH $SOURCE  \" \" 2')
+
+# append builder to both environments
+seqLibEnv.Append(BUILDERS = {'DpsPsGen' : bld})
+nvseqLibEnv.Append(BUILDERS = {'DpsPsGen' : nvbld})
+
+
+nvseqlibPath =  os.path.join(cwd,'nvseqlib')
+Execute('rm -rf nvseqlib; mkdir nvseqlib')
+Execute('cp  *.c ' + nvseqlibPath)
+Execute('cp ' + os.path.join(cwd,os.pardir,'nvpsglib') + '/*.c '+ nvseqlibPath)
+Execute('cp -f SConstruct.vnmrs ' + nvseqlibPath)
+
+bioseqlibPath =  os.path.join(cwd,'bioseqlib')
+if os.path.exists(bioseqlibPath):
+   Execute('rm -rf ' + bioseqlibPath)
+#Execute('cp -rf ' + os.path.join(cwd,os.pardir,'biopack','psglib') + ' ' + bioseqlibPath)
+#Execute('cp -f SConstruct.vnmrs ' + bioseqlibPath)
+
+eseqlibPath =  os.path.join(cwd,'eseqlib')
+if os.path.exists(eseqlibPath):
+   Execute('rm -rf ' + eseqlibPath)
+#Execute('cp -rf ' + os.path.join(cwd,os.pardir,'etest','psglib') + ' ' + eseqlibPath)
+#Execute('cp -f SConstruct.vnmrs ' + eseqlibPath)
+
+solidsseqlibPath =  os.path.join(cwd,'solidsseqlib')
+if os.path.exists(solidsseqlibPath):
+   Execute('rm -rf ' + solidsseqlibPath)
+#Execute('cp -rf ' + os.path.join(cwd,os.pardir,'solidspack','psglib') + ' ' + solidsseqlibPath)
+#Execute('cp -f SConstruct.vnmrs ' + solidsseqlibPath)
+
+biosolidsseqlibPath =  os.path.join(cwd,'biosolidsseqlib')
+if os.path.exists(biosolidsseqlibPath):
+   Execute('rm -rf ' + biosolidsseqlibPath)
+#Execute('cp -rf ' + os.path.join(cwd,os.pardir,'biosolidspack','psglib') + ' ' + biosolidsseqlibPath)
+#Execute('cp -f SConstruct.vnmrs ' + biosolidsseqlibPath)
+
+
+# nvseqlib build      
+seqPath=os.path.join(cwd,os.pardir,os.pardir,os.pardir,'console','ddr')
+SConscript('nvseqlib/SConstruct.vnmrs',exports = 'nvseqLibEnv psgPath nvpsgPath vnmrPath ncommPath seqPath')
+
+dosyseqlibPath =  os.path.join(cwd,'dosyseqlib')
+Execute('rm -rf dosyseqlib; mkdir dosyseqlib')
+Execute('cp ' + os.path.join(cwd,os.pardir,'dosy','psglib') + '/*.c '+ dosyseqlibPath)
+Execute('cp -f SConstruct.vnmrs ' + dosyseqlibPath)
+seqPath=os.path.join(cwd,os.pardir,os.pardir,os.pardir,'console','ddr')
+SConscript('nvseqlib/SConstruct.vnmrs',exports = 'nvseqLibEnv psgPath nvpsgPath vnmrPath ncommPath seqPath')
+
+# bio build      
+#SConscript('bioseqlib/SConstruct.biobuild',exports = 'nvseqLibEnv nvpsgPath vnmrPath ncommPath')
+
+# eautotest build      
+#SConscript('eseqlib/SConstruct.ebuild',exports = 'nvseqLibEnv nvpsgPath vnmrPath ncommPath')
+
+# solids build      
+#SConscript('solidsseqlib/SConstruct.solidsbuild',exports = 'nvseqLibEnv nvpsgPath vnmrPath ncommPath')
+
+# biosolids build      
+#SConscript('biosolidsseqlib/SConstruct.biosolidsbuild',exports = 'nvseqLibEnv nvpsgPath vnmrPath ncommPath')
+vpseqlibPath =  os.path.join(cwd,'vpseqlib')
+Execute('rm -rf  vpseqlib; mkdir vpseqlib')
+Execute('cp ' + os.path.join(cwd,os.pardir,'veripulse','psglib') + '/*.c '+ vpseqlibPath)
+Execute('cp -f SConstruct.vnmrs ' + vpseqlibPath)
+seqPath=os.path.join(cwd,os.pardir,os.pardir,os.pardir,'console','ddr','veripulse')
+SConscript('vpseqlib/SConstruct.vnmrs',exports = 'nvseqLibEnv psgPath nvpsgPath vnmrPath ncommPath seqPath')
+
+#seqlib build
+if ( ('darwin' not in platform) and ('interix' not in platform) ):
+#    SConscript(os.path.join(psgPath, 'SConstruct'))
+    cmd='cd ../psg;scons'
+    os.system(cmd)
+
+    iseqlibPath =  os.path.join(cwd,'iseqlib')
+    Execute('rm -rf  iseqlib; mkdir iseqlib')
+    Execute('cp  *.c ' + iseqlibPath)
+    Execute('cp ' + os.path.join(cwd,os.pardir,'ipsglib') + '/*.c '+ iseqlibPath)
+    Execute('cp -f SConstruct.inova ' + iseqlibPath)
+    seqPath=os.path.join(cwd,os.pardir,os.pardir,os.pardir,'console','inova')
+    SConscript('iseqlib/SConstruct.inova',exports = 'seqLibEnv psgPath vnmrPath ncommPath seqPath')
+
+    idosyseqlibPath =  os.path.join(cwd,'idosyseqlib')
+    Execute('rm -rf idosyseqlib; mkdir idosyseqlib')
+    Execute('cp ' + os.path.join(cwd,os.pardir,'dosy','psglib') + '/*.c '+ idosyseqlibPath)
+    Execute('cp -f SConstruct.inova ' + idosyseqlibPath)
+    seqPath=os.path.join(cwd,os.pardir,os.pardir,os.pardir,'console','inova')
+    SConscript('idosyseqlib/SConstruct.inova',exports = 'seqLibEnv psgPath vnmrPath ncommPath seqPath')
+
+    isolidsseqlibPath =  os.path.join(cwd,'isolidsseqlib')
+    if os.path.exists(isolidsseqlibPath):
+       Execute('rm -rf ' + isolidsseqlibPath)
+#    Execute('cp -rf ' + os.path.join(cwd,os.pardir,'solidspack','psglib') + ' ' + isolidsseqlibPath)
+#    Execute('cp -f SConstruct.isolidsbuild ' + isolidsseqlibPath)
+
+    ibioseqlibPath =  os.path.join(cwd,'ibioseqlib')
+    if os.path.exists(ibioseqlibPath):
+       Execute('rm -rf ' + ibioseqlibPath)
+#    Execute('cp -rf ' + os.path.join(cwd,os.pardir,'biopack','psglib') + ' ' + ibioseqlibPath)
+#    Execute('rm -f ' + ibioseqlibPath + '/gnoesyNfhsqc3919.c')
+#    Execute('cp -f SConstruct.ibiobuild ' + ibioseqlibPath)
+
+#     ibio2seqlibPath =  os.path.join(cwd,'ibio2seqlib')
+#     if os.path.exists(ibio2seqlibPath):
+#        Execute('rm -rf ' + ibio2seqlibPath)
+#     Execute('cp -rf ' + os.path.join(cwd,os.pardir,'biopack_patent','psglib') + ' ' + ibio2seqlibPath)
+#     Execute('cp -f SConstruct.ibio2build ' + ibio2seqlibPath)
+
+    serviceseqlibPath =  os.path.join(cwd,'serviceseqlib')
+    if os.path.exists(serviceseqlibPath):
+       Execute('rm -rf ' + serviceseqlibPath)
+#    Execute('cp -rf ' + os.path.join(cwd,os.pardir,'servicetools','psglib') + ' ' + serviceseqlibPath)
+#    Execute('cp -f SConstruct.servicebuild ' + serviceseqlibPath)
+#    SConscript('serviceseqlib/SConstruct.servicebuild',exports = 'nvseqLibEnv nvpsgPath vnmrPath ncommPath')
+
+    ivpseqlibPath =  os.path.join(cwd,'ivpseqlib')
+    Execute('rm -rf  ivpseqlib; mkdir ivpseqlib')
+    Execute('cp ' + os.path.join(cwd,os.pardir,'veripulse','psglib') + '/*.c '+ ivpseqlibPath)
+    Execute('cp -f SConstruct.inova ' + ivpseqlibPath)
+    seqPath=os.path.join(cwd,os.pardir,os.pardir,os.pardir,'console','inova','veripulse')
+    SConscript('ivpseqlib/SConstruct.inova',exports = 'seqLibEnv psgPath vnmrPath ncommPath seqPath')
+
+#    SConscript('icpseqlib/SConstruct.icpbuild',exports = 'seqLibEnv psgPath vnmrPath ncommPath')
+#    SConscript('isolidsseqlib/SConstruct.isolidsbuild',exports = 'seqLibEnv psgPath vnmrPath ncommPath')
+#    SConscript('ibioseqlib/SConstruct.ibiobuild',exports = 'seqLibEnv psgPath vnmrPath ncommPath')
+

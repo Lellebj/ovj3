@@ -1,0 +1,84 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makeshowconsole  make file
+#
+#
+
+MAKEFILE= makeshowconsole.lnx
+
+
+SCCSDIR=$(sccsdir)
+
+#-The SCCS Sources -----------------------------------------------
+PROG_SCCS_DIR=$(SCCSDIR)/bin/SCCS/s.
+ACQPROC_SCCS_DIR= $(SCCSDIR)/acqproc/SCCS/s.
+
+
+CFLAGS= -O2 -DLINUX
+CPPFLAGS=
+LDFLAGS=
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+
+#---  SCCS Extraction Commands for Sources Needed In True Source Dir.  -------
+PROG_SGET = sccs -p$(SCCSDIR)/bin/SCCS get
+ACQPROC_SGET= sccs -p$(SCCSDIR)/acqproc/SCCS get
+
+
+#------------------------------------------------------------------------
+#-- common Infoproc sources files 
+#------------------------------------------------------------------------
+PROG_SRC=			\
+		showconsole.c
+
+PROG_HDR=	sram.h		\
+		config.h
+
+PROG_OBJ= $(PROG_SRC:.c=.o)
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(PROG_SRC) $(PROG_HDR)
+
+
+#--- PAID Targets ------------------------------------------
+std LINUX : $(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE)  \
+	  showconsole 
+	@echo "NMR_ID showconsole complete ----------------------------------"
+
+
+# ---- Be sure True Source that we link to are upto date.
+Source src : $(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+showconsole : $(PROG_OBJ)
+	@echo Making $@...
+	( umask 2;  $(LINK.c) -o $@ showconsole.o )
+
+
+#--- Object Targets ------------------------------------------------------
+$(PROG_OBJ) : $(@:.o=.c) 
+	(umask 2; $(COMPILE.c) $(@:.o=.c))
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(PROG_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+$(PROG_SRC) : % :$(PROG_SRC_DIR)%
+	$(PROG_SGET) $@
+
+$(PROG_HDR) : % :$(ACQPROC_SRC_DIR)%
+	-$(ACQPROC_SGET) $@
+
+showconsole.o: showconsole.c
+showconsole.o: config.h
+showconsole.o: sram.h

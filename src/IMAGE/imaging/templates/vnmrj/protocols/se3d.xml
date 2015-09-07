@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="se3d" author="varian" investigator="varian"
+    rfcoil="main" anatomy="head" time_created="20010816T120000"
+    application="imaging" apptype="im3D" scans="se3d" seqfil="se3d">
+  <protocol title="se3d" type="protocol">
+    <action  type="LIB" status="Ready" title="se3d" exp="se3d" time="20 sec" macro="sqexp('se3d')" data="" />
+  </protocol>
+</template>

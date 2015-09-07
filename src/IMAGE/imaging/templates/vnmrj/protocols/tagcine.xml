@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="tagcine" author="varian" investigator="varian"
+    application="imaging" rfcoil="main" anatomy="head" time_created="20060720T152847"
+    scans="tagcine" seqfil="tagcine">
+  <protocol title="tagcine" type="protocol">
+    <action  type="LIB" status="Ready" title="tagcine" exp="tagcine" lock="off" time="4 sec" macro="sqexp('tagcine')" data="" />
+  </protocol>
+</template>

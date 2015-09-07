@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template type="basic" name="ge3dshim_calib" author="varian" investigator="varian"
+    application="imaging" rfcoil="test" anatomy="" time_created="20071120T115230"
+    parfile="ge3dshim_calib" apptype="im3Dshim" scans="ge3dshim_calib" seqfil="ge3dshim">
+  <protocol title="ge3dshim_calib" type="protocol">
+    <action  type="LIB" status="Ready" title="ge3dshim_calib" exp="ge3dshim_calib" lock="off" time="unknown" macro="sqexp('ge3dshim_calib')" data="" />
+  </protocol>
+</template>

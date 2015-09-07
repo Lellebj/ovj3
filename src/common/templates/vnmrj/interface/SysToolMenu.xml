@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mainmenu>
+<!--
+ !
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+    <button
+      vc = "cexpnext"
+      icon="New_24.gif"
+      toolTip="New Workspace"
+      />
+    <button 
+      vc = "vnmrjcmd('LOC openDataPanel')"
+      icon="folder_open_file_24.gif"
+      toolTip="Open ..."
+      />
+    <button 
+      vc = "vnmrjcmd('LOC saveAsPanel')"
+      icon="save_24.gif"
+      toolTip="Save As ..."
+      />
+    <button 
+      vc = "vnmrjcmd('util','display options', 'help:/vnmr/jhelp/dialog/displayoptions.html')"
+      icon="display_colors_24.gif"
+      toolTip="Display Options"
+      />
+    <button 
+      vc="M@cancel"
+      enabled="yes"
+      icon="forbidden_24.gif"
+      toolTip="Cancel Command"
+      />
+<label
+size="5 24"
+/>
+    <button 
+      vc="cppause('stop')"
+      enabled="yes"
+      icon="Stop_24.gif"
+      toolTip="Stop Acquisition"
+      />
+</mainmenu>

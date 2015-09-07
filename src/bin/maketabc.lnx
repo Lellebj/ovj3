@@ -1,0 +1,56 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# maketabc  make file
+# make -f maketabc,  creates tabc for PAID
+#
+MAKEFILE=maketabc.lnx
+
+ROOT=$(sccsdir)
+binSCCS=$(ROOT)/bin/SCCS/s.
+vnmrSCCS=$(ROOT)/vnmr/SCCS/s.
+
+BINGET = sccs -p$(ROOT)/bin/SCCS get
+VNMRGET = sccs -p$(ROOT)/vnmr/SCCS get
+
+#-- Normal operational compile flags
+CFLAGS= -c -O -m32
+LDFLAGS= -m32
+
+#-- Debugging with DBXTOOL ccompile flags
+#CFLAGS= -c -g
+
+#------------------------------------------------------------------------
+#--- objects that are needed for tabc
+#------------------------------------------------------------------------
+OBJ=                     \
+                tabc.o
+
+tabc: $(OBJ)
+	(umask 2; cc $(LDFLAGS) -o tabc $(OBJ) -lm  )
+
+LINUX std: tabc
+
+tabc.o       : tabc.c data.h
+	(umask 2; cc $(CFLAGS) tabc.c  )
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+
+data.h : $(vnmrSCCS)data.h
+	$(VNMRGET) data.h
+
+tabc.c : $(binSCCS)tabc.c
+	$(BINGET) tabc.c

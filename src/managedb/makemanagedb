@@ -1,0 +1,220 @@
+# 
+# Copyright (c) 1991-1994 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+# Makefile for managedb
+# This makefile creates managedb.jar
+# The managedb.jar is then executed via a startup script
+# which looks something like:
+
+#   #! /bin/csh
+#   java -classpath $HOME/managedb/managedb.jar \
+#        -Dsysdir=$vnmrsystem -Duserdir=$vnmruser -Ddbloc=/vnmr \
+#        -Djava.compiler=sunwjit vnmr.ui.shuf.FillDBManager $argv[*]
+
+
+SCCSJDIR=        $(sccsjdir)
+MAKEFILE=        makemanagedb
+# All sources for managedb are from vnmrj
+VNMRJ_SCCS_SRC=  $(SCCSJDIR)/vnmrj/SCCS/s.
+SCCS_JSRC_GET=   sccs -p$(SCCSJDIR)/vnmrj/SCCS get
+MANAGEDB_SCCS_SRC=  $(SCCSJDIR)/managedb/SCCS/s.
+SCCS_MSRC_GET=   sccs -p$(SCCSJDIR)/managedb/SCCS get
+BASE_DIR:sh =    pwd
+BO_DEST_DIR=     vnmr/bo
+SHUF_DEST_DIR=   vnmr/ui/shuf
+UI_DEST_DIR=     vnmr/ui
+UTIL_DEST_DIR=   vnmr/util
+XML_DEST_DIR=    vnmr/templates
+POSTGRESQL_DIR=  postgresql
+JAVA_MAIN=       FillDBManager.java
+JAR_FILE=        managedb.jar
+CLASS_PATH =     $(BASE_DIR):$(BASE_DIR)/xml.jar:$(BASE_DIR)/postgresql.jar
+
+
+SHUF_SRC = \
+	FillDBManager.java \
+	DirFilter.java \
+	LocAttrList.java \
+	MountPaths.java \
+	SavedDirList.java \
+	Shuf.java \
+	ShufDataParam.java \
+	SymLinkMap.java \
+	TrashInfo.java \
+	CommandDefinition.java \
+	UpdateAttributeList.java
+
+XML_SRC = \
+	CommandBuilder.java \
+	ElementTree.java \
+	Reference.java \
+	Template.java \
+	Types.java \
+	VElement.java \
+	VProtocolElement.java \
+	VTreeNodeElement.java \
+	VCommandDefinition.java
+
+BO_SRC = \
+	VMessage.java \
+	User.java \
+	LoginService.java \
+	Access.java \
+	Group.java
+
+UI_SRC = \
+       MessageListenerIF.java
+
+UTIL_SRC = \
+	Global.java \
+	NumericStringComparator.java \
+	StreamTokenizerQuotedNewlines.java \
+	QuotedStringTokenizer.java \
+	FileUtil.java \
+	Messages.java \
+	DebugOutput.java \
+	VLabelResource.java \
+	HashArrayList.java \
+	UtilB.java \
+	UNFile.java
+
+# Java sources peculiar to managedb
+M_UTIL_SRC = \
+	ExitStatus.java
+
+M_BO_SRC = \
+	StatementHistory.java
+
+M_UI_SRC = \
+       SessionShare.java
+
+M_SHUF_SRC = \
+       ResultTable.java \
+       TagList.java
+
+
+BO_CLASS= $(BO_SRC:.java=.class)
+UI_CLASS= $(UI_SRC:.java=.class)
+SHUF_CLASS= $(SHUF_SRC:.java=.class)
+UTIL_CLASS= $(UTIL_SRC:.java=.class)
+XML_CLASS= $(XML_SRC:.java=.class)
+M_UTIL_CLASS= $(M_UTIL_SRC:.java=.class)
+M_BO_CLASS= $(M_BO_SRC:.java=.class)
+M_UI_CLASS= $(M_UI_SRC:.java=.class)
+M_SHUF_CLASS= $(M_SHUF_SRC:.java=.class)
+
+
+all: Xml_class_src Postgres_class_src Java_src class
+
+Java_src:
+	(mkdir -p $(UTIL_DEST_DIR) ; cp -f $(MAKEFILE) $(UTIL_DEST_DIR))
+	(cd $(UTIL_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(UTIL_SRC)")
+
+	(mkdir -p $(BO_DEST_DIR) ; cp -f $(MAKEFILE) $(BO_DEST_DIR))
+	(cd $(BO_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(BO_SRC)")
+
+	(mkdir -p $(UI_DEST_DIR) ; cp -f $(MAKEFILE) $(UI_DEST_DIR))
+	(cd $(UI_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(UI_SRC)")
+
+	(mkdir -p $(SHUF_DEST_DIR) ; cp -f $(MAKEFILE) $(SHUF_DEST_DIR))
+	(cd $(SHUF_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(SHUF_SRC)")
+
+	(mkdir -p $(XML_DEST_DIR) ; cp -f $(MAKEFILE) $(XML_DEST_DIR))
+	(cd $(XML_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getJavaSrc "J_SRC=$(XML_SRC)")
+
+	(mkdir -p $(UTIL_DEST_DIR) ; cp -f $(MAKEFILE) $(UTIL_DEST_DIR))
+	(cd $(UTIL_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getMSrc "M_SRC=$(M_UTIL_SRC)")
+
+	(mkdir -p $(BO_DEST_DIR) ; cp -f $(MAKEFILE) $(BO_DEST_DIR))
+	(cd $(BO_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getMSrc "M_SRC=$(M_BO_SRC)")
+
+	(mkdir -p $(UI_DEST_DIR) ; cp -f $(MAKEFILE) $(UI_DEST_DIR))
+	(cd $(UI_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getMSrc "M_SRC=$(M_UI_SRC)")
+
+	(mkdir -p $(SHUF_DEST_DIR) ; cp -f $(MAKEFILE) $(SHUF_DEST_DIR))
+	(cd $(SHUF_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) getMSrc "M_SRC=$(M_SHUF_SRC)")
+
+Xml_class_src: 
+	($(MAKE) -ef $(MAKEFILE) getXmlParser "XML_PARSER=xml.jar")
+
+Postgres_class_src: 
+	($(MAKE) -ef $(MAKEFILE) getPostgresql "POSTGRESQL=postgresql.jar")
+
+class: 
+	(cd $(UTIL_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+	 "J_CLASS=$(UTIL_CLASS) $(M_UTIL_CLASS)" )
+	 @echo
+
+	(cd $(BO_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+	 "J_CLASS=$(BO_CLASS) $(M_BO_CLASS) " )
+	 @echo
+
+	(cd $(UI_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+	 "J_CLASS=$(UI_CLASS) $(M_UI_CLASS) " )
+	 @echo
+
+	(cd $(SHUF_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+         "J_CLASS=$(SHUF_CLASS) $(M_SHUF_CLASS) " )
+	 @echo
+
+	(cd $(XML_DEST_DIR) ; $(MAKE) -ef $(MAKEFILE) Buildclass \
+	 "BASE_DIR=$(BASE_DIR)" \
+         "J_CLASS=$(XML_CLASS) " )
+	 @echo
+
+	jar cf $(JAR_FILE) \
+            com/* org/*    \
+            $(BO_DEST_DIR)/*class \
+            $(UI_DEST_DIR)/*class \
+            $(SHUF_DEST_DIR)/*class \
+            $(XML_DEST_DIR)/*class \
+            $(UTIL_DEST_DIR)/*class \
+            $(POSTGRESQL_DIR)/*class \
+            $(POSTGRESQL_DIR)/util/*class \
+            $(POSTGRESQL_DIR)/jdbc2/*class
+
+
+	@echo +++++++ DONE makemanagedb +++++++
+
+
+Buildclass: $(J_CLASS)
+	pwd
+	@echo
+
+getJavaSrc: $(J_SRC)
+
+getMSrc: $(M_SRC)
+
+getXmlParser: $(XML_PARSER)
+
+getPostgresql: $(POSTGRESQL)
+
+
+#-----------------------------------------------------
+
+$(J_SRC): $$(VNMRJ_SCCS_SRC)$$@
+	$(SCCS_JSRC_GET) $@
+
+$(M_SRC): $$(MANAGEDB_SCCS_SRC)$$@
+	$(SCCS_MSRC_GET) $@
+
+$(J_CLASS): $$(@:.class=.java)
+	(umask 2; javac -deprecation -classpath $(CLASS_PATH) $(@:.class=.java))
+
+$(XML_PARSER): $(VNMRJ_SCCS_SRC)$$@
+	$(SCCS_JSRC_GET) $@
+	jar xf $@
+
+$(POSTGRESQL): $(VNMRJ_SCCS_SRC)$$@
+	$(SCCS_JSRC_GET) $@
+	jar xf $@
+

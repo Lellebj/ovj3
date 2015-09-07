@@ -1,0 +1,285 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+vnmrsystem      =  /vnmr
+SHELL           =  /bin/sh
+MAKEFILE        =  makenvlocki.lnx
+CCC             =  c++
+
+SCCSDIR     = $(sccsdir)
+
+STD_YACCDIR = /usr/bin/yacc
+
+# NDDSHOME = /sw/NDDS/ndds.3.1a
+NDDSHOME = $(nddsdir)
+
+syslibs_Linux = -Wl,-rpath /vnmr/lib -ldl -lnsl -lm -lpthread -lstdc++
+
+# NDDSLIBS = -L$(NDDSHOME)/lib/i86Linux2.4gcc3.2 \
+# 	-lndds -lnddsutils -lnddscdr -lutilsxx -lutilsip \
+# 	$(syslibs_Linux)
+
+NDDSLIBS = -L$(NDDSHOME)/lib/LinuxLibs \
+	-lndds -lnddsutils -lnddscdr -lutilsxx -lutilsip \
+	$(syslibs_Linux)
+
+NDDS4xLIBS = -L$(NDDSHOME)/lib/i86Linux2.6gcc3.4.3 \
+        -lnddscz -lnddscorez \
+        $(syslibs_Linux)
+
+INCLUDES = -I$(NDDSHOME)/include/unix \
+	-I$(NDDSHOME)/include/share
+
+INCLUDES4X = -I$(NDDSHOME)/include \
+        -I$(NDDSHOME)/include/ndds
+
+# where the NDDS include and libraries are
+NDDS_HOME = $(NDDSHOME)
+
+# NDDSGEN = $(NDDS_HOME)/bin/i86Linux2.4gcc3.2/nddsgen
+NDDSGEN = $(NDDS_HOME)/bin/LinuxBin/nddsgen
+NDDSGEN4X = $(NDDS_HOME)/scripts/nddsgen -language C -notypecode -replace
+
+NCOMMDIR= $(lnxobjdir)/proglib/ncomm
+
+LIBS            = -lacqcomm $(NDDSLIBS)
+
+CPPOPTIONS  = -O -Wno-deprecated -m32
+COPTIONS    = -O2 -m32
+LPCFLAGS    =
+CINCLDIR    = -I./  $(INCLUDES)
+
+CDEFINE     = -DLINUX -DVNMRJ -DBSDACQ -DSUN -DX11 -DMOTIF -DNESSIE -DRTI_UNIX
+CPPDEFINE   = -DLINUX
+
+LDOPTIONS   = -O -m32
+LDFLAGS     = $(LDOPTIONS) -L.
+
+COMPILE.c   = $(CC)  $(COPTIONS) $(CINCLDIR) $(CDEFINE) -c
+COMPILE.cc  = $(CCC) $(CPPOPTIONS) $(CINCLDIR) $(CPPDEFINE) -c
+
+LINK.c      = $(CCC) $(LDFLAGS) -L$(NCOMMDIR)
+
+#--- SCCS Sources ----  
+ACQPROC_SCCS_SRC   = $(SCCSDIR)/acqproc/SCCS/s.
+BIN_SCCS_SRC       = $(SCCSDIR)/bin/SCCS/s.
+EXPPROC_SCCS_SRC   = $(SCCSDIR)/expproc/SCCS/s.
+NCOMM_SCCS_SRC     = $(SCCSDIR)/ncomm/SCCS/s.
+NVACQ_SCCS_SRC     = $(SCCSDIR)/nvacq/SCCS/s.
+VNMR_SCCS_SRC      = $(SCCSDIR)/vnmr/SCCS/s.
+VNMRBG_SCCS_SRC    = $(SCCSDIR)/vnmrbg/SCCS/s.
+VWACQ_SCCS_SRC     = $(SCCSDIR)/vwacq/SCCS/s.
+XRACQ_SCCS_SRC     = $(SCCSDIR)/xracq/SCCS/s.
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+ACQPROC_SGET    = sccs -p$(SCCSDIR)/acqproc/SCCS get
+BIN_SGET        = sccs -p$(SCCSDIR)/bin/SCCS get
+EXPPROC_SGET    = sccs -p$(SCCSDIR)/expproc/SCCS get
+NCOMM_SGET      = sccs -p$(SCCSDIR)/ncomm/SCCS get
+NVACQ_SGET      = sccs -p$(SCCSDIR)/nvacq/SCCS get
+VNMR_SGET       = sccs -p$(SCCSDIR)/vnmr/SCCS get
+VNMRBG_SGET     = sccs -p$(SCCSDIR)/vnmrbg/SCCS get
+VWACQ_SGET      = sccs -p$(SCCSDIR)/vwacq/SCCS get
+XRACQ_SGET      = sccs -p$(SCCSDIR)/xracq/SCCS get
+
+
+NDDS_TYPES = Lock_Cmd.x Lock_FID.x
+NDDS4X_TYPES = Lock_Cmd.idl Lock_FID.idl
+
+NDDS_C_SRC= $(NDDS_TYPES:.x=.c)
+NDDS_C_HDR= $(NDDS_TYPES:.x=.h)
+NDDS_OBJ= $(NDDS_TYPES:.x=.o)
+
+# NDDS4x_C_SRCLIST = Lock_Cmd.c Lock_CmdPlugin.c Lock_CmdSupport.c Lock_FID.c Lock_FIDPlugin.c Lock_FIDSupport.c
+# NDDS4x_C_HDRLIST = Lock_Cmd.h Lock_CmdPlugin.h Lock_CmdSupport.h Lock_FID.h Lock_FIDPlugin.h Lock_FIDSupport.h 
+NDDS4x_C_SRCLIST = Lock_FID.c Lock_FIDPlugin.c Lock_FIDSupport.c
+NDDS4x_C_HDRLIST = Lock_FID.h Lock_FIDPlugin.h Lock_FIDSupport.h 
+NDDS4x_OBJ = Lock_FID.o Lock_FIDPlugin.o Lock_FIDSupport.o
+
+#------------------------------------------------------------------------
+#-- NDDS comm Source  files
+#------------------------------------------------------------------------
+
+NVACQ_HDR=                      \
+		crc32.h         \
+		sysUtils.h      \
+		NDDS_Obj.h
+
+
+NVACQ_SRC=                      \
+		NDDS_SubFuncs.c \
+		NDDS_Obj.c      \
+		sysUtils.c
+
+NVACQ_OBJ= $(NVACQ_SRC:.c=.o)
+
+PROG_SRC =			\
+		nvlocki.c
+
+PROG_OBJ= $(PROG_SRC:.c=.o)
+
+#--- Expproc header files that are needed for interactive expts
+EXPPROC_HDR=			\
+		expQfuncs.h	\
+		shrexpinfo.h	\
+		shrstatinfo.h
+
+#--- vwacq (New Digital Console) header files that are needed for iadisplay
+VWACQ_HDR=			\
+		acqcmds.h	\
+		hostAcqStructs.h
+
+UNMRLIB_HDR=			\
+		data.h		\
+		graphics.h	\
+		group.h		\
+		vnmrsys.h
+
+UNMRLIB_SRC =			\
+		acqhwcmd.c
+
+UNMRLIB_OBJ= $(UNMRLIB_SRC:.c=.o)
+
+#---  XRacq Header files needed by Vnmr -------
+XRACQ_HDR =			\
+		ACQ_SUN.h
+
+NCOMM_HDR =			\
+		sockets.h	\
+		mfileObj.h	\
+		errLogLib.h	\
+		shrMLib.h
+
+#------------------------------------------------------------------------
+#---- All Sources and headers required for compilation -----
+#------------------------------------------------------------------------
+
+ALL_H_SRC= $(UNMRLIB_HDR) $(EXPPROC_HDR) \
+	$(NVACQ_HDR) $(VWACQ_HDR) $(XRACQ_HDR) $(NCOMM_HDR)
+
+COMMON_SRC= $(PROG_SRC) $(NDDS_TYPES) $(ALL_H_SRC)
+
+COMMON_OBJ= $(PROG_OBJ) $(NVACQ_OBJ)
+
+ALL_OBJ= $(COMMON_OBJ) $(NDDS_OBJ)
+
+
+#--- make Targets ----------------------------------------------
+
+LINUX std all: nessie
+
+#	( export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN4X) App_HB.idl )
+
+ndds4x :
+	sccs -d$(swloc)/vsccs/sccs/nvacq get Lock_FID.idl Lock_Cmd.idl;
+	( export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN4X) Lock_FID.idl )
+	( export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN4X) Lock_Cmd.idl )
+	$(MAKE) -e -f $(MAKEFILE) \
+        "NDDSLIBS = $(NDDS4xLIBS)" \
+        "INCLUDES = $(INCLUDES4X)" \
+        "NDDSGEN = $(NDDSGEN4X)" \
+        "NDDS_TYPES = " \
+        "NDDS_C_SRC= " \
+        "NDDS_C_HDR= " \
+        "NDDS_OBJ= $(NDDS4x_OBJ)" \
+        "NDDS4x_C_SRC = $(NDDS4x_C_SRCLIST)" \
+        "NDDS4x_C_HDR = $(NDDS4x_C_HDRLIST)" \
+        "CDEFINE = $(CDEFINE) -DRTI_NDDS_4x"      \
+        nvlocki
+	@echo NDDS 4x version complete
+
+
+
+nessie : src
+	$(MAKE) -f $(MAKEFILE) nvlocki
+	@echo "nvlocki complete --------------------------"
+
+
+src : $(MAKEFILE) $(COMMON_SRC)
+	@echo target src :  is up  to date.........
+	@echo ""
+
+
+nvlocki : $(ALL_OBJ)
+	(umask 2; $(LINK.c) -o $@ $(ALL_OBJ) $(LIBS)  )
+
+.PHONY: clean cleanall
+
+clean:
+	rm *.o
+
+cleanall:
+	rm -f *.c  *.h *.o *.p *.y *.l *.parser *.output yytoddl
+	rm -f nvlocki
+
+
+
+#--- Object Targets ---------------------------
+$(NDDS4x_C_SRC) : $(NDDS4X_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN) $(@:.c=.idl) )
+
+
+$(COMMON_OBJ) : %.o:%.c
+	(umask 2; $(COMPILE.c) $< )
+
+$(NDDS_C_SRC) : $(NDDS_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN) -replace  $(@:.c=.x) )
+
+$(NDDS_C_HDR) : $(NDDS_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN) -replace  $(@:.h=.x) )
+
+$(NDDS4x_C_HDR) : $(NDDS4X_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN) $(@:.h=.idl) )
+
+$(NDDS_OBJ) : %.o:%.c
+	(umask 2; $(COMPILE.c) $< )
+
+#------ makefile extraction via SCCS always. -------
+$(MAKEFILE) : %:$(BIN_SCCS_SRC)%
+	@echo "GETTING makefile"
+	$(BIN_SGET) $@
+
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(UNMRLIB_HDR) $(UNMRLIB_SRC) : %:$(VNMR_SCCS_SRC)%
+	$(VNMR_SGET) $@
+
+$(XRACQ_HDR) : %:$(XRACQ_SCCS_SRC)%
+	$(XRACQ_SGET) $@
+
+$(NCOMM_HDR) : %:$(NCOMM_SCCS_SRC)%
+	$(NCOMM_SGET) $@
+
+$(EXPPROC_HDR) : %:$(EXPPROC_SCCS_SRC)%
+	$(EXPPROC_SGET) $@
+
+$(VWACQ_HDR) : %:$(VWACQ_SCCS_SRC)%
+	$(VWACQ_SGET) $@
+
+$(NVACQ_HDR) $(NDDS_TYPES) $(NVACQ_SRC) : %:$(NVACQ_SCCS_SRC)%
+	$(NVACQ_SGET) $@
+
+$(PROG_SRC) : %:$(BIN_SCCS_SRC)%
+	$(BIN_SGET) $@
+
+#Lock_FID.c Lock_FID.h : Lock_FID.x
+#	-(umask 2; export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN) -replace Lock_FID.x )
+
+#Lock_Cmd.c Lock_Cmd.h : Lock_Cmd.x
+#	-(umask 2; export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN) -replace Lock_Cmd.x )
+
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+
+
+nvlocki.o: nvlocki.c data.h hostAcqStructs.h vnmrsys.h group.h ACQ_SUN.h shrexpinfo.h expQfuncs.h shrstatinfo.h
+nvlocki.o: acqcmds.h mfileObj.h errLogLib.h Lock_FID.h graphics.h sockets.h
+nvlocki.o: NDDS_Obj.h 
+# NDDS_SubFuncs.h NDDS_PubFuncs.h
+Lock_FID.o: Lock_FID.c NDDS_Obj.h

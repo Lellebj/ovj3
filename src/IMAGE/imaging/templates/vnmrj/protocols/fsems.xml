@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ !
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="fsems" author="varian" investigator="varian"
+    rfcoil="main" anatomy="head" time_created="20010816T120000"
+    application="imaging" apptype="im2D" scans="fsems" seqfil="fsems">
+  <protocol title="fsems" type="protocol">
+    <action  type="LIB" status="Ready" title="fsems" exp="fsems" time="1 sec" macro="sqexp('fsems')" data="" />
+  </protocol>
+</template>

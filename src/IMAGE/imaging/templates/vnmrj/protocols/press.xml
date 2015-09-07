@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ !
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="press" author="varian" investigator="varian"
+    rfcoil="main" anatomy="head" time_created="20010816T120000"
+    application="imaging" apptype="im2D" scans="press" seqfil="press">
+  <protocol title="press" type="protocol">
+    <action  type="LIB" status="Ready" title="press" exp="press" time="3 sec" macro="sqexp('press')" data="" />
+  </protocol>
+</template>

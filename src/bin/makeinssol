@@ -1,0 +1,195 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+#
+# makeinssol  make file
+#
+#
+
+MAKEFILE= makeinssol
+
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory 
+
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+
+SRC_DIR=$(SRCDIR)/sysbin/
+REV_DATE=$(VNMR_REV_DATE)
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+PROJCAT=
+
+CFLAGS= -O
+CPPFLAGS=
+LDFLAGS=
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+
+
+PROG_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----
+PROG_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+
+
+#--- Link Commands for Sources Needed in the Working Directory. -------
+PROG_LN = ln -s $(PROG_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed In True Source Dir.  -------
+PROG_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)bin get
+
+#----  default source extraction to links -------
+PROG_GET= $(PROG_LN)
+
+
+#------------------------------------------------------------------------
+#-- common Infoproc sources files 
+#------------------------------------------------------------------------
+PROG_SRC=			\
+		send2ld.c	\
+		ins_sol.c
+
+PROG_OBJ= $(PROG_SRC:.c=.o)
+
+#----- Infoproc header files that are needed
+PROG_HDR=			\
+		logo.xicon	\
+		inova.xicon	\
+		g2000.xicon	\
+		spot.xicon	\
+		mercury.xicon	\
+		ibm.xicon	\
+		sgi.xicon	\
+		cdrom.xicon	\
+		disk.xicon	\
+		smile.xicon	\
+		unity.xicon	\
+		uplus.xicon
+
+#---- All Sources and headers required for compilation -----
+
+ALLSRC= $(PROG_SRC) $(PROG_HDR)
+
+ALLSRC_PP = $(ALLSRC:=.pp)
+
+OLIBS= -lXol -lXt -lX11 -ll -lm
+MLIBS= -lXm -lXt -lX11 -ll -lm
+
+#--- PAID Targets ------------------------------------------
+
+std SOLARIS : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE)  \
+	"LIBS= $(OLIBS)"	\
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"CPPFLAGS= -I$(OPENWINHOME)/include -DOWTOOLKIT_WARNING_DISABLED -DSUN -DOLIT -DSOLARIS -DX11" \
+	"LDFLAGS= -L$(OPENWINHOME)/lib" \
+	  ins_sol send2ld
+	@mv ins_sol ins.sol
+	@mv send2ld send.sol
+	@rm $(PROG_OBJ)
+	@echo "ins.sol send.sol complete -----------------------"
+
+ow : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE)  \
+	"LIBS= $(OLIBS)"	\
+	"CPPFLAGS= -I$(OPENWINHOME)/include -DSUN -DOLIT -DX11" \
+	"LDFLAGS= -L$(OPENWINHOME)/lib" \
+	  ins_sol send2ld
+	@mv ins_sol ins.sos
+	@mv send2ld send.sos
+	@rm $(PROG_OBJ)
+	@echo "ins.sos send.sos complete -------------------------------"
+
+AIX : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE)  \
+	"LIBS= $(MLIBS)"	\
+	"CPPFLAGS= -DMOTIF -DX11 -DAIX" \
+	  ins_sol send2ld
+	@mv ins_sol ins.ibm
+	@mv send2ld send.ibm
+	@rm $(PROG_OBJ)
+	@echo "ins.ibm send.ibm complete -------------------------------"
+
+IRIX : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE)  \
+	"LIBS= $(MLIBS)"	\
+	"CFLAGS= -O -cckr -prototypes" \
+	"CPPFLAGS= -DMOTIF -D_NO_PROTO -DX11 -DIRIX" \
+	  ins_sol send2ld
+	@mv ins_sol ins.sgi
+	@mv send2ld send.sgi
+	@rm $(PROG_OBJ)
+	@echo "ins.sgi send.sgi complete -------------------------------"
+
+static : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE) \
+	  "LDFLAGS=-Bstatic" \
+	  ins_sol send2ld
+	@echo "static ins_sol complete -------------------------"
+
+
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+	     "PROG_SRC_DIR= $(PROG_SCCS_SRC)" \
+	     "PROG_GET= $(PROG_SGET)"  src ) 
+
+#---- Recursive Targets ------------------------------------------------
+
+src : $$(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+ins_sol : $(PROG_OBJ)
+	@echo Making $@...
+	( umask 2;  $(LINK.c) -o $@ ins_sol.o  $(LIBS)  )
+
+send2ld : $(PROG_OBJ)
+	@echo Making $@...
+	( umask 2;  $(LINK.c) -o $@ send2ld.o  -ll -lm )
+
+
+#--- Object Targets ------------------------------------------------------
+
+
+$(PROG_OBJ) : $(@:.o=.c) $(PROG_HDR)
+	(umask 2; $(COMPILE.c) -DREVISION_ID='"$(VNMR_REV_ID)"' -DREVISION_DATE='"$(REV_DATE)"' -DCOMPDATE='"$(COMDATE)"' $(@:.o=.c))
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(PROG_SGET) $@
+	( cd $(SRC_DIR); $(PROG_SGET) $@ )
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(PROG_SRC) $(PROG_HDR) : $$(PROG_SRC_DIR)$$(@)
+	$(PROG_GET) $@
+
+
+ins_sol.o: ins_sol.c
+ins_sol.o: g2000.xicon
+ins_sol.o: inova.xicon
+ins_sol.o: spot.xicon
+ins_sol.o: mercury.xicon
+ins_sol.o: ibm.xicon
+ins_sol.o: sgi.xicon
+ins_sol.o: logo.xicon
+ins_sol.o: uplus.xicon
+ins_sol.o: cdrom.xicon
+ins_sol.o: disk.xicon
+ins_sol.o: unity.xicon
+ins_sol.o: smile.xicon
+send2ld.o: send2ld.c

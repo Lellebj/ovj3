@@ -1,0 +1,13 @@
+
+The testControllers script will check for the presence of each of the controller boards in your console
+(using the list in /etc/hosts as a basis set) and then flood ping each in turn to check the communications
+with the PC.  On a properly working system you should see no packet loss at all.  Some accessories
+(e.g. the cryogen monitor) can respond more slowly.  Significant loss of packets suggests a bad Ethernet
+connection due to one of the controller boards, the network switch or one of the Ethernet cables.
+The script must be run with superuser privileges in order to flood ping.
+ 
+To use the script, as root
+cd /vnmr/adm/acq
+./testControllers
+
+

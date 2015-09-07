@@ -1,0 +1,42 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+# 
+# Copyright (c) 2004 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+# makekillroboproc  make file
+# make -f makekillroboproc,  creates killroboproc for Hermes
+#
+
+MAKEFILE= makekillroboproc
+
+BIN_SRC_DIR= $(sourcedir)/sysbin/
+
+CC = cc
+CCOPTS = -Xa -g -xF -c
+
+SCCSDIR= $(sccsdir)
+BIN_SCCS_DIR= $(SCCSDIR)/bin/SCCS/s.
+BIN_SGET= sccs -p$(SCCSDIR)/bin/SCCS get
+
+OBJ=	killroboproc.o
+
+SOLARIS: killroboproc
+
+killroboproc: $(OBJ) $(MAKEFILE)
+	(umask 2; cc -o killroboproc $(OBJ) -lm -lsocket -lnsl )
+
+killroboproc.o : killroboproc.c
+	(umask 2; $(CC) $(CCOPTS) killroboproc.c  )
+
+killroboproc.c : $(BIN_SCCS_DIR)killroboproc.c
+	$(BIN_SGET) killroboproc.c
+

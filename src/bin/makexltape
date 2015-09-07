@@ -1,0 +1,48 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#
+# makexltape  make file
+# make -f makexltape,  creates xltape for PAID
+#
+
+# ----- PAID sccs home ----
+ROOT=/big/sccs
+JAWS=/jaws
+# ----- VIS sccs home ----
+#ROOT=/usr/zaphod/greg/sccs
+#JAWS=/jaws
+
+JSCCS=$(JAWS)/SCCS/
+
+binSCCS=$(ROOT)/bin/SCCS/s.
+
+BINGET = sccs -d$(ROOT)/bin get
+
+#-- Normal operational compile flags
+CFLAGS= -fsingle -c -O
+
+#-- Debugging with DBXTOOL ccompile flags
+#CFLAGS= -c -g
+
+#------------------------------------------------------------------------
+#--- objects that are needed for expfit
+#------------------------------------------------------------------------
+OBJ=                     \
+                xltape.o
+
+xltape: $(OBJ)
+	(umask 2; cc -o xltape $(OBJ) -ll -lm  )
+ 
+xltape.o       : xltape.c
+	(umask 2; cc $(CFLAGS) xltape.c  )
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+
+xltape.c : $(binSCCS)xltape.c
+	$(BINGET) xltape.c

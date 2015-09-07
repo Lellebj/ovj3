@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! locator_statements_trash.xml Copyright (c) 1999-2002 Agilent Technologies All Rights Reserved
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+
+<shuffler>
+
+    <!-- Trash Shuffler Statements*** -->
+    <Statement>
+        <ObjectType value="trash" />
+        <MenuString value="by date" />
+        <Label value="Show Items Trashed"/>
+        <Date value="datetrashed" display="false"/>
+        <Calendar value="on any date"/>
+        <UserType value="owner$me$exclusive" display="false"/>
+        <Columns value="filename$objtype$datetrashed"/>
+        <Sort  value="datetrashed$ASC"/>
+    </Statement>
+
+    <Statement>
+        <ObjectType value="trash" />
+        <MenuString value="by type" />
+        <Label value="Show"/>
+        <Attribute-0 value="objtype" display="false"/>
+        <AttrValue-0 value="all"/>
+        <Label value="Items Trashed"/>
+        <Date value="datetrashed" display="false"/>
+        <Calendar value="on any date"/>
+        <UserType value="owner$me$exclusive" display="false"/>
+        <Columns value="filename$objtype$datetrashed"/>
+        <Sort  value="objtype$ASC"/>
+    </Statement>
+
+</shuffler>

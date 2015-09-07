@@ -1,0 +1,166 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#
+# makediffshims  make file
+# make -f makediffshims,  creates diffshims for PAID
+#
+# creates 68020 version on the SUN-3; SPARC version on the SUN-4
+# this capability works by having the `make' program itself do
+# a `make' when the target is `diffshims'; the lower level target is
+# `diffshims_sun3' or `diffshims_sun4'.  The actual program created is
+# always `diffshims' though.  The system type is appended so as to
+# avoid unending recursion (`diffshims' uses `diffshims' as a target
+# which has `diffshims' as a target etc.)
+#
+# At this time the makediffshims file assumes the VNMR libraries are
+# up to date.
+#
+
+MAKEFILE=makediffshims
+
+#  SCCSDIR is the root of SCCS
+#  VNMRDIR is the root of VNMR
+#  binSCCS locates the ``bin'' category of SCCS
+#  INCDIR is the include directory for VNMR stuff
+
+SCCSDIR=$(sccsdir)
+VNMRDIR=$(vnmrdir)
+OBJDIR=undefined			# defined by recursive use of make
+binSCCS=$(SCCSDIR)/bin/SCCS/s.
+
+#  SRCROOT is the root of source files derived from SCCS
+#  SRC_DIR is the source directory for the SCCS category BIN
+
+SRCROOT=$(sourcedir)
+INCDIR=$(SRCROOT)/sysvnmr
+
+# an explanation is provided below for the 2 definitions of SRC_DIR
+# do not place comments on the same line as a definition of a symbol
+# whose value you care about.  The `make' program will append the
+# intervening white characters as part of the symbol definition and
+# YOU MAY BE SORRY
+
+SRC_DIR=$(SRCROOT)/sysbin/
+#SRC_DIR=./
+BIN_SRC_DIR=$(SRC_DIR)
+BIN_SCCS_SRC=$(SCCSDIR)/bin/SCCS/s.
+
+#  Source files are access by creating a symbolic link to the
+#  common source directory.  This saves disk space if you have
+#  not changed the source program.
+#
+#  BIN_LN creates the symbolic link
+#  BIN_SGET obtains the actual source file from SCCS
+
+BIN_LN   = ln -s $(BIN_SRC_DIR)$(@)
+BIN_SGET = sccs -p$(SCCSDIR)/bin/SCCS get
+BIN_GET  = $(BIN_LN)
+
+#-- VNMR libraries
+
+UNMRLIB = $(OBJDIR)/proglib/vnmr/unmrlib.a
+MAGICLIB = $(OBJDIR)/proglib/vnmr/magiclib.a
+
+#-- Normal operational compile flags
+
+CFLAGS= -fsingle -I$(INCDIR) -c -O
+
+LIBS = -ll -lm
+#------------------------------------------------------------------------
+#--- objects that are needed for diffshims
+#------------------------------------------------------------------------
+DIFFSHIMS_SRC= diffshims.c
+DIFFSHIMS_HDR=
+DIFFSHIMS_OBJ= $(DIFFSHIMS_SRC:.c=.o)				# replace .c with .o
+ALLSRC   = $(DIFFSHIMS_SRC) $(DIFFSHIMS_HDR)
+
+#  The -e flag causes symbols defined in the command string to override
+#  definitions in the make file.  This facility is essential for OBJDIR
+#  to be defined correctly.  The `diffshims' object is made dependent on
+#  `Source' to insure the source files which are compiled reflect the
+#  latest changes to SCCS.
+
+diffshims: Source
+	@echo making diffshims program for `arch`
+	@( if ( test `arch` = "sun4" ); then                                \
+             objpath=$(sun4objdir) ;                                       \
+          else                                                             \
+             objpath=$(sun3objdir) ;                                       \
+          fi ;                                                             \
+	  $(MAKE) -e -f $(MAKEFILE) "OBJDIR=$$objpath" diffshims_`arch`)
+
+AIX: Source
+	@echo making diffshims program for IBM
+	  $(MAKE) -e -f $(MAKEFILE) "OBJDIR=$(ibmobjdir)" diffshims_ibm
+
+IRIX: Source
+	@echo making diffshims program for IBM
+	  ($(MAKE) -e -f $(MAKEFILE) \
+	    "OBJDIR=$(sgiobjdir)" \
+	    "CFLAGS=-c -O -cckr -I$(INCDIR)" \
+	    diffshims_sgi)
+
+SOLARIS: Source
+	@echo making diffshims program for Solaris
+	$(MAKE) -e -f $(MAKEFILE)		\
+	"OBJDIR=$(solobjdir)"			\
+	"CFLAGS=-c -O -DSOLARIS -I$(INCDIR)"	\
+	"UNMRLIB = $(solobjdir)/proglib/vnmr/unmrlib.ow.a"	\
+	 diffshims_sun4
+
+#  These targets are dependent on the object `rmobj' which serves to
+#  remove .o files from the previous compilation.  This is important
+#  to prevent conflict between SUN-3 and SUN-4 .o files.  The .o files
+#  special to DIFFSHIMS are referenced using the symbol DIFFSHIMS_OBJ.
+
+diffshims_sun3 diffshims_sun4 diffshims_sgi: rmobj $(DIFFSHIMS_OBJ)
+	(umask 2; cc -o diffshims $(DIFFSHIMS_OBJ) \
+		  $(MAGICLIB) $(UNMRLIB) $(MAGICLIB) $(LIBS))
+ 
+diffshims_ibm: rmobj $(DIFFSHIMS_OBJ)
+	(umask 2; cc -o diffshims $(DIFFSHIMS_OBJ) \
+		  $(MAGICLIB) $(UNMRLIB) $(MAGICLIB) $(LIBS))
+ 
+diffshims.o: diffshims.c
+	(umask 2; cc $(CFLAGS) diffshims.c  )
+
+rmobj:
+	rm -f $(DIFFSHIMS_OBJ)
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+# make's -e flag is also needed here so as to override the default
+# definitions and extract the latest source files from SCCS
+#
+# effect is to
+# 1.  change directory to /common/sysbin
+# 2.  excute make to update any changes in SCCS not present in /common/sysbin
+#
+# This is done with the "dummy" object `src'.  This object is dependent on the
+# source files, so they become the real objects.  The symbol ALLSRC is only
+# known after `make' has read this file. A new invokation of `make' is required
+# for the activity is (most likely) to take place in a different directory.
+# `make' cannot have as a target a UNIX file path; only a file name.  Thus the
+# dummy object `src'.
+#
+# This operation requires the copy of makefile in /common/sysbin contain `src'
+# as a target !!!
+#
+# define SRC_DIR to be "./" when testing this...
+
+Source:
+	@( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE)	\
+             "BIN_SRC_DIR= $(BIN_SCCS_SRC)"		\
+             "BIN_GET= $(BIN_SGET)"			\
+              src)
+
+src: $(ALLSRC)
+	@echo source files for diffshims up to date
+
+$(DIFFSHIMS_SRC) $(DIFFSHIMS_HDR): $$(BIN_SRC_DIR)$$(@)
+	$(BIN_GET) $@

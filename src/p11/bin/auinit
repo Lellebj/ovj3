@@ -1,0 +1,41 @@
+: '@(#)auinit.sh 22.1 03/24/08 Copyright (c) 1999-2002 Agilent Technologies All Rights Reserved'
+# 
+# Agilent Technologies All Rights Reserved.
+# This software contains proprietary and confidential
+# information of Agilent Technologies and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#!/bin/sh
+#
+
+cd /etc/security
+case "$1" in
+    'start')
+
+	echo 'Starting Unix auditing.'
+	/sbin/init 1 >/dev/msglog 2>&1 
+	(./bsmconv 2>&1 >/dev/null << +++
+y	
++++
+)
+	/sbin/init 6 >/dev/msglog 2>&1 
+	;;
+
+    'stop')
+
+	/sbin/init 1 >/dev/msglog 2>&1 
+	(./bsmunconv 2>&1 >/dev/null << +++
+y	
+y
++++
+)
+	
+	/sbin/init 6 >/dev/msglog 2>&1 
+	;;
+
+    *)
+	echo "Usage: $0 { start | stop }"
+	exit 1
+	;;
+esac

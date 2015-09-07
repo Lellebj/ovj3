@@ -1,0 +1,54 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+#---PAID sccs home---
+SDIR=$(sccsdir)/vnmr/SCCS/s.
+SGET=sccs -p$(sccsdir)/vnmr/SCCS get
+MGET=sccs -p$(sccsdir)/motif/SCCS get
+
+MAKEFILE= makesafecp
+
+#---normal operational compile flags
+CFLAGS= -c -O
+
+#---debugging with DBXTOOL compile flags
+#CFLAGS= -c -g
+
+#---normally LDFLAGS is left undefined - symbol included for SOLARIS target
+
+#---object modules nedded for "safecp"
+SAFECP_OBJ=                       \
+                safecp.o
+
+safecp: $(SAFECP_OBJ)
+	(umask 2; cc -o safecp $(LDFLAGS) $(SAFECP_OBJ))
+
+IRIX:
+	$(MAKE) -ef $(MAKEFILE) \
+	 "CFLAGS=-c -O -cckr -DIRIX" \
+	 safecp)
+
+AIX: AIXSOURCE
+	(umask 2; cc -o safecp safecp.c \
+                -lcur)
+
+SOLARIS:
+	$(MAKE) -e -f $(MAKEFILE)       \
+	"CFLAGS= -c -O -DSOLARIS"       \
+	"LDFLAGS= -L /usr/ccs/lib"      \
+	safecp
+
+
+safecp.o: safecp.c
+	(umask 2; cc $(CFLAGS) safecp.c)
+
+safecp.c: $(SDIR)safecp.c
+	$(SGET) safecp.c
+
+AIXSOURCE:
+	$(MGET) safecp.c

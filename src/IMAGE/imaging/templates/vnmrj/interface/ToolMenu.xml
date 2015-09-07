@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='us-ascii'?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<mainmenu>
+    <subfilemenu hotkey = "f"
+        show="$SHOW=showToolMenu"
+        icon="dfid.gif"
+        file="ToolMenuFid.xml"
+        style="Menu1"
+        toolTip="Display FID"
+        vq="showToolMenu"
+        vc="df"
+    />
+    <subfilemenu hotkey = "1"
+        show="$SHOW=showToolMenu"
+        icon="dspec.gif"
+        file="ToolMenuSpec1D.xml"
+        style="Menu1"
+        toolTip="Display 1D Spectrum"
+        vq="showToolMenu"
+        vc="ds"
+    />
+    <subfilemenu hotkey = "2"
+        show="$SHOW=showToolMenu"
+        icon="2D1cur.gif"
+        file="ToolMenuImagingData.xml"
+        style="Menu1"
+        toolTip="Display 2D Spectrum"
+        vq="showToolMenu"
+        vc="dconi"
+    />
+    <subfilemenu hotkey = "2"
+        show="$SHOW=showToolMenu"
+        icon="2Dimage.gif"
+        file="ToolMenuImaging.xml"
+        style="Menu1"
+        toolTip="Imaging Tools"
+        vq="showToolMenu"
+        vc="aipDisplay(`redisplay`) menu(`aip`)"
+    />
+</mainmenu>

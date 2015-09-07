@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="essfp" author="michaelg" investigator=""
+    application="imaging" rfcoil="rapid72x4" anatomy="" time_created="20080225T141812"
+    parfile="essfp" apptype="im2D" scans="essfp" seqfil="essfp">
+  <protocol title="essfp" type="protocol">
+    <action  type="LIB" status="Ready" title="essfp" exp="essfp" lock="off" time="1 sec" macro="sqexp('essfp')" data="" />
+  </protocol>
+</template>

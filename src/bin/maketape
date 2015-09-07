@@ -1,0 +1,46 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+
+# 
+# maketape - a make file for 'tape', a program for running the streaming tape 
+# 	and the 9-track tape in VXR-4000 format.
+# version 1.4 uses combined source tape.c, previous versions used seperate 
+# 	sources.
+# make -f maketape,  creates 'tape' for PAID
+#
+
+ROOT=$(sccsdir)
+JAWS=$(vnmrdir)
+
+binSCCS=$(ROOT)/bin/SCCS/s.
+
+BINGET = sccs -d$(ROOT)/bin get
+
+#-- Normal operational compile flags
+CFLAGS= -fsingle -c -O
+
+#-- Debugging with DBXTOOL ccompile flags
+#CFLAGS= -c -g
+
+#------------------------------------------------------------------------
+#--- objects that are needed for tape
+#------------------------------------------------------------------------
+OBJ=                     \
+                tape.o
+
+tape: $(OBJ)
+	(umask 2; cc -o tape $(OBJ) -ll -lm  )
+ 
+tape.o       : tape.c
+	(umask 2; cc $(CFLAGS) tape.c  )
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+
+tape.c : $(binSCCS)tape.c
+	$(BINGET) tape.c

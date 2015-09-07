@@ -10,10 +10,6 @@ showstatTarget = 'showstat'
 # can be called from any other SConstruct file
 cwd = os.getcwd()
 
-# needed for rpath 
-if not os.path.exists(os.path.join(os.pardir, 'lib')):
-   Execute('cd ..;ln -s ncomm lib')
-
 # library dependancies
 ncommPath = os.path.join(cwd, os.pardir, 'ncomm')
 SConscript(os.path.join(ncommPath, 'SConstruct'))
@@ -48,7 +44,7 @@ acqMeterFileList = ['acqmeter_win.c']
 # build environment
 statEnv = Environment(CCFLAGS    = '-O -m32',
                       CPPDEFINES = ['ACQSTAT', 'LINUX', 'SUN', 'BSDACQ', 'X11'],
-                      LINKFLAGS  = '-O2 -m32 -Wl,-rpath ../lib ',
+                      LINKFLAGS  = '-O2 -m32 -Wl,-rpath,/vnmr/lib ',
                       CPPPATH    = [cwd,
                                     os.path.join(os.sep, 'usr', 'include', 'X11')])
 

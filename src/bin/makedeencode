@@ -1,0 +1,150 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makedeencode  make file
+#
+#
+
+MAKEFILE= makedeencode
+
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory 
+
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+
+SRC_DIR=$(SRCDIR)/sysbin/
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+PROJCAT=
+
+CFLAGS= -O
+CPPFLAGS= -I$(OPENWINHOME)/include
+LDFLAGS= -L$(OPENWINHOME)/lib
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+
+
+PROG_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----
+PROG_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+
+
+#--- Link Commands for Sources Needed in the Working Directory. -------
+PROG_LN = ln -s $(PROG_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed In True Source Dir.  -------
+PROG_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)bin get
+
+#----  default source extraction to links -------
+PROG_GET= $(PROG_LN)
+
+
+#------------------------------------------------------------------------
+#-- common Infoproc sources files 
+#------------------------------------------------------------------------
+PROG_SRC=			\
+		encode.c	\
+		decode.c
+
+PROG_OBJ= $(PROG_SRC:.c=.o)
+
+#---- All Sources and headers required for compilation -----
+
+ALLSRC= $(PROG_SRC)
+
+ALLSRC_PP = $(ALLSRC:=.pp)
+
+LIBS=
+
+#--- PAID Targets ------------------------------------------
+
+std : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE)  \
+	  encode 
+	@echo "NMR_ID de-en-code complete -------------------------------"
+
+SOLARIS : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE)  \
+	  decode ; mv decode decode.sol
+	@echo "NMR_ID de-en-code complete -------------------------------"
+
+AIX : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE)	\
+	  decode ; mv decode decode.ibm
+	@echo "NMR_ID de-en-code complete -------------------------------"
+
+IRIX : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE)	\
+	"COMPILE.c=/usr/bin/cc -c -O"	\
+	"LINK.c=/usr/bin/cc "	\
+	  decode ; mv decode decode.sgi
+	@echo "NMR_ID de-en-code complete --------------------------------"
+
+static : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE) \
+	  "LDFLAGS=-Bstatic" \
+	  decode encode
+	@echo "NMR_ID static ins_sol complete -------------------------------"
+
+
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+	     "PROG_SRC_DIR= $(PROG_SCCS_SRC)" \
+	     "PROG_GET= $(PROG_SGET)"  src ) 
+
+#---- Recursive Targets ------------------------------------------------
+
+src : $$(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+decode : $(PROG_OBJ)
+	@echo Making $@...
+	( umask 2;  $(LINK.c) -o $@ decode.o  )
+
+encode : $(PROG_OBJ)
+	@echo Making $@...
+	( umask 2;  $(LINK.c) -o $@ encode.o )
+
+
+#--- Object Targets ------------------------------------------------------
+
+
+$(PROG_OBJ) : $(@:.o=.c) 
+	(umask 2; $(COMPILE.c) $(@:.o=.c))
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(PROG_SGET) $@
+	( cd $(SRC_DIR); $(PROG_SGET) $@ )
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(PROG_SRC) $(PROG_HDR) : $$(PROG_SRC_DIR)$$(@)
+	$(PROG_GET) $@
+
+
+decode.o: decode.c
+encode.o: encode.c

@@ -1,0 +1,20 @@
+"macro prescanfreq"
+"********************************************************************
+" Copyright (c) 1999-2003 Agilent Technologies All Rights Reserved.
+"
+" This software contains proprietary and confidential information of
+" Agilent Technologies and its contributors. Use, disclosure and reproduction
+" is prohibited without prior consent.
+"
+" NAME:
+"    prescanfreq
+"
+" DESCRIPTION:
+"    Set up parameters for:
+"       PRESCAN - Center Frequency Search
+"
+"********************************************************************
+rtppar($0,'nomenu'):$e
+if ($e=0) then
+  write('error','No parameters for pulse sequence %s',$0)
+endif

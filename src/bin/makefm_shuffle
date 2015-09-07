@@ -1,0 +1,54 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makefm_shuffle  make file
+# make -f makefm_shuffle,  creates fm_shuffle for FASTMAP
+#
+MAKEFILE=makefm_shuffle
+
+ROOT=$(sccsdir)
+JAWS=$(vnmrdir)
+
+JSCCS=$(JAWS)/SCCS/
+
+binSCCS=$(ROOT)/bin/SCCS/s.
+
+BINGET = sccs -p$(ROOT)/bin/SCCS get
+
+#-- Normal operational compile flags
+CFLAGS= -fsingle -c -O
+
+#-- Debugging with DBXTOOL ccompile flags
+#CFLAGS= -c -g
+
+#------------------------------------------------------------------------
+#--- objects that are needed for fm_shuffle
+#------------------------------------------------------------------------
+OBJ=                     \
+                fm_shuffle.o
+
+fm_shuffle: $(OBJ)
+	(umask 2; cc -o fm_shuffle $(OBJ) -ll -lm  )
+
+AIX: fm_shuffle
+
+SOLARIS: fm_shuffle
+
+IRIX:
+	($(MAKE) -ef $(MAKEFILE) \
+	  "CFLAGS=-c -O -cckr -DIRIX" \
+	  fm_shuffle)
+ 
+fm_shuffle.o       : fm_shuffle.c
+	(umask 2; cc $(CFLAGS) fm_shuffle.c  )
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+
+fm_shuffle.c : $(binSCCS)fm_shuffle.c
+	$(BINGET) fm_shuffle.c

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="sems_image_quality" author="ATP" investigator=""
+    application="imaging" rfcoil="main" anatomy="ATP" time_created="20040519T124956"
+    parfile="sems_image_quality" apptype="im2D" scans="sems_image_quality" seqfil="sems">
+  <protocol title="sems_image_quality" type="protocol">
+    <action  type="LIB" status="Ready" title="sems_image_quality" exp="sems_image_quality" time="4 min, 19 sec" macro="sqexp('sems_image_quality')" data="" />
+  </protocol>
+</template>

@@ -1,0 +1,69 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makefm_calshim  make file
+# make -f makefm_calshim,  creates fm_calshim for FASTMAP
+#
+MAKEFILE=makefm_calshim
+
+ROOT=$(sccsdir)
+JAWS=$(vnmrdir)
+
+JSCCS=$(JAWS)/SCCS/
+
+binSCCS=$(ROOT)/bin/SCCS/s.
+
+BINGET = sccs -p$(ROOT)/bin/SCCS get
+
+#-- Normal operational compile flags
+CFLAGS= -fsingle -c -O
+
+#-- Debugging with DBXTOOL ccompile flags
+#CFLAGS= -c -g
+
+#------------------------------------------------------------------------
+#--- objects that are needed for fm_calshim
+#------------------------------------------------------------------------
+OBJ=			\
+	fm_calshim.o	\
+	fm_polycoef.o	\
+	fm_getdata.o
+
+
+fm_calshim: $(OBJ)
+	(umask 2; cc -o fm_calshim $(OBJ) -ll -lm )
+
+AIX: fm_calshim
+
+SOLARIS: fm_calshim
+
+IRIX:
+	($(MAKE) -ef $(MAKEFILE) \
+	  "CFLAGS=-c -O -cckr -DIRIX" \
+	  fm_calshim)
+ 
+fm_calshim.o       : fm_calshim.c
+	(umask 2; cc $(CFLAGS) fm_calshim.c  )
+
+fm_polycoef.o       : fm_polycoef.c
+	(umask 2; cc $(CFLAGS) fm_polycoef.c  )
+
+fm_getdata.o       : fm_getdata.c
+	(umask 2; cc $(CFLAGS) fm_getdata.c  )
+
+#---------  SCCS ----------------
+#-----   programs  ---------------
+
+fm_calshim.c : $(binSCCS)fm_calshim.c
+	$(BINGET) fm_calshim.c
+
+fm_polycoef.c : $(binSCCS)fm_polycoef.c
+	$(BINGET) fm_polycoef.c
+
+fm_getdata.c : $(binSCCS)fm_getdata.c
+	$(BINGET) fm_getdata.c

@@ -1,0 +1,162 @@
+# Copyright (c) Varian Assoc., Inc.  All Rights Reserved.
+
+###############################################################################
+# Copyright Spectroscopy Imaging Systems, Inc.                                #
+# Image Browser makefile                     Author:  M. Howitt               #
+# make -f makeib_initdir:  Make Image Browser initialization files and        #
+#			   directories within current directory. 	      #
+###############################################################################
+
+
+###############################################################################
+#                                                                             #
+#   Description:                                                              #
+#	Makefile taken from makeparlib.
+#	Makes Image Browser initialization files and directories. 
+#	
+#	make -f makeib_initdir 
+#	make -f makeib_initdir templates
+#	make -f makeib_initdir files
+#                                                                             #
+#                                                                             #
+#                                                                             #
+###############################################################################
+
+
+# SCCS library containing the manual pages.  
+# sccsdir is an environmental variable.
+IB_REV=
+IB_SCCS=$(sccsdir)/ib
+
+TEMPLATE_DIR = 	filter			\
+		gframe			\
+		macro			\
+		math			\
+		math/expressions	\
+		math/expressions/bin	\
+		math/expressions/src	\
+		math/functions		\
+		math/functions/bin	\
+		math/functions/src	\
+		roi
+
+BITMAP_FILES =	alpha.bm browser.xpm2 frame.bm graphics.bm line.bm math.bm \
+		oval.bm pgon.bm pgon.open.bm point.bm rect.bm \
+		rot_180.bm rot_270.bm rot_90.bm rot_E-W.bm \
+		rot_N-S.bm rot_NE-SW.bm rot_NW-SE.bm \
+		selector.bm \
+		ui.bm vs.bm zoom.bm
+
+
+SPEC_FILES = colormap.init  window.init fileformats.init
+
+COMMON_SRC =	ddl_c_interface.h	\
+		image_utils.h		\
+		imagemath.h		\
+		parmlist.h
+
+EXPR_SRC =	mathproto.c
+
+FUNC_SRC =	adcfit.c		\
+		addms.c			\
+		baseline.c		\
+		circ.c			\
+		f2c.h			\
+		fit.c			\
+		linfit.c		\
+		maxof.c			\
+		mean.c			\
+		object.c		\
+		polyfit.c		\
+		qt1fit.c		\
+		shamesfit.c		\
+		snr.c			\
+		snrme.c			\
+		stats.c			\
+		subms.c			\
+		t1fit.c			\
+		t2fit.c			\
+		userfit.c		\
+		ufuncs.c
+
+FUNC_MAKE =	makemathfunc
+
+FUNC_MAKE_LNX =	makemathfunc.lnx
+
+# All frame files assumed to have a ".frame" appended on them
+FRAME_FILES = default
+
+# All filter files assumed to have a ".filter" appended on them
+FILTER_FILES = 3diff 3exp 3sharp 3smooth 5exp \
+		3Grad-N 3Grad-NW 3shadow 3traceA 3traceB \
+		5LaPlace 5Smooth 5hat 5hat1 5hat2 5sharp
+
+# All macro files assumed to have a ".macro" appended on them
+MACRO_FILES = startup
+
+FILES = $(BITMAP_FILES) $(SPEC_FILES) $(FRAME_FILES) $(FILTER_FILES) \
+	$(MACRO_FILES) $(EXPR_SRC) $(FUNC_SRC) $(FUNC_MAKE) $(COMMON_SRC)
+
+FILES_LNX = $(BITMAP_FILES) $(SPEC_FILES) $(FRAME_FILES) $(FILTER_FILES) \
+	$(MACRO_FILES) $(EXPR_SRC) $(FUNC_SRC) $(FUNC_MAKE_LNX) $(COMMON_SRC)
+
+FUNC_EXECS = fit maxof
+
+# default target:  Get all macros from SCCS
+std	  :  $(TEMPLATE_DIR) $(FILES)
+
+linux	  :  $(TEMPLATE_DIR) $(FILES_LNX)
+
+funcs	  :  std $(FUNC_EXECS)
+
+templates :  $(TEMPLATE_DIR)	
+
+files     :  $(FILES)
+
+
+$(TEMPLATE_DIR) :  
+	if [ ! -d $@  ]; then mkdir $@; chmod g+w $@; fi
+
+$(BITMAP_FILES) $(SPEC_FILES) : $(IB_SCCS)/SCCS/s.$$@
+	rm -f $@; sccs -d $(IB_SCCS) get $(IB_REV) $@
+
+$(FRAME_FILES) : $(IB_SCCS)/SCCS/s.$$@.frame
+	( cd gframe; rm -f $@; sccs -d $(IB_SCCS) get $(IB_REV) $@.frame; \
+		mv $@.frame $@; cd .. )
+
+$(FILTER_FILES) : $(IB_SCCS)/SCCS/s.$$@.filter
+	( cd filter; rm -f $@; sccs -d $(IB_SCCS) get $(IB_REV) $@.filter; \
+		mv $@.filter $@; cd .. )
+
+$(MACRO_FILES) : $(IB_SCCS)/SCCS/s.$$@.macro
+	( cd macro; rm -f $@; sccs -d $(IB_SCCS) get $(IB_REV) $@.macro; \
+		mv $@.macro $@; cd .. )
+
+$(EXPR_SRC) : $(IB_SCCS)/SCCS/s.$$@
+	(cd math/expressions/src; rm -f $@; \
+		sccs -d $(IB_SCCS) get $(IB_REV) $@; cd ../../.. )
+
+$(FUNC_SRC) : $(IB_SCCS)/SCCS/s.$$@
+	(cd math/functions/src; rm -f $@; \
+		sccs -d $(IB_SCCS) get $(IB_REV) $@; cd ../../.. )
+
+$(FUNC_MAKE) : $(IB_SCCS)/SCCS/s.$$@
+	(cd math/functions/src; rm -f $@; \
+		rm -f Makefile; \
+		sccs -d $(IB_SCCS) get $(IB_REV) $@; \
+		ln -s $@ Makefile; cd ../../.. )
+
+$(FUNC_MAKE_LNX) : $(IB_SCCS)/SCCS/s.$$@
+	(cd math/functions/src; rm -f $@; \
+		rm -f Makefile; \
+		sccs -d $(IB_SCCS) get $(IB_REV) $@; \
+		ln -s $@ Makefile; cd ../../.. )
+
+$(COMMON_SRC) :	$(IB_SCCS)/SCCS/s.$$@
+	(cd math/functions/src; rm -f $@; \
+		sccs -d $(IB_SCCS) get $(IB_REV) $@; cd ../../.. ; \
+		cd math/expressions/src; rm -f $@; \
+		sccs -d $(IB_SCCS) get $(IB_REV) $@; cd ../../.. )
+
+$(FUNC_EXECS) : $(FILES)
+	(cd math/functions/src; make $@ )

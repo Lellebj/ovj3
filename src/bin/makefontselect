@@ -1,0 +1,102 @@
+# 
+# Copyright (c) 1991-1994 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+SHELL=/bin/sh
+
+MAKEFILE= makefontselect
+
+SCCSDIR= $(sccsdir)
+OBJDIR= undefined
+
+REV_DATE=$(VNMR_REV_DATE)
+
+SRCDIR= $(sourcedir)
+PROG_SRC_DIR= $(sourcedir)/sysbin/
+VNMR_SRC_DIR= $(sourcedir)/sysvnmr/
+
+PROG_SCCS_DIR= $(SCCSDIR)/bin/SCCS/s.
+VNMR_SCCS_DIR= $(SCCSDIR)/vnmr/SCCS/s.
+
+PROG_LN= ln -s $(PROG_SRC_DIR)$(@)
+VNMR_LN= ln -s $(VNMR_SRC_DIR)$(@)
+
+PROG_SGET= sccs -p$(SCCSDIR)/bin/SCCS get
+VNMR_SGET= sccs -p$(SCCSDIR)/vnmr/SCCS get
+
+PROG_GET= $(PROG_LN)
+VNMR_GET= $(VNMR_LN)
+
+CFLAGS= -DSUN -O
+OPENWINHOME=/usr/openwin
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) -c
+LPCOMPILE.c= $(CC) $(LPCFLAGS) $(CPPFLAGS) -c
+LINK.c= $(CC) $(LDFLAGS) 
+
+OW_LIBS = -lXm -lXt -lX11 -lacqcomm -ll -lm
+LIBDIRS = -L$(OPENWINHOME)/lib -L/usr/dt/lib -L$(solobjdir)/proglib/ncomm
+INCDIRS = -I/usr/dt/include -I$(OPENWINHOME)/include
+
+#	custom.c exp_solvent.c recalldata.c
+
+PROG_SRC=		\
+	fontselect.c
+
+PROG_OBJ= $(PROG_SRC:.c=.o)
+
+std : $$(MAKEFILE)
+	@( $(MAKE) -ef $(MAKEFILE) sol_ow ; )
+	@echo "makefontselect  Complete."
+
+ow :  Source
+	@($(MAKE) -e -f $(MAKEFILE)                    \
+        "LDFLAGS= $(LIBDIRS) -R$(OPENWINHOME)/lib:/vnmr/lib" \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	fontselect )
+
+SOLARIS : $$(MAKEFILE)
+	@( $(MAKE) -ef $(MAKEFILE) sol_ow ; )
+	@echo "makefontselect  Complete."
+
+sol_ow :  Source
+	@($(MAKE) -e -f $(MAKEFILE)                    \
+        "LDFLAGS= $(LIBDIRS) -R$(OPENWINHOME)/lib:/vnmr/lib" \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	fontselect )
+
+AIX :  Source
+	@($(MAKE) -e -f $(MAKEFILE)                    \
+	"LDFLAGS= -L$(ibmobjdir)/proglib/vnmr -L." \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	fontselect )
+
+IRIX :  Source
+	@($(MAKE) -e -f $(MAKEFILE)                    \
+	"LDFLAGS= -L$(sgiobjdir)/proglib/vnmr -L. -rpath /vnmr/lib -L." \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	fontselect )
+
+fontselect: $(PROG_OBJ)
+	(umask 2; $(LINK.c) -o $@ $(PROG_OBJ) \
+                $(OW_LIBS) )
+
+Source:
+	@( cd $(PROG_SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+	     "PROG_SRC_DIR= $(PROG_SCCS_DIR)"             \
+	     "PROG_GET= $(PROG_SGET)"                     \
+	     "VNMR_GET= $(VNMR_SGET)"                     \
+	     src )
+
+src:  $(PROG_SRC)
+	@echo  Sources up to date...
+
+fontselect.o: $(@:.o=.c) 
+	(umask 2; $(CC) -c $(CFLAGS) -DX11 $(INCDIRS)  fontselect.c)
+
+$(PROG_SRC): $$(PROG_SRC_DIR)$$(@)
+	$(PROG_GET) $@
+

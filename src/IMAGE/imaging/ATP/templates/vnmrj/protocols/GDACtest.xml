@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="basic" name="GDACtest" author="ATP" investigator=""
+    application="imaging" rfcoil="main" anatomy="ATP" time_created="20040611T174752"
+    parfile="GDACtest" apptype="GDACtest" scans="GDACtest" seqfil="GDACtest">
+  <protocol title="GDACtest" type="protocol">
+    <action  type="LIB" status="Ready" title="GDACtest" exp="GDACtest" time="1 sec" macro="sqexp('GDACtest')" data="" />
+  </protocol>
+</template>

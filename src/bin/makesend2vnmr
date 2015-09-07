@@ -1,0 +1,161 @@
+# 
+# Copyright (c) 1994-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#
+# makesend2Vnmr  make file
+#
+#
+
+MAKEFILE= makesend2vnmr
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+VNMRDIR=$(vnmrdir)
+RULESET=$(ruleset)
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+SRC_DIR=$(SRCDIR)/sysbin/
+
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+BIN_SRC_DIR= $(SRC_DIR)
+NCOMM_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----
+BIN_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+BIN_LN = ln -s $(BIN_SRC_DIR)$(@)
+NCOMM_LN = ln -s $(NCOMM_SRC_DIR)$(@)
+ 
+#---  SCCS Extraction Commands for Sources Needed.  -------
+BIN_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get
+NCOMM_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ncomm/SCCS get
+ 
+#----  default source extraction to links -------
+BIN_GET= $(BIN_LN)
+NCOMM_GET= $(NCOMM_LN)
+
+#------------------------------------------------------------------------
+#--- NCOMM Sources that are needed 
+#------------------------------------------------------------------------
+# Communications libraries
+
+NCOMM_HDR_LIB=			\
+		ipcKeyDbm.h	\
+		ipcMsgQLib.h	\
+		mfileObj.h	\
+		msgQLib.h	\
+		semLib.h	\
+		sendAsync.h	\
+		shrMLib.h
+
+NCOMM_SRC_LIB=
+NCOMM_OBJ_LIB= $(NCOMM_SRC_LIB:.c=.o)
+
+
+#------------------------------------------------------------------------
+#-- expproc Source  files 
+#------------------------------------------------------------------------
+BIN_HDR=
+BIN_SRC=	send2Vnmr.c
+BIN_OBJ= $(BIN_SRC:.c=.o)
+
+MAKE_SRC=		\
+	makesend2vnmr	\
+	makesend2vnmr.rules.SOLARIS \
+	makesend2vnmr.rules.IRIX \
+	makesend2vnmr.rules.AIX 
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= 				\
+	$(MAKE_SRC) 			\
+	$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) \
+	send2Vnmr.c
+ 
+ALL_C_SRC = $(ALLSRC)
+
+#------------  Include Proper Rules for System base on environment variable ruleset ---- 
+
+include $(SRC_DIR)/makesend2vnmr.rules.$(RULESET)
+
+#---------------------------------------------------------------------------------------
+ 
+getsrc : 
+	( $(MAKE) -e -f $(MAKEFILE) \
+             "BIN_SRC_DIR= $(BIN_SCCS_SRC)"	\
+             "BIN_GET= $(BIN_SGET)" 		\
+             "NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)" 	\
+	     "NCOMM_GET= $(NCOMM_SGET)"		\
+		src )
+
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+             "BIN_SRC_DIR= $(BIN_SCCS_SRC)"	\
+             "BIN_GET= $(BIN_SGET)" 		\
+             "NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)" 	\
+	     "NCOMM_GET= $(NCOMM_SGET)" 	\
+		src )
+
+src : $$(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+depend:	$$(MAKEFILE) getsrc
+	@ echo making dependencies...
+	@ grep '^#include' $(ALL_C_SRC) \
+		| sed 's/<\([^>]*\)>/"\/usr\/include\/\1"/' \
+		| sed 's/:[^"]*"\([^"]*\)".*/: \1/' \
+		| sed 's/\.c/.o/' \
+                | sed 's/\.y/.o/' \
+                | sed 's/\.l/.o/' >makedepd
+	@ ls -1 $(ALL_C_SRC) | awk "{ {len = length(\$$0)} {s2 = substr(\$$0, 1, len - 2)} {print s2 \".o: \", \$$0 >> \"makedepd\"} } "
+	@ awk "{ if ( \$$2 !~ /\/usr\// ) { print \$$0; } }" makedepd | sort > makedep
+	@ echo '/^# DO NOT DELETE THIS LINE/+2,$$d' >eddep
+	@ echo '$$r makedep' >>eddep
+	@ echo 'w' >>eddep
+	@ cp $(MAKEFILE) $(MAKEFILE).bak
+	@ ed - $(MAKEFILE) < eddep
+	@ rm eddep makedep makedepd
+	@ echo '# DEPENDENCIES MUST END AT END OF FILE' >> $(MAKEFILE)
+	@ echo '# IF YOU PUT STUFF HERE IT WILL GO AWAY' >> $(MAKEFILE)
+	@ echo '# see make depend above' >> $(MAKEFILE)
+
+
+#--- Object Targets ----------------------------------------------
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(BIN_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(BIN_SRC) $(BIN_HDR) $(MAKE_SRC) : $$(BIN_SRC_DIR)$$(@)
+	$(BIN_GET) $@
+
+$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) $(CHANOBJ_SRC) $(CHANOBJ_HDR) : $$(NCOMM_SRC_DIR)$$(@)
+	$(NCOMM_GET) $@
+
+# ---------  Manual dependences ------------- 
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+# DEPENDENCIES MUST END AT END OF FILE
+
+
+# DEPENDENCIES MUST END AT END OF FILE
+# IF YOU PUT STUFF HERE IT WILL GO AWAY
+# see make depend above

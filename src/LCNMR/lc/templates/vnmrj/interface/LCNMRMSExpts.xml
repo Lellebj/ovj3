@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Copyright Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+-->
+<mainmenu>
+    <mchoice label = "LCNMR(MS) Run with Wet Suppression" vc = "lc1d"
+        style="Heading3"
+        show="exists('lc1d','psglib'):$SHOW"
+    />
+</mainmenu>

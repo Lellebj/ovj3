@@ -1,0 +1,165 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential 
+# information of Varian Assoc., Inc. and its contributors. 
+# Use, disclosure and reproduction is prohibited without 
+# prior consent. 
+#
+#
+# logplane make file		
+#	- make executables log_mag, plane_decode
+#
+#
+# make -f makelogplane
+# make -f makelogplane dbx,  creates dbx versions 
+# make -f makelogplane prof,  creates profiling versions 
+#
+
+MAKEFILE= makelogplane
+
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+REV=
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+VNMRDIR=$(vnmrdir)
+
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+#SRC_DIR=../
+SRC_DIR=$(SRCDIR)/sysbin/
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+CFLAGS= -O -fsingle
+CPPFLAGS=
+LDFLAGS=
+ASMCPP.s= /lib/cpp -P $(CPPFLAGS) $(TARGET_ARCH)
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+ 
+BIN_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----  
+BIN_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)bin/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+BIN_LN = ln -s $(BIN_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+BIN_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)bin/SCCS get $(REV)
+ 
+#----  default source extraction to links -------
+# BIN_GET= $(BIN_LN)
+
+#----  default source extraction (removed links) -------
+BIN_GET= $(BIN_SGET)
+
+LIBS = -ll -lm
+
+#------------------------------------------------------------------------
+#--- logplane source 
+#------------------------------------------------------------------------
+LOG_SRC= 			\
+		log_mag.c
+
+PLANE_SRC= 			\
+		plane_decode.c
+
+LOGPLANE_SRC= 			\
+		sis_geometry.c
+
+LOG_OBJ= $(LOG_SRC:.c=.o)
+
+PLANE_OBJ= $(PLANE_SRC:.c=.o)
+
+LOGPLANE_OBJ= $(LOGPLANE_SRC:.c=.o)
+
+#---  Header files needed  -------
+LOGPLANE_HDR=
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(LOG_SRC) $(PLANE_SRC) $(LOGPLANE_SRC) $(LOGPLANE_HDR)
+ 
+#LINTFILES= $(ALLSRC:.c=.ln)
+
+.KEEP_STATE:
+
+#--- make Targets ----------------------------------------------
+
+
+std AIX SOLARIS IRIX: $$(MAKEFILE)
+	@( $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS= -O" \
+	  log_mag plane_decode; )
+	@echo log_mag plane_decode complete
+
+dbx : $$(MAKEFILE)
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 log_mag_dbx plane_decode_dbx; )
+	@echo log_mag_dbx plane_decode_dbx complete
+
+prof: $$(MAKEFILE)
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -pg" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	  log_mag_p plane_decode_p; )
+	@echo log_mag_p plane_decode_p complete
+
+
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	@( cd $(SRC_DIR); $(BIN_SGET) $(MAKEFILE); \
+	     $(MAKE) -e -f $(MAKEFILE) \
+             "BIN_SRC_DIR= $(BIN_SCCS_SRC)"   \
+             "BIN_GET= $(BIN_SGET)" 		\
+               src)
+ 
+#--- Recursive Targets ------------------------------
+
+src : $(ALLSRC)
+	@echo Sources up to date...
+
+
+log_mag plane_decode : $$@.o $$(LOGPLANE_OBJ)
+	-(umask 2; \
+	$(LINK.c) -o $@ $@.o $(LOGPLANE_OBJ) $(LIBS)  )
+
+log_mag_dbx log_mag_p : $$(LOG_OBJ) $$(LOGPLANE_OBJ)
+	-(umask 2; \
+	$(LINK.c) -o $@ $(LOG_OBJ) $(LOGPLANE_OBJ) $(LIBS)  )
+
+plane_decode_dbx plane_decode_p : $$(PLANE_OBJ) $$(LOGPLANE_OBJ)
+	-(umask 2; \
+	$(LINK.c) -o $@ $(PLANE_OBJ) $(LOGPLANE_OBJ) $(LIBS)  )
+
+
+#--- Object Targets ---------------------------
+
+log_mag.o	: $(@:.o=.c)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+plane_decode.o	: $(@:.o=.c)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+sis_geometry.o	: $(@:.o=.c)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) :
+	$(BIN_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(LOG_SRC) $(PLANE_SRC) $(LOGPLANE_SRC) $(LOGPLANE_HDR) : $$(BIN_SCCS_SRC)$$(@)
+	$(BIN_GET) $@
+
