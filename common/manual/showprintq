@@ -1,0 +1,7 @@
+" Copyright (c) Agilent Technologies  All Rights Reserved. "
+************************************************************
+* 			showprintq			   *
+************************************************************
+
+This macro displays all current print jobs in the print queue
+for the active printer in Vnmr.

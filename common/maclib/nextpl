@@ -1,0 +1,7 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"************************************************************"
+"   nextpl  -  displays the next 3D plane                    "
+"************************************************************"
+
+select('next')
+dconi

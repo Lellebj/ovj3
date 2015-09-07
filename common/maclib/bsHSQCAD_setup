@@ -1,0 +1,3 @@
+if (satmode ='y') then
+  satmode='yy'
+endif

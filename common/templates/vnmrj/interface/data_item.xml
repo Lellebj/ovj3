@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<mainmenu>
+	<mchoice label = "Open in Review VP"
+	      vc = "$cmd=`RQaction(contextmenuarg[1], contextmenuarg[2], 
+		 contextmenuarg[3]) vnmrjcmd('LOC protocolBrowserClose')`
+                 vnmrjcmd('VP 3', $cmd)"
+	      style="Menu1"
+        />
+</mainmenu>

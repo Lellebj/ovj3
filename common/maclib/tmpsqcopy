@@ -1,0 +1,18 @@
+if ($# < 1) then return endif
+   walkupQ_init
+   flush
+   $dir=cursqexp+'/'+$1
+   exists($dir,'file'):$isthere
+   if ($isthere > 0.5) then
+	shell('rm -rf '+$dir):$dum
+   endif
+   shell('mkdir -p '+$dir):$dum
+   shell('cp -p '+curexp+'/acqfil/fid '+$dir+'/fid'):$dum
+   shell('cp -p '+curexp+'/datdir/data '+$dir+'/data'):$dum
+   shell('cp -p '+curexp+'/datdir/phasefile '+$dir+'/phasefile'):$dum
+   shell('cp -p '+curexp+'/procpar '+$dir+'/procpar'):$dum
+   shell('cp -p '+curexp+'/curpar '+$dir+'/curpar'):$dum
+   shell('cp -p '+curexp+'/text '+$dir+'/text'):$dum
+   shell('cp -p '+curexp+'/sampling.sch '+$dir+'/cur_sampling.sch'):$dum
+   shell('cp -p '+curexp+'/acqfil/sampling.sch '+$dir+'/sampling.sch'):$dum
+   clear(2)

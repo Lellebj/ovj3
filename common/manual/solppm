@@ -1,0 +1,4 @@
+" Copyright (c) Agilent Technologies  All Rights Reserved. "
+*****************************************************************************
+solppm	- return ppm and peak width (in hz) of solvent signal
+*****************************************************************************

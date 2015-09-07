@@ -1,0 +1,4 @@
+ab3524b7fbe136aef5015113cba5da374ad23336  ./adm/sha1/CD_Build_Id.txt
+637b2fbb2dfc3d0e990b61446612557caa49c12a  ./adm/sha1/sha1chklist.txt
+d9d0bcd5c8eaee69662e87a9f34824c002a9428d  ./adm/sha1/sha1chklistOptionsStd.txt
+f121f23a8b9f41e25f9e5b9c3a1c4952fbd1e745  ./adm/sha1/sha1chklistOptionsPwd.txt

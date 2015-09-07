@@ -1,0 +1,2 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+ds menu('ds_selfrq') ds('restart')

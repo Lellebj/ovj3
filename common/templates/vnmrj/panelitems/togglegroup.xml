@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template type="basic" element="composites">
+    <group size="96 80">
+      <label loc="24 0" size="48 24" fg="Label1"
+        font="Label1" style="Label1" point="Label1"
+        value="Toggle"
+        />
+      <toggle loc="8 24" size="80 24" fg="PlainText"
+        font="PlainText" style="PlainText" point="PlainText"
+        value="Toggle 1" vq=""
+        vc=""
+        set=""
+        />
+      <toggle loc="8 48" size="80 24" fg="PlainText"
+        font="PlainText" style="PlainText" point="PlainText"
+        value="Toggle 2" vq=""
+        vc=""
+        set=""
+        />
+    </group>
+</template>

@@ -1,0 +1,165 @@
+# 
+# makeatproc  make file
+#
+# make -f makeatproc creates Atproc
+#
+#
+
+MAKEFILE= makeatproc.lnx
+
+
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+SCCSDIR=$(sccsdir)
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+# set defines acording to system Type
+LIBS = -lm -lnsl
+NCOMMDIR = $(lnxobjdir)/proglib/ncomm
+OBJDIR = lnx
+DEBUGOPT =
+CFLAGS= -DLINUX -O2 -DDEBUG -m32
+OPTIMIZE= -O2
+CPPFLAGS=
+LDFLAGS= -m32 -Wl,-rpath /vnmr/lib
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(LDFLAGS) $(TARGET_ARCH)
+
+#--- SCCS Sources ----
+RECVPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)recvproc/SCCS/s.
+SENDPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)sendproc/SCCS/s.
+EXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)expproc/SCCS/s.
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+ATPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)atproc/SCCS/s.
+VWACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vwacq/SCCS/s.
+VNMR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmr/SCCS/s.
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+RECVPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)recvproc/SCCS get
+SENDPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)sendproc/SCCS get
+ATPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)atproc/SCCS get
+NCOMM_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ncomm/SCCS get
+EXPPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)expproc/SCCS get
+VWACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vwacq/SCCS get
+VNMR_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vnmr/SCCS get
+
+#------------------------------------------------------------------------
+#--- Expproc Sources & Headers that are needed for Recvproc
+#------------------------------------------------------------------------
+EXPPROC_HDR=                    \
+		hostMsgChannels.h	\
+                parser.h
+
+EXPPROC_SRC=			\
+		excepthandler.c	\
+		parser.c
+
+EXPPROC_OBJ= $(EXPPROC_SRC:.c=.o)
+
+NCOMM_HDR=                    \
+		ipcMsgQLib.h	\
+		hhashLib.h	\
+		errLogLib.h	\
+		eventHandler.h	\
+		mfileObj.h	\
+		shrMLib.h	\
+                msgQLib.h
+
+NCOMM_SRC=                    \
+		errLogLib.c
+
+NCOMM_OBJ= $(NCOMM_SRC:.c=.o)
+#------------------------------------------------------------------------
+
+#------------------------------------------------------------------------
+#-- atproc Source  files 
+#------------------------------------------------------------------------
+ATPROC_HDR=
+
+ATPROC_SRC=			\
+		atcmds.c	\
+		atproc.c	\
+		atfuncs.c
+
+ATPROC_OBJ= $(ATPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#--- Vnmr Sources & Headers that are needed for Recvproc
+#------------------------------------------------------------------------
+VNMR_HDR=			\
+		errorcodes.h	\
+		acquisition.h
+VNMR_SRC=
+VNMR_OBJ= $(VNMR_SRC:.c=.o)
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= 				\
+	$(EXPPROC_SRC) $(EXPPROC_HDR)	\
+	$(NCOMM_SRC) $(NCOMM_HDR)	\
+	$(ATPROC_SRC) $(ATPROC_HDR) \
+	$(VNMR_SRC) $(VNMR_HDR)
+ 
+ALL_C_SRC = $(ALLSRC)
+
+#LINTFILES= $(ALLSRC:.c=.ln)
+ 
+# link to ncomm library libncomm.a 
+
+all std LINUX : $(MAKEFILE) $(ALLSRC)
+	( $(MAKE) -e -f $(MAKEFILE) \
+        Atproc )
+	@ echo "NMR_ID Atproc programs Complete"
+
+Source : $(ALLSRC)
+	@echo Sources up to date...
+
+Atproc : $(ATPROC_OBJ) $(EXPPROC_OBJ)
+	(umask 2; $(LINK.c) -o $@  -L$(NCOMMDIR) $(ATPROC_OBJ) $(EXPPROC_OBJ) -lacqcomm $(LIBS))
+	@echo Atproc is complete
+
+depend:	Source
+	makedepend -f $(MAKEFILE) -Y $(CDEFINE) $(ALLSRC) 2>/dev/null
+
+#--- Object Targets ----------------------------------------------
+
+$(ALLOBJS) : $(@:.o=.c)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(ATPROC_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(ATPROC_SRC) $(ATPROC_HDR) : % :$(ATPROC_SCCS_SRC)%
+	$(ATPROC_SGET) $@
+
+$(EXPPROC_SRC) $(EXPPROC_HDR) : % :$(EXPPROC_SCCS_SRC)%
+	$(EXPPROC_SGET) $@
+
+$(NCOMM_SRC) $(NCOMM_HDR) : % :$(NCOMM_SCCS_SRC)%
+	$(NCOMM_SGET) $@
+
+$(VNMR_SRC) $(VNMR_HDR) : % :$(VNMR_SCCS_SRC)%
+	$(VNMR_SGET) $@
+
+$(VWACQ_SRC) $(VWACQ_HDR) : % :$(VWACQ_SCCS_SRC)%
+	$(VWACQ_SGET) $@
+
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+
+excepthandler.o: errLogLib.h
+parser.o: errLogLib.h hhashLib.h parser.h
+shrMLib.o: mfileObj.h
+msgQLib.o: ipcMsgQLib.h shrMLib.h mfileObj.h
+atcmds.o: parser.h
+atproc.o: msgQLib.h ipcMsgQLib.h shrMLib.h mfileObj.h errLogLib.h
+atproc.o: hostMsgChannels.h eventHandler.h
+atfuncs.o: errLogLib.h

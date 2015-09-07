@@ -1,0 +1,264 @@
+# 
+# This file contains rules for building Nessie Host Communications software
+#
+#Linux version of makencomm
+MAKEFILE=makencomm.lnx
+
+ifndef sccsdir
+sccsdir = "/vsccs/sccs"
+endif
+ifndef sccsjdir
+sccsjdir = "/vsccs/jsccs"
+endif
+ifndef lnxobjdir
+lnxobjdir = "/vobj/lnx"
+endif
+
+SCCSDIR=$(sccsdir)
+JSCCSDIR=$(sccsjdir)
+JDKDIR=$(lnxjredir)
+
+# Shared Library version number   E.G.  3.2 -> libncomm.so.3.2
+SO_LIB_VER = $(psg_so_ver)
+
+LIBNCOMM.so   = libncomm.so
+LIBACQCOMM.so = libacqcomm.so
+
+#--- SCCS sources ----
+NCOMM_SCCS_SRC		=$(SCCSDIR)/ncomm/SCCS/s.
+EXPPROC_SCCS_SRC	=$(SCCSDIR)/expproc/SCCS/s.
+VNMR_SCCS_SRC		=$(SCCSDIR)/vnmr/SCCS/s.
+VWCOM_SCCS_SRC		=$(SCCSDIR)/vwcom/SCCS/s.
+VWACQ_SCCS_SRC		=$(SCCSDIR)/vwacq/SCCS/s.
+PSG_SCCS_SRC		=$(SCCSDIR)/psg/SCCS/s.
+
+JPSG_SCCS_SRC		=$(JSCCSDIR)/proccom/SCCS/s.
+
+#---  SCCS extraction commands for sources needed.  -------
+NCOMM_SGET 	= sccs -p$(SCCSDIR)/ncomm/SCCS get
+EXPPROC_SGET 	= sccs -p$(SCCSDIR)/expproc/SCCS get
+VNMR_SGET 	= sccs -p$(SCCSDIR)/vnmr/SCCS get
+VWCOM_SGET 	= sccs -p$(SCCSDIR)/vwcom/SCCS get
+VWACQ_SGET 	= sccs -p$(SCCSDIR)/vwacq/SCCS get
+PSG_SGET 	= sccs -p$(SCCSDIR)/psg/SCCS get
+
+JPSG_SGET 	= sccs -p$(JSCCSDIR)/proccom/SCCS get
+
+CC	  =  gcc -m32
+CFLAGS	  =  -fPIC -g -c -Wall -O 
+CDEFINE	  =  -DLINUX -DNESSIE -DUSE_HTONS
+COMPILE.c =  $(CC) $(CFLAGS) $(CDEFINE)
+
+LDSOFLAGS =  -shared 
+LINK.c    =  $(CC) $(LDSOFLAGS)
+ 
+# Object libraries which stand alone
+NCOMM_HDR=			\
+		mfileObj.h	\
+		errLogLib.h	\
+		hhashLib.h	\
+		ipcKeyDbm.h	\
+		ipcMsgQLib.h	\
+		semLib.h	\
+		msgQLib.h	\
+		eventHandler.h	\
+		eventQueue.h	\
+		eventQueueP.h	\
+		listObj.h	\
+		sendAsync.h	\
+		shrMLib.h
+
+NCOMM_SRC=			\
+		mfileObj.c	\
+		errLogLib.c	\
+		hhashLib.c	\
+		ipcKeyDbm.c	\
+		ipcMsgQLib.c	\
+		semLib.c	\
+		msgQLib.c	\
+		asyncIo.c	\
+		eventHandler.c	\
+		eventQueue.c	\
+		listObj.c	\
+		sendAsync.c	\
+		shrMLib.c
+
+NCOMM_OBJ		= $(NCOMM_SRC:.c=.o)
+
+# chanLib obj consist of chanLib.h sockets.h chanlib.c sockets.c signals.c fdmask.c
+CHANOBJ_HDR=			\
+		chanLib.h	\
+		chanLibP.h	\
+		sockets.h
+
+CHANOBJ_SRC=			\
+		chanLib.c	\
+		sockets.c	\
+		signals.c	\
+		fdmask.c
+
+CHANOBJ_OBJ=$(CHANOBJ_SRC:.c=.o)
+
+# Expproc headers needed
+EXPPROC_HDR=                    \
+		shrexpinfo.h	\
+		shrstatinfo.h	\
+		expQfuncs.h	\
+                hostMsgChannels.h
+
+EXPPROC_SRC=			\
+		expQfuncs.c	\
+		statfuncs.c
+
+EXPPROC_OBJ=$(EXPPROC_SRC:.c=.o)
+
+VNMR_HDR=                       \
+		acquisition.h	\
+		variables.h	\
+                comm.h
+
+VNMR_SRC=			\
+		comm.c		\
+		socket.c	\
+		socket1.c
+
+VNMR_OBJ=$(VNMR_SRC:.c=.o)
+
+PSG_HDR=
+
+PSG_SRC=		\
+		convertapbout.c	
+
+PSG_OBJ=$(PSG_SRC:.c=.o)
+
+VWCOM_HDR=			\
+		connBroker.h
+
+VWACQ_HDR=			\
+		hostAcqStructs.h
+
+
+# -----   Java NATIVE method for jpsg  
+JPSG_HDR=			\
+		proccom_ProcCom.h
+
+JPSG_SRC=			\
+		ProcCom.c
+
+JPSG_OBJ=$(JPSG_SRC:.c=.o)
+
+
+#---- All sources and headers required for compilation -----
+ALLSRC= $(NCOMM_SRC) $(NCOMM_HDR) $(CHANOBJ_SRC) $(CHANOBJ_HDR) $(EXPPROC_SRC) $(EXPPROC_HDR) \
+        $(VNMR_SRC) $(VNMR_HDR) $(VWCOM_HDR) $(VWACQ_HDR) $(PSG_SRC) $(JPSG_HDR) $(JPSG_SRC)
+
+ALLOBJ= $(NCOMM_OBJ) $(CHANOBJ_OBJ) $(VNMR_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ)
+
+#---- Targets ------------------------------------
+
+std LINUX : so_lib
+
+so_lib : $(MAKEFILE) depend
+	 which gcc
+	 ($(MAKE) -e -f $(MAKEFILE) $(LIBNCOMM.so) $(LIBACQCOMM.so))
+	 @echo
+	 @echo "------- DONE Linux $(LIBNCOMM.so) and $(LIBACQCOMM.so) -------"
+
+depend: src
+	makedepend -f $(MAKEFILE) -Y $(CDEFINE) $(ALLSRC) 2>/dev/null
+
+.PHONY: clean cleanall
+
+clean:
+	rm -f *.o *.so *.so.*
+
+cleanall:
+	rm -f *.c *.C *.h *.o *.a *.so *.so.*
+
+#-----  Recursive Targets ----------------------------------------------------
+
+src Source : $(MAKEFILE) $(ALLSRC)
+	@echo
+	@echo Linux NCOMM sources up to date ---------------------------
+
+$(LIBNCOMM.so) : $(NCOMM_OBJ) $(CHANOBJ_OBJ)
+	@echo
+	- (umask 2; rm -f libncomm.s*)
+	(umask 2; $(LINK.c) -Wl,-soname,$@ -o $@.$(SO_LIB_VER) $(NCOMM_OBJ) $(CHANOBJ_OBJ))
+	@(umask 2; ln -s $@.$(SO_LIB_VER) $@)
+	@echo $@.$(SO_LIB_VER) is complete -------
+	@echo
+
+$(LIBACQCOMM.so) : $(NCOMM_OBJ) $(CHANOBJ_OBJ) $(VNMR_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ) $(JPSG_OBJ)
+	- (umask 2; rm -f libacqcomm.s*)
+	(umask 2; $(LINK.c) -Wl,-soname,$@ -o $@.$(SO_LIB_VER) $(NCOMM_OBJ) $(CHANOBJ_OBJ) \
+                                        $(VNMR_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ) $(JPSG_OBJ))
+	@(umask 2; ln -s $@.$(SO_LIB_VER) $@)
+	@echo $@.$(SO_LIB_VER) is complete -------
+	@echo
+
+ProcCom.o : $(JPSG_HDR) $(JSPG_SRC)
+	$(CC) -c $(CFLAGS) $(CDEFINE) -I$(JDKDIR)/include -I$(JDKDIR)/include/linux $(@:.o=.c)
+
+#--- Object dependencies -------------------------------------------
+
+$(ALLOBJ) : $(@:.o=.c)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#------------  source extraction via SCCS  ---------------
+
+$(MAKEFILE) : %:$(NCOMM_SCCS_SRC)%
+	$(NCOMM_SGET) $@
+
+$(NCOMM_SRC) $(NCOMM_HDR) $(CHANOBJ_SRC) $(CHANOBJ_HDR): %:$(NCOMM_SCCS_SRC)%
+	$(NCOMM_SGET) $@
+
+$(EXPPROC_SRC) $(EXPPROC_HDR) : %:$(EXPPROC_SCCS_SRC)%
+	$(EXPPROC_SGET) $@
+
+$(VNMR_SRC) $(VNMR_HDR) : %:$(VNMR_SCCS_SRC)%
+	$(VNMR_SGET) $@
+
+$(VWACQ_HDR) : %:$(VWACQ_SCCS_SRC)%
+	$(VWACQ_SGET) $@
+
+$(VWCOM_HDR) : %:$(VWCOM_SCCS_SRC)%
+	$(VWCOM_SGET) $@
+
+$(PSG_SRC) $(PSG_HDR) : %:$(PSG_SCCS_SRC)%
+	$(PSG_SGET) $@
+
+$(JPSG_SRC) $(JPSG_HDR) : %:$(JPSG_SCCS_SRC)%
+	$(JPSG_SGET) $@
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+
+mfileObj.o: errLogLib.h mfileObj.h
+hhashLib.o: errLogLib.h hhashLib.h
+ipcKeyDbm.o: errLogLib.h shrMLib.h mfileObj.h ipcKeyDbm.h
+ipcMsgQLib.o: errLogLib.h ipcMsgQLib.h
+semLib.o: errLogLib.h semLib.h mfileObj.h
+msgQLib.o: errLogLib.h hostMsgChannels.h chanLib.h mfileObj.h msgQLib.h
+msgQLib.o: ipcMsgQLib.h shrMLib.h
+asyncIo.o: eventHandler.h errLogLib.h
+eventHandler.o: errLogLib.h listObj.h eventQueue.h eventHandler.h
+eventQueue.o: eventQueueP.h eventQueue.h
+listObj.o: listObj.h
+sendAsync.o: errLogLib.h sockets.h
+shrMLib.o: errLogLib.h shrMLib.h mfileObj.h
+ipcKeyDbm.o: shrMLib.h mfileObj.h
+msgQLib.o: ipcMsgQLib.h shrMLib.h mfileObj.h
+eventQueueP.o: eventQueue.h
+shrMLib.o: mfileObj.h
+chanLib.o: errLogLib.h chanLibP.h sockets.h chanLib.h listObj.h
+chanLib.o: eventHandler.h
+sockets.o: errLogLib.h sockets.h
+chanLibP.o: sockets.h chanLib.h
+expQfuncs.o: errLogLib.h mfileObj.h shrMLib.h shrexpinfo.h expQfuncs.h
+statfuncs.o: errLogLib.h hostAcqStructs.h mfileObj.h shrMLib.h shrstatinfo.h
+shrstatinfo.o: hostAcqStructs.h
+comm.o: comm.h acquisition.h errLogLib.h shrstatinfo.h hostAcqStructs.h
+socket.o: expQfuncs.h mfileObj.h acquisition.h comm.h variables.h
+socket.o: shrstatinfo.h hostAcqStructs.h
+socket1.o: acquisition.h comm.h
+ProcCom.o: proccom_ProcCom.h

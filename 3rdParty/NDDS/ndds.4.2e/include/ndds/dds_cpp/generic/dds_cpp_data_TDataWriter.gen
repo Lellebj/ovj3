@@ -1,0 +1,378 @@
+/* $Id: TDataWriter.cxx,v 1.11 2006/01/13 03:21:27 fernando Exp $
+
+ (c) Copyright, Real-Time Innovations, $Date: 2006/01/13 03:21:27 $.
+ All rights reserved.
+ No duplications, whole or partial, manual or electronic, may be made
+ without express written permission.  Any such copies, or
+ revisions thereof, must display this notice unaltered.
+ This code contains trade secrets of Real-Time Innovations, Inc.
+
+modification history
+--------------------
+1.0h,12jan06,fcs Changed the implementation of the narrow
+                 function in order to support data writers
+                 defined inside a C++ namespace.
+1.0g,27jul05,kaj Added API for FooDataWriter::wait_for_acknowledgments
+1.0g,26jul05,kaj Added API for FooDataWriter::lookup_instance.
+1.0g,13jul05,kaj Added DDSEntity::get_instance_handle
+1.0g,14jul05,jml Bug #9595: provide type safety TDataWriter and 
+                 and TDataReader narrow methods 
+1.0e,12jul05,kaj Renamed DDS_StatusKindMask to DDS_StatusMask
+1.0e,11jul05,kaj get_matched_subscription params change: pointer -> reference
+1.0e,08jul05,kaj Renamed PublicationMatchedStatus and member functions.
+1.0e,01apr05,eys Fixed bug 9595. Added narrow method.
+1.0f,21mar05,rw  Bug #8660: return DDS_ReturnCode_t instead of void
+1.0e,18feb05,rw  Bug #9332: get_status_condition() -> get_statuscondition
+1.0d,02jun04,rw  Bug #8050: TData should be referred to by reference,
+                 not by pointer
+1.0d,21apr04,eys Added get_matched_subscriptions and
+                 get_matched_subscription_data
+1.0d,21apr04,eys Updated get_key_value API
+1.0d,14apr04,eys Added w_timestamp methods in C
+1.0d,14apr04,eys Added new API's to DDSDataWriter
+1.0c,10dec03,eys  Bug #8143: copied here from dds/psm-cpp
+1.0a,30oct03,eys Added forward declarations
+1.0a,24oct03,rw  Bug #8008: moved impl. of write() and dispose() to
+                 superclass
+1.0a,13oct03,eys Fixed include files. Include only if it is necessary.
+                 Fixed compiler warnings for unused variables
+1.0a,09oct03,seb Added new delete operator for windows to remove warnings
+1.0a,03oct03,eys Refactored generic code to allow multiple types definition
+                 in one file
+1.0a,03oct03,rw  Pass additional arg. when creating Presentation writer
+1.0a,24sep03,rw  Neither write_w_timestamp() nor dispose_w_timestamp()
+                 will be supported in the LAR
+1.0a,23sep03,rw  Implemented (un)register_instance()
+1.0a,22sep03,rw  Superclass takes over responsibility for destruction;
+                 initialize Presentation instance handles
+1.0a,21sep03,rw  Implemented get_key_valueX()
+1.0a,17sep03,rw  Better encapsulation of creation and destruction;
+                 preliminary impl. of write and dispose methods
+1.0a,16sep03,rw  Updated lifecycle APIs; reformatted comments and long
+                 lines in response to review feedback; removed
+                 dependency on PLATFORM_SPECIFIC_NAME macro
+1.0a,09sep03,rw  Changed suffix of get_impl and get_interface methods
+                 from X to I: they are Internal, not eXtensions
+1.0a,04sep03,rw  Removed dependency on TECHNOLOGY_PLATFORM
+1.0a,25aug03,rw  Removed DDS namespace and added DDS prefix to names
+1.0a,18aug03,rj  Removed dependency on log_impl.h
+1.0a,11aug03,rj  Removed dependency on rtilib/makeheader.h
+1.0a,08aug03,rj  Now includes dds_log_impl.h
+1.0a,08aug03,rj  Now conditionally including based on TECHNOLOGY_PLATFORM
+1.0a,22jul03,rj  Added get_key_valueX()
+1.0a,07jun03,rj  Now just a minimal type safe wrapper for 
+		 PLATFORM_SPECIFIC_NAME(DDSDataWriter_impl), 
+		 which does all the real work.
+1.0a,06jun03,rj  Now extends PLATFORM_SPECIFIC_NAME(DDSDataWriter_impl)
+1.0a,05jun03,rj  Added get_impl_X() and get_interface_X()
+1.0a,03jun03,rj  _impl should be the FIRST base class 
+1.0a,23may03,rj  Created: refactored from TDataWriter.gencxx
+===================================================================== */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "dds_c/dds_c_common.h"
+#include "dds_c/dds_c_log_impl.h"
+
+#ifndef dds_c_publication_h
+  #include "dds_cpp/dds_cpp_publication.h"
+#endif
+
+/* ================================================================== */
+/*i
+   <<INTERFACE>> 
+
+   Defines:   TDataWriter_impl, TDataWriter, TData
+
+   Organized using the well-documented "Generics Pattern" for
+   implementing generics in C and C++.
+*/
+
+/* ================================================================== */
+/*i
+   <<IMPLEMENTATION>> 
+
+   Defines:   TDataWriter_impl TData
+*/
+#if defined(TDataWriter) && defined(TData)
+
+#define DDS_CURRENT_SUBMODULE  DDS_SUBMODULE_MASK_DATA
+
+
+/*
+ * Two step procedure needed for stringize the value of a macro 
+ */
+#define _QUOTE(x) # x
+#define QUOTE(x) _QUOTE(x)
+
+/* ----------------------------------------------------------------- */
+/* Defines submodule for logging purposes
+ */
+
+
+// ---------------------------------------------------------------------
+// Public Methods
+// ---------------------------------------------------------------------
+
+// --- Lifecycle: ------------------------------------------------------
+
+TDataWriter* TDataWriter::createI(DDSDataWriter* dataWriter) {
+    TDataWriter* typedDataWriter = new TDataWriter(dataWriter);
+    return typedDataWriter;
+}
+
+DDS_ReturnCode_t TDataWriter::destroyI(
+        TDataWriter* writer) {
+    // nothing need to be done
+    delete writer;
+    return DDS_RETCODE_OK;
+}
+
+// ---------------------------------------------------------------------
+
+TDataWriter* TDataWriter::narrow(DDSDataWriter *writer) {
+    const char *METHOD_NAME = "TDataWriter::narrow";        
+
+    if (writer == NULL) {
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,"null writer");
+        return NULL;
+    }
+
+#ifndef TTYPENAME
+    /* Compatibility with ndds.4.0g where TTYPENAME is not defined 
+       for the data writer */
+    if (!writer->compare_typeI(QUOTE(TData))) {
+#else
+    /* This solution allows to work with DataWriters defined inside C++ namespaces 
+       where TData doesn't match with the TYPENAME asssigned by nddsgen */
+    if (!writer->compare_typeI(TTYPENAME)) {
+#endif
+
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,
+                         "wrong type writer");
+        return NULL; 
+    }
+        
+    return (TDataWriter *)writer;
+}
+
+
+DDS_InstanceHandle_t TDataWriter::register_instance(
+    const TData& instance_data) {
+    //
+    return DDSDataWriter::register_instance_untypedI(&instance_data);
+}
+
+DDS_InstanceHandle_t TDataWriter::register_instance_w_timestamp(
+    const TData& instance_data,
+    const DDS_Time_t& source_timestamp) {
+    //
+    return DDSDataWriter::register_instance_w_timestamp_untypedI(
+	&instance_data, source_timestamp);
+}
+
+
+DDS_ReturnCode_t TDataWriter::unregister_instance(
+    const TData& instance_data, const DDS_InstanceHandle_t& handle) { 
+    //
+    return DDSDataWriter::unregister_instance_untypedI(&instance_data,
+                                                       handle);
+}                                                             
+
+DDS_ReturnCode_t TDataWriter::unregister_instance_w_timestamp(
+    const TData& instance_data, const DDS_InstanceHandle_t& handle,
+    const DDS_Time_t& source_timestamp) { 
+    //
+    return DDSDataWriter::unregister_instance_w_timestamp_untypedI(
+	&instance_data, handle,
+	source_timestamp);
+}                                                             
+                                                                     
+DDS_ReturnCode_t TDataWriter::write(const TData& instance_data, 
+				    const DDS_InstanceHandle_t& handle) {  
+    //
+    return DDSDataWriter::write_untypedI(&instance_data, handle);
+}                                                             
+
+DDS_ReturnCode_t TDataWriter::write_w_timestamp(
+    const TData& instance_data, const DDS_InstanceHandle_t& handle,   
+    const DDS_Time_t& source_timestamp) {
+    return DDSDataWriter::write_w_timestamp_untypedI(&instance_data, handle,
+						     source_timestamp);
+}                                                             
+                                                                   
+DDS_ReturnCode_t TDataWriter::dispose(
+    const TData& instance_data,          
+    const DDS_InstanceHandle_t& instance_handle) {
+    //
+    return DDSDataWriter::dispose_untypedI(&instance_data, instance_handle);
+}                                                             
+
+DDS_ReturnCode_t TDataWriter::dispose_w_timestamp(
+    const TData& instance_data, const DDS_InstanceHandle_t& instance_handle,
+    const DDS_Time_t& source_timestamp) {
+    return DDSDataWriter::dispose_w_timestamp_untypedI(
+	&instance_data, instance_handle,
+	source_timestamp);
+}                                                             
+      
+                                                                   
+DDS_ReturnCode_t TDataWriter::get_key_value(
+    TData& key_holder,
+    const DDS_InstanceHandle_t& handle)  {
+    //
+    return DDSDataWriter::get_key_value_untypedI(&key_holder, handle);
+}                     
+
+DDS_InstanceHandle_t TDataWriter::lookup_instance(
+    const TData& key_holder) { 
+    //
+    return DDSDataWriter::lookup_instance_untypedI(
+        &key_holder);
+}                                                             
+                                                                     
+DDS_ReturnCode_t TDataWriter::set_qos(
+        const DDS_DataWriterQos& qos) {
+    //
+    return DDSDataWriter::set_qos(qos);
+}
+
+DDS_ReturnCode_t TDataWriter::get_qos(DDS_DataWriterQos& qos) {
+    return DDSDataWriter::get_qos(qos);
+}
+
+
+DDS_ReturnCode_t TDataWriter::set_listener(
+        DDSDataWriterListener* l, DDS_StatusMask mask) {
+    //
+    return DDSDataWriter::set_listener(l, mask);
+}
+    
+DDSDataWriterListener* TDataWriter::get_listener() {
+    return DDSDataWriter::get_listener();
+}
+
+    
+DDS_ReturnCode_t TDataWriter::get_liveliness_lost_status(
+        DDS_LivelinessLostStatus& status) {
+    return DDSDataWriter::get_liveliness_lost_status(status);
+}
+    
+DDS_ReturnCode_t TDataWriter::get_offered_deadline_missed_status(
+        DDS_OfferedDeadlineMissedStatus& status) {
+    return DDSDataWriter::get_offered_deadline_missed_status(status);
+}
+    
+DDS_ReturnCode_t TDataWriter::get_offered_incompatible_qos_status(
+        DDS_OfferedIncompatibleQosStatus& status) {
+    return DDSDataWriter::get_offered_incompatible_qos_status(status);
+}
+
+DDS_ReturnCode_t TDataWriter::get_publication_matched_status(
+        DDS_PublicationMatchedStatus& status) {
+    return DDSDataWriter::get_publication_matched_status(status);
+}
+
+DDS_ReturnCode_t TDataWriter::assert_liveliness() {
+    return DDSDataWriter::assert_liveliness();
+}
+
+DDS_ReturnCode_t TDataWriter::get_matched_subscriptions(
+    DDS_InstanceHandleSeq& subscription_handles) {
+  // C++ to C++, both use references
+    return DDSDataWriter::get_matched_subscriptions(subscription_handles);
+}
+
+DDS_ReturnCode_t TDataWriter::get_matched_subscription_data(
+    DDS_SubscriptionBuiltinTopicData& subscription_data,
+    const DDS_InstanceHandle_t& subscription_handle) {
+  // C++ to C++, both use references
+    return DDSDataWriter::get_matched_subscription_data(
+	subscription_data, subscription_handle);
+}
+
+DDSTopic* TDataWriter::get_topic() {
+    return DDSDataWriter::get_topic();
+}
+
+DDSPublisher* TDataWriter::get_publisher() {
+    return DDSDataWriter::get_publisher();
+}
+
+DDS_ReturnCode_t TDataWriter::wait_for_acknowledgments(
+    const DDS_Duration_t& max_wait) {
+    return DDSDataWriter::wait_for_acknowledgments(max_wait);
+}
+
+DDS_ReturnCode_t TDataWriter::enable() {
+    return DDSDataWriter::enable();
+}
+    
+DDSStatusCondition* TDataWriter::get_statuscondition() {
+    return DDSDataWriter::get_statuscondition();
+}
+    
+DDS_InstanceHandle_t TDataWriter::get_instance_handle() {
+    return DDSDataWriter::get_instance_handle();
+}
+
+DDS_StatusMask TDataWriter::get_status_changes() {
+    return DDSDataWriter::get_status_changes();
+}
+
+//DDSEntity* TDataWriter::get_interface_EntityI() {
+//    return (TDataWriter*)this;
+//}
+
+DDSEntity_impl* TDataWriter::get_impl_EntityI() {
+    return DDSDataWriter::get_impl_EntityI();
+}
+
+
+
+// ---------------------------------------------------------------------
+// Protected Methods
+// ---------------------------------------------------------------------
+
+// --- Constructors & destructors: -------------------------------------
+
+TDataWriter::~TDataWriter() {
+}                   
+
+
+TDataWriter::TDataWriter(DDSDataWriter* impl)
+    : DDSDataWriter(impl) {
+    // empty
+}
+
+
+
+// ---------------------------------------------------------------------
+// Private Methods
+// ---------------------------------------------------------------------
+
+// --- <<lifecycle>>: --------------------------------------------------
+
+//void* TDataWriter::operator new(size_t size,
+//        struct PRESPsWriter* presWriter) {
+//    //
+//    return DDSDataWriter::allocate(size, presWriter);
+//}
+
+
+//void TDataWriter::operator delete(void* self) {
+//    DDSDataWriter::deallocate(self);
+//}
+
+//void TDataWriter::operator delete(void* self,
+//				       struct PRESPsWriter* /* presWriter */) {
+//    DDSDataWriter::deallocate(self);
+//}
+
+
+#undef DDS_CURRENT_SUBMODULE
+#endif /* defined(TDataWriter) && defined(TData) */
+
+
+/* End $Id: TDataWriter.cxx,v 1.11 2006/01/13 03:21:27 fernando Exp $ */

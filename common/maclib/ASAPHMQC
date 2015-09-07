@@ -1,0 +1,6 @@
+"***ASAP_hmqc setup macro***"
+
+on('gain'):$gainon
+cpsetup($0)
+gainUP(10,$gainon)
+

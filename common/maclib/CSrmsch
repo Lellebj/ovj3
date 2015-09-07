@@ -1,0 +1,6 @@
+
+$f2=curexp+'/sampling.sch'
+exists($f2,'file'):$e
+if($e) then 
+  delete($f2)
+endif

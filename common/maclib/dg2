@@ -1,0 +1,6 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+
+" ***************** "
+" *** macro dg2 *** "
+" ***************** "
+dg('dg2')

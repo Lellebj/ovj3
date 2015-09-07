@@ -1,0 +1,532 @@
+# 
+# This file contains rules for building Nessie Host Communications software
+#
+#Windows version of makencomm
+MAKEFILE=makencomm.win
+
+#ifndef sccsdir
+#sccsdir="/vsccs/sccs"
+#endif
+#ifndef sccsjdir
+#sccsjdir = "/vsccs/jsccs"
+#endif
+#ifndef lnxobjdir
+#lnxobjdir = "/vobj/lnx"
+#endif
+
+SCCSDIR=$(sccsdir)
+JSCCSDIR=$(sccsjdir)
+JDKDIR=$(JDK_HOME)
+
+# Shared Library version number   E.G.  3.2 -> libncomm.so.3.2
+SO_LIB_VER = $(psg_so_ver)
+
+LIBNCOMM.so   = libncomm.so
+LIBACQCOMM.so = libacqcomm.so
+LIBNCOMM.a   = libncomm.a
+LIBACQCOMM.a = libacqcomm.a
+
+#--- SCCS sources ----
+NCOMM_SCCS_SRC		=$(SCCSDIR)/ncomm/SCCS/s.
+EXPPROC_SCCS_SRC	=$(SCCSDIR)/expproc/SCCS/s.
+VNMR_SCCS_SRC		=$(SCCSDIR)/vnmr/SCCS/s.
+VWCOM_SCCS_SRC		=$(SCCSDIR)/vwcom/SCCS/s.
+VWACQ_SCCS_SRC		=$(SCCSDIR)/vwacq/SCCS/s.
+PSG_SCCS_SRC		=$(SCCSDIR)/psg/SCCS/s.
+
+JPSG_SCCS_SRC		=$(JSCCSDIR)/proccom/SCCS/s.
+
+#---  SCCS extraction commands for sources needed.  -------
+NCOMM_SGET 	= sccs -p$(SCCSDIR)/ncomm/SCCS get
+EXPPROC_SGET 	= sccs -p$(SCCSDIR)/expproc/SCCS get
+VNMR_SGET 	= sccs -p$(SCCSDIR)/vnmr/SCCS get
+VWCOM_SGET 	= sccs -p$(SCCSDIR)/vwcom/SCCS get
+VWACQ_SGET 	= sccs -p$(SCCSDIR)/vwacq/SCCS get
+PSG_SGET 	= sccs -p$(SCCSDIR)/psg/SCCS get
+
+JPSG_SGET 	= sccs -p$(JSCCSDIR)/proccom/SCCS get
+
+CC	  =  gcc
+# CFLAGS	  =  -fPIC -shared -g -c -O   NO PIC with gcc3.3 has bug that causes switch not to work
+CFLAGS	  =  -g -c -O 
+CDEFINE	  =  -DNESSIE -DLINUX -D_ALL_SOURCE -I/usr/include -I/$(JDK_HOME)/include \
+	     -I/$(JDK_HOME)/include/win32
+COMPILE.c =  $(CC) $(CFLAGS) $(CDEFINE)
+
+# LDSOFLAGS =  -shared 
+LDSOFLAGS =
+LINK.c    =  $(CC) $(LDSOFLAGS)
+ 
+# Object libraries which stand alone
+NCOMM_HDR=			\
+		mfileObj.h	\
+		errLogLib.h	\
+		hhashLib.h	\
+		ipcKeyDbm.h	\
+		ipcMsgQLib.h	\
+		semLib.h	\
+		msgQLib.h	\
+		eventHandler.h	\
+		eventQueue.h	\
+		eventQueueP.h	\
+		listObj.h	\
+		sendAsync.h	\
+		shrMLib.h
+
+NCOMM_SRC=			\
+		mfileObj.c	\
+		errLogLib.c	\
+		hhashLib.c	\
+		ipcKeyDbm.c	\
+		ipcMsgQLib.c	\
+		semLib.c	\
+		msgQLib.c	\
+		asyncIo.c	\
+		eventHandler.c	\
+		eventQueue.c	\
+		listObj.c	\
+		sendAsync.c	\
+		shrMLib.c
+
+NCOMM_OBJ		= $(NCOMM_SRC:.c=.o)
+
+# chanLib obj consist of chanLib.h sockets.h chanlib.c sockets.c signals.c fdmask.c
+CHANOBJ_HDR=			\
+		chanLib.h	\
+		chanLibP.h	\
+		sockets.h
+
+CHANOBJ_SRC=			\
+		chanLib.c	\
+		sockets.c	\
+		signals.c	\
+		fdmask.c
+
+CHANOBJ_OBJ=$(CHANOBJ_SRC:.c=.o)
+
+# Expproc headers needed
+EXPPROC_HDR=                    \
+		shrexpinfo.h	\
+		shrstatinfo.h	\
+		expQfuncs.h	\
+                hostMsgChannels.h
+
+EXPPROC_SRC=			\
+		expQfuncs.c	\
+		statfuncs.c
+
+EXPPROC_OBJ=$(EXPPROC_SRC:.c=.o)
+
+VNMR_HDR=                       \
+		acquisition.h	\
+		variables.h	\
+                comm.h
+
+VNMR_SRC=			\
+		comm.c		\
+		socket.c	\
+		socket1.c
+
+VNMR_OBJ=$(VNMR_SRC:.c=.o)
+
+PSG_HDR=
+
+PSG_SRC=		\
+		convertapbout.c	
+
+PSG_OBJ=$(PSG_SRC:.c=.o)
+
+VWCOM_HDR=			\
+		connBroker.h
+
+VWACQ_HDR=			\
+		hostAcqStructs.h
+
+
+# -----   Java NATIVE method for jpsg  
+JPSG_HDR=			\
+		proccom_ProcCom.h
+
+JPSG_SRC=			\
+		ProcCom.c
+
+JPSG_OBJ=$(JPSG_SRC:.c=.o)
+
+
+#---- All sources and headers required for compilation -----
+ALLSRC= $(NCOMM_SRC) $(NCOMM_HDR) $(CHANOBJ_SRC) $(CHANOBJ_HDR) $(EXPPROC_SRC) $(EXPPROC_HDR) \
+        $(VNMR_SRC) $(VNMR_HDR) $(VWCOM_HDR) $(VWACQ_HDR) $(PSG_SRC) $(JPSG_HDR) $(JPSG_SRC)
+
+ALLOBJ= $(NCOMM_OBJ) $(CHANOBJ_OBJ) $(VNMR_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ) \
+
+#---- Targets ------------------------------------
+
+# std WINDOWS : so1_lib
+
+std WINDOWS : a_lib
+	@echo "NDC libs on Windows complete---------------"
+
+a_lib : depend
+	@echo "$(MAKEFILE)"
+	 ($(MAKE) -e -f $(MAKEFILE) $(LIBNCOMM.a) $(LIBACQCOMM.a))
+	 @echo
+	 @echo "------- DONE WINDOWS $(LIBNCOMM.a) and $(LIBACQCOMM.a) -------"
+
+so1_lib : depend
+	@echo "$(MAKEFILE)"
+	 ($(MAKE) -e -f $(MAKEFILE) $(LIBNCOMM.so) $(LIBACQCOMM.so))
+	 @echo
+	 @echo "------- DONE WINDOWS $(LIBNCOMM.so) and $(LIBACQCOMM.so) -------"
+
+depend: src
+	makedepend -f $(MAKEFILE) -Y $(CDEFINE) $(ALLSRC) 
+
+clean:
+	rm -f *.o *.so *.so.*
+
+cleanall:
+	rm -f *.c *.C *.h *.o *.a *.so *.so.*
+
+#-----  Recursive Targets ----------------------------------------------------
+
+src Source : $(ALLSRC)
+	@echo
+	@echo WINDOWS NCOMM sources up to date ---------------------------
+
+$(LIBNCOMM.a) : $(NCOMM_OBJ) $(CHANOBJ_OBJ)
+	@echo
+	- (umask 2; rm -f libncomm.a)
+	@(umask 2; ar rv libncomm.a $(NCOMM_OBJ) $(CHANOBJ_OBJ) 1>/dev/null )
+	@echo $@ is complete -------
+
+$(LIBACQCOMM.a) : $(NCOMM_OBJ) $(CHANOBJ_OBJ) $(VNMR_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ) $(JPSG_OBJ)
+	- (umask 2; rm -f libacqcomm*)
+	@(umask 2; ar rv libacqcomm.a $(NCOMM_OBJ) $(CHANOBJ_OBJ) \
+               $(VNMR_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ) $(JPSG_OBJ) 1>/dev/null)
+	@echo $@ is complete -------
+	@echo
+
+$(LIBNCOMM.so) : $(NCOMM_OBJ) $(CHANOBJ_OBJ)
+	@echo
+	- (umask 2; rm -f libncomm.s*)
+	(umask 2; $(LINK.c) -o $@.$(SO_LIB_VER) $(NCOMM_OBJ) $(CHANOBJ_OBJ))
+	@(umask 2; ln -s $@.$(SO_LIB_VER) $@)
+	@echo $@.$(SO_LIB_VER) is complete -------
+	@echo
+#(umask 2; $(LINK.c) -Wl,-soname,$@ -o $@.$(SO_LIB_VER) $(NCOMM_OBJ) $(CHANOBJ_OBJ))
+
+$(LIBACQCOMM.so) : $(NCOMM_OBJ) $(CHANOBJ_OBJ) $(VNMR_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ) $(JPSG_OBJ)
+	- (umask 2; rm -f libacqcomm*)
+	@(umask 2; ar rv libacqcomm.a $(NCOMM_OBJ) $(CHANOBJ_OBJ) \
+               $(VNMR_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ) $(JPSG_OBJ) 1>/dev/null)
+	(umask 2; $(LINK.c) -o $@.$(SO_LIB_VER) $(NCOMM_OBJ) $(CHANOBJ_OBJ) \
+               $(VNMR_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ) $(JPSG_OBJ))
+	@(umask 2; ln -s $@.$(SO_LIB_VER) $@)
+	@echo $@.$(SO_LIB_VER) is complete -------
+	@echo
+
+ProcCom.o : $(JPSG_HDR) $(JSPG_SRC)
+	$(CC) -c $(CFLAGS) $(CDEFINE) -I$(JDKDIR)/include -I$(JDKDIR)/include/win32 $(@:.o=.c)
+
+#--- Object dependencies -------------------------------------------
+
+$(ALLOBJ) : $(@:.o=.c)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#------------  source extraction via SCCS  ---------------
+
+$(MAKEFILE) : $$(NCOMM_SCCS_SRC)$(@)
+	$(NCOMM_SGET) $@
+
+$(NCOMM_SRC) $(NCOMM_HDR) $(CHANOBJ_SRC) $(CHANOBJ_HDR): $$(NCOMM_SCCS_SRC)$$(@)
+	$(NCOMM_SGET) $@
+
+$(EXPPROC_SRC) $(EXPPROC_HDR) : $$(EXPPROC_SCCS_SRC)$$(@)
+	$(EXPPROC_SGET) $@
+
+$(VNMR_SRC) $(VNMR_HDR) : $$(VNMR_SCCS_SRC)$$(@)
+	$(VNMR_SGET) $@
+
+$(VWACQ_HDR) : $$(VWACQ_SCCS_SRC)$$(@)
+	$(VWACQ_SGET) $@
+
+$(VWCOM_HDR) : $$(VWCOM_SCCS_SRC)$$(@)
+	$(VWCOM_SGET) $@
+
+$(PSG_SRC) $(PSG_HDR) : $$(PSG_SCCS_SRC)$$(@)
+	$(PSG_SGET) $@
+
+$(JPSG_SRC) $(JPSG_HDR) : $$(JPSG_SCCS_SRC)$$(@)
+	$(JPSG_SGET) $@
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+
+mfileObj.o: /usr/include/unistd.h /usr/include/features.h
+mfileObj.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+mfileObj.o: /usr/include/sys/unistd.h /usr/include/stdio.h
+mfileObj.o: /usr/include/va_list.h /usr/include/stdarg.h
+mfileObj.o: /usr/include/string.h /usr/include/strings.h /usr/include/errno.h
+mfileObj.o: /usr/include/sys/file.h /usr/include/fcntl.h
+mfileObj.o: /usr/include/sys/stat.h /usr/include/sys/time.h
+mfileObj.o: /usr/include/time.h /usr/include/sys/time_impl.h
+mfileObj.o: /usr/include/sys/mman.h /usr/include/stdlib.h
+mfileObj.o: /usr/include/stddef.h /usr/include/sys/wait.h errLogLib.h
+mfileObj.o: /usr/include/syslog.h mfileObj.h /usr/include/inttypes.h
+mfileObj.o: /usr/include/sys/resource.h
+errLogLib.o: /usr/include/stdio.h /usr/include/features.h
+errLogLib.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+errLogLib.o: /usr/include/va_list.h /usr/include/stdarg.h
+errLogLib.o: /usr/include/stdlib.h /usr/include/stddef.h
+errLogLib.o: /usr/include/sys/wait.h /usr/include/unistd.h
+errLogLib.o: /usr/include/sys/unistd.h /usr/include/string.h
+errLogLib.o: /usr/include/strings.h /usr/include/syslog.h
+errLogLib.o: /usr/include/errno.h /usr/include/time.h
+errLogLib.o: /usr/include/sys/time_impl.h
+hhashLib.o: /usr/include/stdio.h /usr/include/features.h
+hhashLib.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+hhashLib.o: /usr/include/va_list.h /usr/include/stdarg.h
+hhashLib.o: /usr/include/stdlib.h /usr/include/stddef.h
+hhashLib.o: /usr/include/sys/wait.h /usr/include/string.h
+hhashLib.o: /usr/include/strings.h /usr/include/syslog.h /usr/include/errno.h
+hhashLib.o: errLogLib.h hhashLib.h
+ipcKeyDbm.o: /usr/include/stdio.h /usr/include/features.h
+ipcKeyDbm.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+ipcKeyDbm.o: /usr/include/va_list.h /usr/include/stdarg.h
+ipcKeyDbm.o: /usr/include/stdlib.h /usr/include/stddef.h
+ipcKeyDbm.o: /usr/include/sys/wait.h /usr/include/string.h
+ipcKeyDbm.o: /usr/include/strings.h /usr/include/signal.h
+ipcKeyDbm.o: /usr/include/sys/ipc.h /usr/include/errno.h errLogLib.h
+ipcKeyDbm.o: /usr/include/syslog.h shrMLib.h mfileObj.h
+ipcKeyDbm.o: /usr/include/inttypes.h /usr/include/sys/time.h
+ipcKeyDbm.o: /usr/include/time.h /usr/include/sys/time_impl.h
+ipcKeyDbm.o: /usr/include/sys/resource.h /usr/include/sys/mman.h ipcKeyDbm.h
+ipcMsgQLib.o: /usr/include/stdio.h /usr/include/features.h
+ipcMsgQLib.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+ipcMsgQLib.o: /usr/include/va_list.h /usr/include/stdarg.h
+ipcMsgQLib.o: /usr/include/stdlib.h /usr/include/stddef.h
+ipcMsgQLib.o: /usr/include/sys/wait.h /usr/include/string.h
+ipcMsgQLib.o: /usr/include/strings.h /usr/include/time.h
+ipcMsgQLib.o: /usr/include/sys/time_impl.h /usr/include/sys/ipc.h
+ipcMsgQLib.o: /usr/include/sys/msg.h /usr/include/errno.h errLogLib.h
+ipcMsgQLib.o: /usr/include/syslog.h ipcMsgQLib.h
+msgQLib.o: /usr/include/stdio.h /usr/include/features.h
+msgQLib.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+msgQLib.o: /usr/include/va_list.h /usr/include/stdarg.h /usr/include/stdlib.h
+msgQLib.o: /usr/include/stddef.h /usr/include/sys/wait.h
+msgQLib.o: /usr/include/string.h /usr/include/strings.h /usr/include/time.h
+msgQLib.o: /usr/include/sys/time_impl.h /usr/include/sys/ipc.h
+msgQLib.o: /usr/include/sys/msg.h /usr/include/signal.h /usr/include/errno.h
+msgQLib.o: errLogLib.h /usr/include/syslog.h hostMsgChannels.h chanLib.h
+msgQLib.o: mfileObj.h /usr/include/inttypes.h /usr/include/sys/time.h
+msgQLib.o: /usr/include/sys/resource.h /usr/include/sys/mman.h msgQLib.h
+msgQLib.o: ipcMsgQLib.h shrMLib.h
+asyncIo.o: /usr/include/stdio.h /usr/include/features.h
+asyncIo.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+asyncIo.o: /usr/include/va_list.h /usr/include/stdarg.h /usr/include/errno.h
+asyncIo.o: /usr/include/stdlib.h /usr/include/stddef.h
+asyncIo.o: /usr/include/sys/wait.h /usr/include/signal.h /usr/include/fcntl.h
+asyncIo.o: /usr/include/unistd.h /usr/include/sys/unistd.h
+asyncIo.o: /usr/include/sys/stat.h /usr/include/sys/param.h
+asyncIo.o: /usr/include/limits.h /usr/include/sys/select.h
+asyncIo.o: /usr/include/sys/time.h /usr/include/string.h
+asyncIo.o: /usr/include/strings.h /usr/include/time.h
+asyncIo.o: /usr/include/sys/time_impl.h /usr/include/sys/ioctl.h
+asyncIo.o: eventHandler.h errLogLib.h /usr/include/syslog.h
+eventHandler.o: /usr/include/stdio.h /usr/include/features.h
+eventHandler.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+eventHandler.o: /usr/include/va_list.h /usr/include/stdarg.h
+eventHandler.o: /usr/include/stdlib.h /usr/include/stddef.h
+eventHandler.o: /usr/include/sys/wait.h /usr/include/errno.h
+eventHandler.o: /usr/include/signal.h errLogLib.h /usr/include/syslog.h
+eventHandler.o: listObj.h eventQueue.h eventHandler.h
+eventQueue.o: /usr/include/stdio.h /usr/include/features.h
+eventQueue.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+eventQueue.o: /usr/include/va_list.h /usr/include/stdarg.h
+eventQueue.o: /usr/include/stdlib.h /usr/include/stddef.h
+eventQueue.o: /usr/include/sys/wait.h /usr/include/string.h
+eventQueue.o: /usr/include/strings.h eventQueueP.h eventQueue.h
+listObj.o: /usr/include/stdio.h /usr/include/features.h
+listObj.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+listObj.o: /usr/include/va_list.h /usr/include/stdarg.h /usr/include/stdlib.h
+listObj.o: /usr/include/stddef.h /usr/include/sys/wait.h /usr/include/errno.h
+listObj.o: listObj.h
+sendAsync.o: /usr/include/stdio.h /usr/include/features.h
+sendAsync.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+sendAsync.o: /usr/include/va_list.h /usr/include/stdarg.h
+sendAsync.o: /usr/include/errno.h /usr/include/sys/socket.h
+sendAsync.o: /usr/include/sys/uio.h errLogLib.h /usr/include/syslog.h
+sendAsync.o: sockets.h /usr/include/sys/time.h /usr/include/string.h
+sendAsync.o: /usr/include/strings.h /usr/include/time.h
+sendAsync.o: /usr/include/sys/time_impl.h
+shrMLib.o: /usr/include/stdio.h /usr/include/features.h
+shrMLib.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+shrMLib.o: /usr/include/va_list.h /usr/include/stdarg.h /usr/include/stdlib.h
+shrMLib.o: /usr/include/stddef.h /usr/include/sys/wait.h
+shrMLib.o: /usr/include/sys/file.h /usr/include/fcntl.h /usr/include/unistd.h
+shrMLib.o: /usr/include/sys/unistd.h /usr/include/sys/stat.h
+shrMLib.o: /usr/include/sys/ipc.h /usr/include/errno.h errLogLib.h
+shrMLib.o: /usr/include/syslog.h shrMLib.h mfileObj.h /usr/include/inttypes.h
+shrMLib.o: /usr/include/sys/time.h /usr/include/string.h
+shrMLib.o: /usr/include/strings.h /usr/include/time.h
+shrMLib.o: /usr/include/sys/time_impl.h /usr/include/sys/resource.h
+shrMLib.o: /usr/include/sys/mman.h
+mfileObj.o: /usr/include/inttypes.h /usr/include/sys/types.h
+mfileObj.o: /usr/include/features.h /usr/include/sys/endian.h
+mfileObj.o: /usr/include/sys/time.h /usr/include/string.h
+mfileObj.o: /usr/include/strings.h /usr/include/time.h
+mfileObj.o: /usr/include/sys/time_impl.h /usr/include/sys/resource.h
+mfileObj.o: /usr/include/sys/mman.h
+errLogLib.o: /usr/include/syslog.h /usr/include/features.h
+errLogLib.o: /usr/include/va_list.h /usr/include/stdarg.h
+ipcKeyDbm.o: shrMLib.h mfileObj.h /usr/include/inttypes.h
+ipcKeyDbm.o: /usr/include/sys/types.h /usr/include/features.h
+ipcKeyDbm.o: /usr/include/sys/endian.h /usr/include/sys/time.h
+ipcKeyDbm.o: /usr/include/string.h /usr/include/strings.h /usr/include/time.h
+ipcKeyDbm.o: /usr/include/sys/time_impl.h /usr/include/sys/resource.h
+ipcKeyDbm.o: /usr/include/sys/mman.h
+ipcMsgQLib.o: /usr/include/sys/types.h /usr/include/features.h
+ipcMsgQLib.o: /usr/include/sys/endian.h
+semLib.o: /usr/include/sys/types.h /usr/include/features.h
+semLib.o: /usr/include/sys/endian.h /usr/include/sys/ipc.h
+semLib.o: /usr/include/sys/sem.h
+msgQLib.o: ipcMsgQLib.h /usr/include/sys/types.h /usr/include/features.h
+msgQLib.o: /usr/include/sys/endian.h shrMLib.h mfileObj.h
+msgQLib.o: /usr/include/inttypes.h /usr/include/sys/time.h
+msgQLib.o: /usr/include/string.h /usr/include/strings.h /usr/include/time.h
+msgQLib.o: /usr/include/sys/time_impl.h /usr/include/sys/resource.h
+msgQLib.o: /usr/include/sys/mman.h
+eventQueueP.o: eventQueue.h
+shrMLib.o: mfileObj.h /usr/include/inttypes.h /usr/include/sys/types.h
+shrMLib.o: /usr/include/features.h /usr/include/sys/endian.h
+shrMLib.o: /usr/include/sys/time.h /usr/include/string.h
+shrMLib.o: /usr/include/strings.h /usr/include/time.h
+shrMLib.o: /usr/include/sys/time_impl.h /usr/include/sys/resource.h
+shrMLib.o: /usr/include/sys/mman.h
+chanLib.o: /usr/include/stdio.h /usr/include/features.h
+chanLib.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+chanLib.o: /usr/include/va_list.h /usr/include/stdarg.h /usr/include/errno.h
+chanLib.o: /usr/include/string.h /usr/include/strings.h /usr/include/malloc.h
+chanLib.o: /usr/include/stdlib.h /usr/include/stddef.h
+chanLib.o: /usr/include/sys/wait.h /usr/include/sys/time.h
+chanLib.o: /usr/include/time.h /usr/include/sys/time_impl.h
+chanLib.o: /usr/include/signal.h /usr/include/sys/socket.h
+chanLib.o: /usr/include/sys/uio.h /usr/include/netinet/in.h errLogLib.h
+chanLib.o: /usr/include/syslog.h chanLibP.h sockets.h chanLib.h listObj.h
+chanLib.o: eventHandler.h
+sockets.o: /usr/include/stdio.h /usr/include/features.h
+sockets.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+sockets.o: /usr/include/va_list.h /usr/include/stdarg.h /usr/include/unistd.h
+sockets.o: /usr/include/sys/unistd.h /usr/include/string.h
+sockets.o: /usr/include/strings.h /usr/include/errno.h /usr/include/stdlib.h
+sockets.o: /usr/include/stddef.h /usr/include/sys/wait.h /usr/include/fcntl.h
+sockets.o: /usr/include/sys/stat.h /usr/include/sys/file.h
+sockets.o: /usr/include/sys/ioctl.h /usr/include/sys/socket.h
+sockets.o: /usr/include/sys/uio.h /usr/include/netdb.h /usr/include/signal.h
+sockets.o: errLogLib.h /usr/include/syslog.h sockets.h
+sockets.o: /usr/include/sys/time.h /usr/include/time.h
+sockets.o: /usr/include/sys/time_impl.h
+signals.o: /usr/include/stdio.h /usr/include/features.h
+signals.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+signals.o: /usr/include/va_list.h /usr/include/stdarg.h
+signals.o: /usr/include/sys/time.h /usr/include/string.h
+signals.o: /usr/include/strings.h /usr/include/time.h
+signals.o: /usr/include/sys/time_impl.h /usr/include/signal.h
+fdmask.o: /usr/include/sys/time.h /usr/include/features.h
+fdmask.o: /usr/include/string.h /usr/include/strings.h
+fdmask.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+fdmask.o: /usr/include/time.h /usr/include/sys/time_impl.h
+chanLibP.o: sockets.h /usr/include/sys/time.h /usr/include/features.h
+chanLibP.o: /usr/include/string.h /usr/include/strings.h
+chanLibP.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+chanLibP.o: /usr/include/time.h /usr/include/sys/time_impl.h chanLib.h
+sockets.o: /usr/include/sys/time.h /usr/include/features.h
+sockets.o: /usr/include/string.h /usr/include/strings.h
+sockets.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+sockets.o: /usr/include/time.h /usr/include/sys/time_impl.h
+expQfuncs.o: /usr/include/stdio.h /usr/include/features.h
+expQfuncs.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+expQfuncs.o: /usr/include/va_list.h /usr/include/stdarg.h
+expQfuncs.o: /usr/include/string.h /usr/include/strings.h
+expQfuncs.o: /usr/include/sys/stat.h /usr/include/signal.h
+expQfuncs.o: /usr/include/fcntl.h /usr/include/unistd.h
+expQfuncs.o: /usr/include/sys/unistd.h /usr/include/errno.h errLogLib.h
+expQfuncs.o: /usr/include/syslog.h mfileObj.h /usr/include/inttypes.h
+expQfuncs.o: /usr/include/sys/time.h /usr/include/time.h
+expQfuncs.o: /usr/include/sys/time_impl.h /usr/include/sys/resource.h
+expQfuncs.o: /usr/include/sys/mman.h shrMLib.h shrexpinfo.h expQfuncs.h
+statfuncs.o: /usr/include/stdio.h /usr/include/features.h
+statfuncs.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+statfuncs.o: /usr/include/va_list.h /usr/include/stdarg.h
+statfuncs.o: /usr/include/stdlib.h /usr/include/stddef.h
+statfuncs.o: /usr/include/sys/wait.h /usr/include/string.h
+statfuncs.o: /usr/include/strings.h /usr/include/sys/stat.h
+statfuncs.o: /usr/include/sys/time.h /usr/include/time.h
+statfuncs.o: /usr/include/sys/time_impl.h /usr/include/fcntl.h
+statfuncs.o: /usr/include/unistd.h /usr/include/sys/unistd.h
+statfuncs.o: /usr/include/errno.h errLogLib.h /usr/include/syslog.h
+statfuncs.o: hostAcqStructs.h /usr/include/netinet/in.h mfileObj.h
+statfuncs.o: /usr/include/inttypes.h /usr/include/sys/resource.h
+statfuncs.o: /usr/include/sys/mman.h shrMLib.h shrstatinfo.h
+shrexpinfo.o: /usr/include/inttypes.h
+shrstatinfo.o: /usr/include/time.h /usr/include/features.h
+shrstatinfo.o: /usr/include/sys/time_impl.h /usr/include/sys/time.h
+shrstatinfo.o: /usr/include/string.h /usr/include/strings.h
+shrstatinfo.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+shrstatinfo.o: hostAcqStructs.h /usr/include/netinet/in.h
+comm.o: /usr/include/stdio.h /usr/include/features.h /usr/include/sys/types.h
+comm.o: /usr/include/sys/endian.h /usr/include/va_list.h
+comm.o: /usr/include/stdarg.h /usr/include/unistd.h /usr/include/sys/unistd.h
+comm.o: /usr/include/stdlib.h /usr/include/stddef.h /usr/include/sys/wait.h
+comm.o: /usr/include/string.h /usr/include/strings.h /usr/include/fcntl.h
+comm.o: /usr/include/sys/stat.h /usr/include/netdb.h /usr/include/errno.h
+comm.o: /usr/include/signal.h comm.h /usr/include/sys/param.h
+comm.o: /usr/include/limits.h /usr/include/sys/socket.h
+comm.o: /usr/include/sys/uio.h /usr/include/netinet/in.h acquisition.h
+comm.o: errLogLib.h /usr/include/syslog.h shrstatinfo.h /usr/include/time.h
+comm.o: /usr/include/sys/time_impl.h /usr/include/sys/time.h hostAcqStructs.h
+socket.o: /usr/include/stdio.h /usr/include/features.h
+socket.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+socket.o: /usr/include/va_list.h /usr/include/stdarg.h /usr/include/stdlib.h
+socket.o: /usr/include/stddef.h /usr/include/sys/wait.h /usr/include/unistd.h
+socket.o: /usr/include/sys/unistd.h /usr/include/string.h
+socket.o: /usr/include/strings.h /usr/include/signal.h /usr/include/fcntl.h
+socket.o: /usr/include/sys/stat.h /usr/include/netdb.h /usr/include/errno.h
+socket.o: /usr/include/sys/time.h /usr/include/time.h
+socket.o: /usr/include/sys/time_impl.h /usr/include/sys/file.h
+socket.o: /usr/include/arpa/inet.h /usr/include/netinet/in.h expQfuncs.h
+socket.o: mfileObj.h /usr/include/inttypes.h /usr/include/sys/resource.h
+socket.o: /usr/include/sys/mman.h acquisition.h comm.h
+socket.o: /usr/include/sys/param.h /usr/include/limits.h
+socket.o: /usr/include/sys/socket.h /usr/include/sys/uio.h variables.h
+socket.o: shrstatinfo.h hostAcqStructs.h
+socket1.o: /usr/include/stdio.h /usr/include/features.h
+socket1.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+socket1.o: /usr/include/va_list.h /usr/include/stdarg.h /usr/include/signal.h
+socket1.o: /usr/include/string.h /usr/include/strings.h
+socket1.o: /usr/include/sys/ioctl.h /usr/include/sys/time.h
+socket1.o: /usr/include/time.h /usr/include/sys/time_impl.h
+socket1.o: /usr/include/sys/resource.h /usr/include/sys/wait.h
+socket1.o: /usr/include/sys/stat.h /usr/include/netdb.h /usr/include/errno.h
+socket1.o: /usr/include/setjmp.h /usr/include/fcntl.h /usr/include/unistd.h
+socket1.o: /usr/include/sys/unistd.h acquisition.h comm.h
+socket1.o: /usr/include/sys/param.h /usr/include/limits.h
+socket1.o: /usr/include/sys/socket.h /usr/include/sys/uio.h
+socket1.o: /usr/include/netinet/in.h
+comm.o: /usr/include/sys/types.h /usr/include/features.h
+comm.o: /usr/include/sys/endian.h /usr/include/sys/param.h
+comm.o: /usr/include/limits.h /usr/include/sys/unistd.h
+comm.o: /usr/include/sys/socket.h /usr/include/sys/uio.h
+comm.o: /usr/include/netinet/in.h
+hostAcqStructs.o: /usr/include/netinet/in.h
+proccom_ProcCom.o: /dev/fs/E/j2sdk1.4.2_05/include/jni.h /usr/include/stdio.h
+proccom_ProcCom.o: /usr/include/features.h /usr/include/sys/types.h
+proccom_ProcCom.o: /usr/include/sys/endian.h /usr/include/va_list.h
+proccom_ProcCom.o: /usr/include/stdarg.h
+proccom_ProcCom.o: /dev/fs/E/j2sdk1.4.2_05/include/win32/jni_md.h
+ProcCom.o: /usr/include/stdio.h /usr/include/features.h
+ProcCom.o: /usr/include/sys/types.h /usr/include/sys/endian.h
+ProcCom.o: /usr/include/va_list.h /usr/include/stdarg.h /usr/include/unistd.h
+ProcCom.o: /usr/include/sys/unistd.h /usr/include/signal.h
+ProcCom.o: /usr/include/errno.h proccom_ProcCom.h
+ProcCom.o: /dev/fs/E/j2sdk1.4.2_05/include/jni.h
+ProcCom.o: /dev/fs/E/j2sdk1.4.2_05/include/win32/jni_md.h

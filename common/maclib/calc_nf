@@ -1,0 +1,27 @@
+"********************************************************************   "
+" Copyright (c) 1999-2004 Agilent Technologies All Rights Reserved.             "
+"                                                                       "
+" This software contains proprietary and confidential information of    "
+" Agilent Technologies and its contributors. Use, disclosure and reproduction   "
+" is prohibited without prior consent.                                  "
+"                                                                       "
+" NAME:                                                                 "
+"    calc_nf                                                            "
+"                                                                       "
+" DESCRIPTION:                                                          "
+"    finds the value of nf for ECC sequence                             "
+"                                                                       "
+" Ex.:                                                                  "
+"    calc_nf - no arguments                                             "
+"                                                                       "
+"																		"
+"                                                                       "
+"********************************************************************   "
+if ($# <> 0) then
+     write('line3','Function calc_nf does not take input arguments!')
+     abort
+endif     
+
+nf = (ne_ecc + (nv -1)*ne2_ecc) * ecc_loop
+
+return(nf)

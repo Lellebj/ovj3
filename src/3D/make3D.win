@@ -1,0 +1,503 @@
+#
+# make -f makeft3d	  -  generic make command
+# make -f makeft3d all	  -  make everything
+# make -f makeft3d nmri	  -  creates ft3d and its library
+# make -f makeft3d dbx	  -  creates dbx version of ft3d and its library
+# make -f makeft3d prof	  -  creates gprof profiling version of ft3d and
+#			     its library 
+#
+# ----->  dbx or profiling libraries are not a standard release item and 
+#         are not to be given to customers....    10/9/90  Sandy Farmer
+#
+# changed the name of makefile to make3D to follow naming convention
+# and added fpa version.
+#
+# make -f make3D	  -  generic make command
+# make -f make3D all	  -  make everything
+# make -f make3D nmri	  -  creates ft3d and its library
+# make -f make3D dbx	  -  creates dbx version of ft3d and its library
+# make -f make3D fpa	  -  creates fpa version of ft3d and its library
+# make -f make3D prof	  -  creates gprof profiling version of ft3d and
+#			     its library 
+#
+# added plane extract program getplane
+# make -f make3D getpl	   -  creates getplane 
+# make -f make3D getpldbx  -  creates dbx version of getplane 
+# make -f make3D getplprof -  creates gprof profiling version of getplane
+#
+# added FID compression program compressfid
+# make -f make3D cmprsfid     -  creates compressfid 
+# make -f make3D cmprsfiddbx  -  creates dbx version of compressfid 
+# make -f make3D cmprsfidprof -  creates gprof profiling version of compressfid
+#
+# added alternate computers and operating systems
+# make -f make3D AIX      - creates everything on IBM
+# make -f make3D IRIX     - creates everything on Silicon Graphics
+# make -f make3D SOLARIS  - creates everything on Solaris (SunOS 5.x)
+#
+
+MAKEFILE= make3D.win
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+CFLAGS= -O -sb -fsingle `getconf LFS_CFLAGS`
+LPCFLAGS= -O4 -dalign -sb `getconf LFS_CFLAGS`
+CPPFLAGS=
+LDFLAGS=`getconf LFS_LDFLAGS` `getconf LFS_LIBS`
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LPCOMPILE.c= $(CC) $(LPCFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(LDFLAGS) $(TARGET_ARCH)
+ 
+IN_LINE=/usr/lib/libm.il
+FT3D_SRC_DIR= ../3D/
+VNMR_SRC_DIR= ../vnmr/
+STAT_SRC_DIR= ../stat/
+
+#---- ft3d library being updated. -----
+WORKLIB= unmr3Dlib.a
+
+#--- SCCS Sources ----  
+#--- Link Commands for Sources Needed. -------
+FT3D_LN = cp $(FT3D_SRC_DIR)$(@)
+VNMR_LN = cp $(VNMR_SRC_DIR)$(@)
+STAT_LN = cp $(STAT_SRC_DIR)$(@)
+
+#----  default source extraction to links -------
+FT3D_GET= $(FT3D_LN)
+VNMR_GET= $(VNMR_LN)
+STAT_GET= $(STAT_LN)
+
+
+LIBS = -ll -lm
+
+
+LIBU= unmr3Dlib.a
+LIBUFPA= unmr3Dlibfpa.a
+LIBUDBX= unmr3Dlib_dbx.a
+LIBUPROF= unmr3Dlib_p.a
+
+#  COPTIONS are passed to make, or could be an environmental parameter.
+#  use for -DSIS, etc.
+
+#------------------------------------------------------------------------
+#--- ft3d source files that are needed for unmr3Dlib
+#------------------------------------------------------------------------
+UNMR3DLIB_SRC= 			\
+		combine.c 	\
+		comline.c 	\
+		errorlog.c	\
+		fft3d.c 	\
+		fileinfo.c 	\
+		fmap.c		\
+		ft3d.c 		\
+		ft3dio.c	\
+		ftutil.c	\
+		lock3Dfiles.c
+
+UNMR3DLIB_OBJ= $(UNMR3DLIB_SRC:.c=.o)
+
+
+#------------------------------------------------------------------------
+#---  ft3d header files needed for unmr3Dlib
+#------------------------------------------------------------------------
+UNMR3DLIB_HDR=			\
+		coef3d.h	\
+		command.h	\
+		constant.h	\
+		datac.h		\
+		fileio.h	\
+		lock3D.h	\
+		struct3d.h
+
+
+#------------------------------------------------------------------------
+#--- VNMR header files that are needed for unmr3Dlib
+#------------------------------------------------------------------------
+VNMR_HDR=			\
+		data.h		\
+		ftpar.h		\
+		process.h
+
+
+# ------------------------------------------------------------------------
+#--- VNMR source files that are needed for unmr3Dlib
+#------------------------------------------------------------------------
+VNMR_SRC=			\
+		lpqld.c		\
+		lpz.c
+
+VNMR_OBJ= $(VNMR_SRC:.c=.o)
+
+
+#------------------------------------------------------------------------
+#--- ACQSTAT header files that are needed for unmr3Dlib
+#------------------------------------------------------------------------
+STAT_HDR=
+
+
+#------------------------------------------------------------------------
+#--- ACQSTAT source iles that are needed for unmr3Dlib
+#------------------------------------------------------------------------
+STAT_SRC=
+
+
+STAT_OBJ= $(STAT_SRC:.c=.o)
+
+
+#------------------------------------------------------------------------
+#--- getplane source files
+#------------------------------------------------------------------------
+GETPL_SRC= 			\
+		plextract.c
+
+
+GETPL_OBJ= $(GETPL_SRC:.c=.o)
+
+
+#------------------------------------------------------------------------
+#--- compressfid source files
+#------------------------------------------------------------------------
+CMPRSFID_SRC=			\
+		compressfid.c
+
+CMPRSFID_OBJ= $(CMPRSFID_SRC:.c=.o)
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(UNMR3DLIB_SRC) $(UNMR3DLIB_HDR) $(VNMR_SRC) $(VNMR_HDR)	\
+	$(STAT_SRC) $(STAT_HDR) $(GETPL_SRC) $(CMPRSFID_SRC)
+
+
+#--- make Targets ----------------------------------------------
+
+sparc: nmri getpl cmprsfid
+
+std:  nmri getpl cmprsfid
+	@echo "NMRI:  Standard FT3D library complete ---------------------"
+
+nmri : $$(MAKEFILE) Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	   unmr3Dlib.a ft3d; )
+	@echo "NMRI:  FT3D library complete ------------------------------"
+
+dbx : Source
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g -Bstatic -DDBXTOOL -fsingle \
+	 -DDEBUG $(COPTIONS)" \
+	"LPCFLAGS= -g -Bstatic -DDBXTOOL -DDEBUG $(COPTIONS)"	\
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"WORKLIB= unmr3Dlib_dbx.a" ft3d_dbx; )
+	@echo "NMRI:  FT3D dbx library complete --------------------------"
+
+prof: Source
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -pg -Bstatic -fsingle $(COPTIONS)" \
+	"LPCFLAGS= -O4 -dalign -pg -Bstatic $(COPTIONS)"	\
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"WORKLIB= unmr3Dlib_p.a" ft3d_p; )
+	@echo "NMRI:  FT3D profiling library complete --------------------"
+
+getpl : $$(MAKEFILE) Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 getplane; )
+	@echo "NMRI:  getplane complete ------------------------------"
+
+getpldbx : $$(MAKEFILE) Source
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g -fsingle -Bstatic -DDBXTOOL      \
+	 -DDEBUG $(COPTIONS)" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 getplane_dbx; )
+	@echo "NMRI:  getplane_dbx complete ------------------------------"
+
+getplprof : $$(MAKEFILE) Source
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -pg -fsingle -Bstatic $(COPTIONS)" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 getplane_p; )
+	@echo "NMRI:  getplane_p complete ------------------------------"
+
+cmprsfid : $$(MAKEFILE) Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 compressfid; )
+	@echo "NMRI:  compressfid complete ------------------------------"
+
+cmprsfiddbx : $$(MAKEFILE) Source
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g -fsingle -Bstatic -DDBXTOOL      \
+	 -DDEBUG $(COPTIONS)" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 compressfid_dbx; )
+	@echo "NMRI:  compressfid_dbx complete ------------------------------"
+
+cmprsfidprof : $$(MAKEFILE) Source
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -pg -fsingle -Bstatic $(COPTIONS)" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 compressfid_p; )
+	@echo "NMRI:  compressfid_p complete ------------------------------"
+
+
+AIX : $$(MAKEFILE) Source 
+	( $(MAKE) -f $(MAKEFILE) \
+	"CFLAGS= -O -fsingle -DSUN -D_SUN $(COPTIONS)" \
+	"LPCFLAGS= -O $(COPTIONS)"    \
+	"CPPFLAGS= -DSUN -DAIX -D_NO_PROTO" \
+	"TARGET_ARCH=" \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"LIBS = -ll -lm" \
+	"WORKLIB= unmr3Dlib.ibm.a" \
+	ft3d getplane compressfid)
+	@echo "NMR_ID IBM AIX VNMR libraries complete --------------------------"
+
+IRIX : $$(MAKEFILE) Source 
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS= -O -cckr -prototypes -float -D_BSD_COMPAT -DIRIX $(COPTIONS)" \
+	"LPCFLAGS= -O $(COPTIONS)"      \
+	"CPPFLAGS= -DSUN -D_NO_PROTO" \
+	"TARGET_ARCH=-DIRIX" \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"LIBS = -s -lsun -lmalloc -ll -lm" \
+	"WORKLIB= unmr3Dlib.sgi.a" \
+	ft3d getplane compressfid)
+	@echo "NMR_ID SGI MOTIF libraries complete --------------------------"
+ 
+SOLARIS: $$(MAKEFILE) Source
+	( SOLARIS="y"; export SOLARIS; $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS= -O -fsingle $(COPTIONS) `getconf LFS_CFLAGS`" \
+	"LPCFLAGS= -O $(COPTIONS) `getconf LFS_CFLAGS`"      \
+	"CPPFLAGS= -DSUN -DSOLARIS" \
+	"TARGET_ARCH=" \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"LIBS= -lm -lsocket -lnsl" \
+	"WORKLIB= unmr3Dlib.a" \
+	ft3d getplane compressfid)
+	@echo "NMR_ID Solaris libraries complete --------------------------"
+
+WINDOWS: Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS= -O $(COPTIONS) " \
+	"LPCFLAGS= -O $(COPTIONS) "      \
+	"CPPFLAGS= -DSUN -DLINUX" \
+        "CC=gcc" \
+        "LINK.c=gcc" \
+	"TARGET_ARCH=" \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"RPCLIBS= -lrpclib" \
+	"LIBS= -lm" \
+	ft3d_win getplane compressfid)
+	@echo "3D Windows libraries complete --------------------------"
+
+
+all: nmri dbx prof
+	@echo NMRI:  all FT3D libraries complete
+
+# ---- Be sure True Source that we link to are upto date.
+Source : src
+ 
+#--- Recursive Targets ------------------------------
+
+src : $(ALLSRC)
+	@echo Sources up to date...
+
+unmr3Dlib.a unmr3Dlib_dbx.a unmr3Dlibfpa.a unmr3Dlib_p.a : getunmr3Dobj 	\
+		$(UNMR3DLIB_OBJ) $(VNMR_OBJ) $(STAT_OBJ)
+	- (umask 2; rm -f $@ )
+	@echo remake library $@ 
+	@(umask 2; ar rv $@ `lorder $(UNMR3DLIB_OBJ) $(VNMR_OBJ) $(STAT_OBJ) \
+		 | tsort` )
+	@(umask 2; if [ x$$SOLARIS != "xy" ]; then	\
+		 echo ranlib $@; 			\
+		 ranlib $@; 				\
+	 fi)
+	-@ (umask 2; if [ x$$SOLARIS != "xy" ]; then		\
+		echo remove objects;				\
+		rm -f $(UNMR3DLIB_OBJ) $(VNMR_OBJ) $(STAT_OBJ); \
+	 fi)
+
+# for ibm leave the objects in directory since "ar -xo" doesn't work
+unmr3Dlib.ibm.a  : $(UNMR3DLIB_OBJ) $(VNMR_OBJ) $(STAT_OBJ)
+	- (umask 2; rm -f $@ )
+	@echo remake library $@ 
+	@(umask 2; ar rv $@ `lorder $(UNMR3DLIB_OBJ) $(VNMR_OBJ) $(STAT_OBJ) \
+		 | tsort` )
+	(umask 2; ranlib $@ )
+#	@echo remove objects
+#	-@ (umask 2; rm -f $(UNMR3DLIB_OBJ) $(VNMR_OBJ) $(STAT_OBJ) )
+
+
+unmr3Dlib.sgi.a : $(UNMR3DLIB_OBJ) $(VNMR_OBJ) $(STAT_OBJ)
+	- (umask 2; rm -f $@ )
+	@echo remake library $@ 
+	@(umask 2; ar rsv $@ $(UNMR3DLIB_OBJ) $(VNMR_OBJ) $(STAT_OBJ) )
+#	@echo remove objects
+#	-@ (umask 2; rm -f $(UNMR3DLIB_OBJ) $(VNMR_OBJ) $(STAT_OBJ) )
+
+ft3d ft3d_dbx ft3d_fpa ft3d_p : $$(WORKLIB)
+	(umask 2; \
+	$(LINK.c) -o $@ $(WORKLIB) $(LIBS)  )
+
+ft3d_win : $(UNMR3DLIB_OBJ) $(VNMR_OBJ) $(STAT_OBJ)
+	(umask 2; \
+	$(LINK.c) -o ft3d $(UNMR3DLIB_OBJ) $(VNMR_OBJ) $(STAT_OBJ) $(LIBS) $(RPCLIBS) )
+
+getplane getplane_dbx getplane_p : $(GETPL_OBJ)
+	(umask 2; \
+	$(LINK.c) -o $@ $(GETPL_OBJ) $(LIBS) ; \
+	rm -f $(GETPL_OBJ) )
+
+compressfid compressfid_dbx compressfid_p:  $(CMPRSFID_OBJ)
+	(umask 2; \
+	$(LINK.c) -o $@ $(CMPRSFID_OBJ) $(LIBS) ; \
+	rm -f $(CMPRSFID_OBJ) )
+
+
+
+getunmr3Dobj :                                                       
+	-@(umask 2; if [ x$$SOLARIS != "xy" ]; then				\
+		echo extract $(WORKLIB) objects from FT3D library;		\
+		ar xo $(WORKLIB) $(UNMR3DLIB_OBJ) $(VNMR_OBJ) $(STAT_OBJ);	\
+	 fi)
+
+
+#--- Smake Target ---------------------------------------------------------
+
+fromlibs: $(OBJ) $(OBJS)
+	(umask 2; $(LINK.c) -o $(ProgName) $(OBJ) $(OBJS)	\
+	  $(LINKLIB1) $(LINKLIB2) $(MISCLIBS) $(LIBS) )
+
+
+#--- Object Targets ---------------------------
+
+acqinfo_xdr.o		: acqinfo_xdr.c	\
+			acqinfo.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+combine.o		: combine.c	\
+			constant.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+comline.o		: comline.c	\
+			command.h	\
+			constant.h 	\
+			ftpar.h		\
+			process.h	\
+			struct3d.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+errorlog.o		: errorlog.c	\
+			command.h	\
+			constant.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+fft3d.o			: fft3d.c	\
+			constant.h 	\
+			data.h		\
+			fileio.h	\
+			ftpar.h		\
+			process.h	\
+			struct3d.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+fileinfo.o		: fileinfo.c	\
+			coef3d.h	\
+			command.h	\
+			constant.h 	\
+			ftpar.h		\
+			lock3D.h	\
+			process.h	\
+			struct3d.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+fmap.o			: fmap.c	\
+			command.h	\
+			constant.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+ft3d.o			: ft3d.c	\
+			coef3d.h	\
+			command.h	\
+			constant.h 	\
+			data.h		\
+			datac.h		\
+			fileio.h	\
+			ftpar.h		\
+			lock3D.h	\
+			process.h	\
+			struct3d.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+ft3dio.o		: ft3dio.c	\
+			coef3d.h	\
+			command.h	\
+			constant.h 	\
+			data.h		\
+			datac.h		\
+			fileio.h	\
+			ftpar.h		\
+			lock3D.h	\
+			process.h	\
+			struct3d.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+ftutil.o		: ftutil.c	\
+			constant.h	\
+			data.h		\
+			fileio.h	\
+			ftpar.h		\
+			process.h	\
+			struct3d.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+lock3Dfiles.o		: lock3Dfiles.c	\
+			lock3D.h
+	(umask 2; $(COMPILE.c) -DFT3D $(@:.o=.c) )
+
+
+lpqld.o			: lpqld.c	\
+			process.h
+	(umask 2; $(LPCOMPILE.c) -DFT3D $(@:.o=.c) )
+
+
+lpz.o			: lpz.c	\
+			data.h		\
+			process.h
+	(umask 2; $(COMPILE.c) -DFT3D $(@:.o=.c) )
+
+
+plextract.o		: plextract.c	\
+			command.h	\
+			data.h		\
+			datac.h		\
+			fileio.h	\
+			ftpar.h		\
+			process.h	\
+			struct3d.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+
+#------ makefile extraction via SCCS allways. -------
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(VNMR_SRC): $$(VNMR_SRC_DIR)$$(@)
+	$(VNMR_GET) $@
+
+$(VNMR_HDR): $$(VNMR_SRC_DIR)$$(@)
+	$(VNMR_GET) $@
+
+$(STAT_SRC): $$(STAT_SRC_DIR)$$(@)
+	$(STAT_GET) $@
+
+$(STAT_HDR): $$(STAT_SRC_DIR)$$(@)
+	$(STAT_GET) $@
+
+$(UNMR3DLIB_SRC) $(UNMR3DLIB_HDR) $(GETPL_SRC) $(CMPRSFID_SRC): $$(FT3D_SRC_DIR)$$(@)
+	$(FT3D_GET) $@

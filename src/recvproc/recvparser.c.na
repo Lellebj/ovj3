@@ -1,0 +1,95 @@
+/* recvparser.c.na 12.1 03/21/08 - Parser for Recvproc Process */
+/*
+ * Varian Assoc.,Inc. All Rights Reserved.
+ * This software contains proprietary and confidential
+ * information of Varian Assoc., Inc. and its contributors.
+ * Use, disclosure and reproduction is prohibited without
+ * prior consent.
+ */
+
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <signal.h>
+
+
+#include <errno.h>
+
+#include "errLogLib.h"
+#include "hhashLib.h"
+#include "recvcmds.h"
+
+/*
+#ifndef PFI
+typedef int (*PFI)();
+#endif
+*/
+
+static HASH_ID cmdtbl;
+
+/**************************************************************
+*
+*  initCmdParser - Initialize the command hash table.
+*
+* This routine initializes the command hash table.
+*  
+* RETURNS:
+* OK , or ERROR on error. 
+*
+*       Author Greg Brissey 8/4/94
+*/
+int initCmdParser()
+{
+   static void setupMsgSig();
+
+    int i, size;
+
+    size = sizeof(table);
+    cmdtbl = hashCreate(size, NULL, NULL, "Cmd Hash Table");
+    if (cmdtbl == NULL)
+       errLogSysQuit(LOGOPT,debugInfo,"initCmdParser: hashCreate() failed");
+
+    i = 0;
+    while(table[i].n)
+    {
+       hashPut(cmdtbl, table[i].n, (char *) table[i].f);
+       i++;
+    }
+ 
+#ifdef DEBUG
+    hashShow(cmdtbl,2);
+#endif
+}
+
+parser(char* str)
+{
+    char *cmdstr;
+    PFI  cmdfunc;
+
+    cmdstr = strtok(str," ");
+    cmdfunc = (PFI) hashGet(cmdtbl,cmdstr);
+    if (cmdfunc != (PFI) -1L)
+    {
+       (*cmdfunc)(cmdstr);
+    }
+    else
+    {
+       errLogRet(LOGOPT,debugInfo,
+	  "parser: Cmd Str: '%s' is an unknown command\n",cmdstr);
+       return(-1);
+    }
+    return(0);
+}
+
+listCmds(char *str)
+{
+   int i;
+
+    diagPrint(NULL,"Known Commands:\n");
+    i = 0;
+    while(table[i].n)
+    {
+       diagPrint(NULL,"                 %s: %s\n",table[i].n,table[i].d);
+       i++;
+    }
+}

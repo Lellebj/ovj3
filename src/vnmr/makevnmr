@@ -1,0 +1,2385 @@
+# 
+# 7/7/92 modified for seperate GUI, at present SunView & XView work 
+#
+#
+# make -f makevnmr
+# make -f makevnmr sv , Sunview 
+# make -f makevnmr ow , OpenWindows 
+# make -f makevnmr static,  creates static SunView Vnmr  & libraries 
+# make -f makevnmr dbx,  creates dbxtool Sunview version of Vnmr library
+# make -f makevnmr owdbx,  creates dbxtool OpenWindow version of Vnmr library
+# make -f makevnmr prof,  creates gprof SunView profiling Vnmr library 
+# make -f makevnmr fpc,  creates Floating Point Coprocessor (68881) SunView 
+# make -f makevnmr fpcow,  creates Floating Point Coprocessor (68881) OpenWindows 
+# make -f makevnmr fpa,  creates Floating Point Accelerator SunView Vnmr
+# make -f makevnmr fpaow,  creates Floating Point Accelerator OpenWindows Vnmr
+# make -f makevnmr AIX,  creates IBM Risc 6000 Motif Vnmr
+# make -f makevnmr IRIX,  creates SGI Motif Vnmr
+# make -f makevnmr depend,  creates SUN dependence list for objects, Must be done in
+# make -f makevnmr acqlib,  creates acquisition communication libraries
+#
+# ----->  dbx or profiling libraries are not a standard release item and 
+#         are not to be given to customers....    9/22/87  Greg Brissey
+#
+#
+#  Note: vnmr yacc must be in /vobj/'arch'/yacc which is unique to architecture 
+#
+#  Modified for user programing  11/21/88   GMB
+#  change contents of libraries.
+#
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#
+# Changed makefile to use the depend target to generate dependencies for .o targets
+# Note: the files are first passed through unifdef defining -DSUN -DUNIX. This means
+# dependencies are for SUNs not IBM or SGI, etc......
+#					Greg Brissey   6/2/92
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+SHELL=/usr/bin/sh
+MAKEFILE= makevnmr
+
+.PRECIOUS= unmrlib.a unmrilib_dbx.a unmrlib_p.a \
+           magiclib.a magiclib_dbx.a magiclib_p.a \
+	   unmrlibap.a unmrilibap_dbx.a unmrlibap_p.a \
+           magiclibap.a magiclibap_dbx.a magiclibap_p.a \
+	   unmrlibfpaap.a unmrilibfpaap_dbx.a unmrlibfpaap_p.a \
+           magiclibfpaap.a magiclibfpaap_dbx.a magiclibfpaap_p.a
+
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+REV_DATE=$(VNMR_REV_DATE)
+
+OPENWINHOME=/usr/openwin
+YACCDIR=/vobj/sol
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+#SRC_DIR=../
+SRC_DIR=$(SRCDIR)/sysvnmr/
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+
+OPTIMIZE = `uname -sr | awk ' \
+	/SunOS 4/ { print sunos; match=1 } \
+	/SunOS 5/ { print sol"; match=1 } \
+	match == 0 { print dflt" } ' \
+	sunos='-O2' sol='-xO2' dflt='-O' `
+
+DEBUGOPT = `uname -sr | awk ' \
+	/SunOS 4/ { print sunos; match=1 } \
+	/SunOS 5/ { print sol; match=1 } \
+	match == 0 { print dflt } ' \
+	sunos='-g ' sol='-g - g -xF ' dflt='-g' `
+
+# use echo where we don't perform action
+RANLIB = `uname -sr | awk ' \
+	/SunOS 5/ { print sol; match=1 } \
+	match == 0 { print dflt } ' \
+	sol='echo' dflt='ranlib' `
+
+PIC = `uname -sr | awk ' \
+	/SunOS 5/ { print sol; match=1 } \
+	match == 0 { print dflt } ' \
+	sol='-K PIC' dflt='-PIC' `
+
+SOL = `uname -sr | awk ' \
+	/SunOS 5/ { print sol; match=1 } \
+	match == 0 { print dflt } ' \
+	sol='-DSOLARIS' dflt='' `
+
+ACC = `uname -sr | awk ' \
+	/SunOS 4/ { print sunos; match=1 } \
+	match == 0 { print dflt } ' \
+	sunos='acc' dflt='cc' `
+
+LDSOFLAGS = `uname -sr | awk ' \
+	/SunOS 4/ { print sunos } \
+	/SunOS 5/ { print sol } ' \
+	sunos='-assert pure-text' sol='-G' `
+
+# use echo where we don't perform action
+SLINK = `uname -sr | awk ' \
+	/SunOS 5/ { print sol; match=1 } \
+	match == 0 { print dflt } ' \
+	sol='ln -s' dflt='echo' `
+
+OBJDIR = `uname -sr | awk ' \
+	/SunOS 5/ { print sol } ' \
+	sol='sol' `
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+CFLAGS= -O -DBSDACQ -fsingle
+LPCFLAGS= -O4 -fsingle -dalign
+CPPFLAGS= -DSUN -DBSDACQ
+LDFLAGS=  -O
+ASMCPP.s= /lib/cpp -P $(CPPFLAGS) $(TARGET_ARCH)
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LPCOMPILE.c= $(CC) $(LPCFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(LDFLAGS) $(TARGET_ARCH)
+
+ 
+IN_LINE=
+
+#IN_LINE=/usr/lib/libm.il  removed because some SUN4s get real slow when used
+
+VNMR_SRC_DIR= $(SRC_DIR)
+ACQPROC_SRC_DIR= $(SRC_DIR)
+ACQI_SRC_DIR= $(SRC_DIR)
+XRACQ_SRC_DIR= $(SRC_DIR)
+PSG_SRC_DIR= $(SRC_DIR)
+FT3D_SRC_DIR= $(SRC_DIR)
+NCOMM_SRC_DIR= $(SRC_DIR)
+VWACQ_SRC_DIR= $(SRC_DIR)
+EXPPROC_SRC_DIR= $(SRC_DIR)
+XVIEW_GUI_SRC_DIR= $(SRC_DIR)ow/
+SVIEW_GUI_SRC_DIR= $(SRC_DIR)sv/
+MOTIF_GUI_SRC_DIR= $(SRC_DIR)ow/
+AIP_SRC_DIR=$(SRC_DIR)
+
+#---- iadisplay library being updated. -----
+WORKLIB= unmrlib.a
+WORKLIB2= magiclib.a
+
+#--- SCCS Sources ----  
+ACQI_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)acqi/SCCS/s.
+ACQPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)acqproc/SCCS/s.
+VNMR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmr/SCCS/s.
+VWACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vwacq/SCCS/s.
+XRACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)xracq/SCCS/s.
+PSG_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)psg/SCCS/s.
+FT3D_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)3D/SCCS/s.
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+EXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)expproc/SCCS/s.
+XVIEW_GUI_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)xwin/SCCS/s.
+SVIEW_GUI_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)sunview/SCCS/s.
+MOTIF_GUI_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)xwin/SCCS/s.
+AIP_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)aip/SCCS/s.
+
+
+#--- Link Commands for Sources Needed. -------
+ACQI_LN = ln -s $(ACQI_SRC_DIR)$(@)
+ACQPROC_LN = ln -s $(ACQPROC_SRC_DIR)$(@)
+VNMR_LN = ln -s $(VNMR_SRC_DIR)$(@)
+XRACQ_LN = ln -s $(XRACQ_SRC_DIR)$(@)
+PSG_LN = ln -s $(PSG_SRC_DIR)$(@)
+FT3D_LN = ln -s $(FT3D_SRC_DIR)$(@)
+NCOMM_LN = ln -s $(NCOMM_SRC_DIR)$(@)
+EXPPROC_LN = ln -s $(EXPPROC_SRC_DIR)$(@)
+XVIEW_GUI_LN = ln -s $(XVIEW_GUI_SRC_DIR)$(@)
+SVIEW_GUI_LN = ln -s $(SVIEW_GUI_SRC_DIR)$(@)
+MOTIF_GUI_LN = ln -s $(MOTIF_GUI_SRC_DIR)$(@)
+VWACQ_LN = ln -s $(VWACQ_SRC_DIR)$(@)
+AIP_LN = ln -s $(AIP_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+ACQI_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)acqi/SCCS get
+ACQPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)acqproc/SCCS get
+VNMR_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vnmr/SCCS get
+XRACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)xracq/SCCS get
+PSG_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)psg/SCCS get
+FT3D_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)3D/SCCS get
+NCOMM_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ncomm/SCCS get
+EXPPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)expproc/SCCS get
+SVIEW_GUI_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)sunview/SCCS get
+XVIEW_GUI_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)xwin/SCCS get
+MOTIF_GUI_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)xwin/SCCS get
+VWACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vwacq/SCCS get
+AIP_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)aip/SCCS get
+
+#----  default source extraction to links -------
+ACQI_GET= $(ACQI_LN)
+ACQPROC_GET= $(ACQPROC_LN)
+VNMR_GET= $(VNMR_LN)
+XRACQ_GET= $(XRACQ_LN)
+PSG_GET= $(PSG_LN)
+FT3D_GET= $(FT3D_LN)
+NCOMM_GET= $(NCOMM_LN)
+EXPPROC_GET= $(EXPPROC_LN)
+VWACQ_GET= $(VWACQ_LN)
+AIP_GET= $(AIP_LN)
+
+GUI_GET= $(SVIEW_GUI_SGET)
+GUI_SRC_DIR= $(SVIEW_GUI_SRC_DIR)
+
+GUI_COM_GET= $(XVIEW_GUI_SGET)
+GUI_COM_SRC_DIR= $(XVIEW_GUI_SRC_DIR)
+
+# This will keep the IBM happy
+WIN_SRC= a1.c
+WIN_OBJ= a1.o
+WIN_COM_SRC= a2.c
+WIN_COM_OBJ= a2.o
+WIN_LN_SRC= dummy.c
+WIN_LN_COM_SRC= dummy2.c
+
+# -- sunview libraries ---
+LIBS = -lcurses -ltermlib -lsuntool -lsunwindow -lpixrect -ll -lm
+
+# -- OpenWindows libraries ---
+OWLIBS = -lcurses -ltermlib -ll -lm
+
+# -- ibm motif libraries ---
+MLIBS = -lXm -lXt -lX11 -lbsd -ll -lm
+RLIBDIR=-R /usr/openwin/lib:/usr/dt/lib:/vnmr/lib
+MLIBDIR=-L/usr/dt/lib -L/vnmr/lib
+MINCDIR=-I/usr/dt/include
+
+LIBU= unmrlib$(FPOP).a
+LIBM= magiclib$(FPOP).a
+LIBUDBX= unmrlib$(FPOP)_dbx.a
+LIBMDBX= magiclib$(FPOP)_dbx.a
+LIBUPROF= unmrlib$(FPOP)_p.a
+LIBMPROF= magiclib$(FPOP)_p.a
+
+#  COPTIONS are passed to make, or could be an environmental parameter.
+#  use for -DSIS, etc.
+
+
+#------------------------------------------------------------------------
+#--- VNMR objects that are needed for unmrlib 
+#------------------------------------------------------------------------
+UNMRLIB_SRC_COM= 		\
+		acqfuncs.c 	\
+		acqhwcmd.c 	\
+		addsub.c 	\
+		ai.c 		\
+		allocate.c 	\
+		asm.c		\
+		asmfuncs.c	\
+		assign.c 	\
+		bgvars.c 	\
+		bootup.c 	\
+		builtin.c 	\
+		builtin1.c 	\
+		buttons.c	\
+		createparams.c	\
+		calcq.c		\
+		data.c 		\
+		dcon.c 		\
+		dconi.c 	\
+		ddf.c 		\
+		ddif.c 		\
+		ddph.c 		\
+		debug.c 	\
+		df2d.c		\
+		dfid.c		\
+		dfww.c 		\
+		dg.c 		\
+		disp3Dmap.c	\
+		dll.c		\
+		dosyfit.c	\
+		dosyfit3D.c	\
+		dpcon.c 	\
+		dpf.c		\
+		dps.c		\
+		ds.c		\
+		dscale.c	\
+		dsn.c		\
+		dsp.c		\
+		dsww.c 		\
+		element.c 	\
+		emouse.c 	\
+		execcmd.c 	\
+		fiddle.c	\
+		files.c 	\
+		flashc.c	\
+		ft.c		\
+		ft2d.c 		\
+		ftinit.c	\
+		full.c 		\
+		gdevsw.c	\
+		glide.c 	\
+		go.c 		\
+		gradfit.c 	\
+		graphics.c 	\
+		gxyzcalib.c 	\
+		gxyzcalib2.c 	\
+		gxyzmap.c 	\
+		gzfit.c 	\
+		handler.c 	\
+		help.c 		\
+		history.c 	\
+		hpa.c 		\
+		ht.c 		\
+		init2d.c 	\
+		init_display.c 	\
+		init_proc.c 	\
+		integ.c 	\
+		io.c 		\
+		jexp.c 		\
+		ll2d.c 		\
+		lockfreqfunc.c	\
+		locksys.c	\
+		lookup.c 	\
+		lstring.c 	\
+		macro.c 	\
+		magnetom.c	\
+		main.c		\
+		makeslice.c	\
+		master.c	\
+		md5c.c		\
+		mfdata.c	\
+		ops.c 		\
+		p11Tools.c	\
+		part11.c	\
+		pcmap.c		\
+		phase_fid.c	\
+		plot_handlers.c	\
+		plot_construct.c \
+		proc2d.c 	\
+		pvars.c		\
+		recon_mm.c	\
+		recon_all.c	\
+		readlk.c 	\
+		rtvarcmds.c	\
+		savretphf.c	\
+		set3dproc.c	\
+		shellcmds.c	\
+		shims.c		\
+		sky.c		\
+		smagic.c 	\
+		specfreq.c	\
+		sread.c 	\
+		swrite.c 	\
+		symtab.c 	\
+		table.c 	\
+		tempstuff.c 	\
+		terminal.c 	\
+		text.c 		\
+		tools.c 	\
+		variables1.c 	\
+		vcolor.c 	\
+		vdialog.c 	\
+		vfilesys.c 	\
+		vfontselect.c 	\
+		weight.c	\
+		wjunk.c		\
+		wti.c
+
+UNMRLIB_OBJ_COM= $(UNMRLIB_SRC_COM:.c=.o)
+
+# ---- SunView GUI Sources ----
+SV_WIN_HDR=			\
+		master.icon	\
+		vnmr_text.icon	\
+		vnmr.icon
+
+SV_WIN_SRC=                     \
+		banner.c 	\
+		graphics_win.c	\
+		master_win.c	\
+		ras_dump.c 	\
+		smagic_win.c
+
+SV_WIN_OBJ= $(SV_WIN_SRC:.c=.o)
+
+# ---- Common GUI source for OpenWindows & Motif ----
+COM_X_WIN_HDR=			\
+                master.icon	\
+		vnmr_text.icon  \
+                vnmr.icon
+
+COM_X_WIN_SRC=			\
+		banner.c	\
+		graphics_win.c
+
+COM_X_WIN_OBJ= $(COM_X_WIN_SRC:.c=.o)
+
+# ---- OpenWindows GUI source ----
+OW_WIN_SRC= 			\
+		master_win.c    \
+		ras_dump.c      \
+		smagic_win.c
+
+OW_WIN_OBJ= $(OW_WIN_SRC:.c=.o)
+
+# ---- Motif  GUI source ----
+MOTIF_WIN_HDR=			\
+		master.icon	\
+		vnmr_text.icon	\
+		vnmr.icon
+
+MOTIF_WIN_SRC= 			\
+		master_win.c    \
+		ras_dump.c      \
+		smagic_win.c
+
+MOTIF_WIN_OBJ= $(MOTIF_WIN_SRC:.c=.o)
+
+# -- special compile options required 
+UNMRLIB_SRC_SPC= 		\
+		acqhdl.c 	\
+		displayops.c	\
+		foldj.c
+
+UNMRLIB_SRC= $(UNMRLIB_SRC_COM) $(UNMRLIB_SRC_SPC)
+UNMRLIB_OBJ= $(UNMRLIB_SRC:.c=.o)
+
+#---  Header files needed by Vnmr -------
+#  be warned that lc.h in vnmr category is really a soft link to lc.h in xracq
+UNMRLIB_HDR=			\
+		acqerrmsges.h	\
+		acquisition.h	\
+		allocate.h	\
+		asm.h		\
+		data.h		\
+		disp.h		\
+		dps_menu.icon	\
+		dpsdef.h	\
+		element.h	\
+		epi_recon.h	\
+		errorcodes.h	\
+		ftpar.h		\
+		graphics.h	\
+		group.h		\
+		init.h		\
+		init2d.h	\
+		locksys.h	\
+		node.h		\
+		md5global.h	\
+		md5.h		\
+		params.h	\
+		part11.h	\
+		phase_correct.h	\
+		process.h	\
+		pvars.h		\
+		shims.h		\
+		sky.h		\
+		stack.h		\
+		symtab.h	\
+		tools.h		\
+		variables.h	\
+		vfilesys.h	\
+		vglide.h	\
+		vnmrsys.h	\
+		whenmask.h	\
+		wjunk.h
+
+#---  header for recon_all 
+AIPLIB_HDR=				\
+		aipCInterface.h		\
+
+#--- No current assembly routines -----
+ASM_SRC=
+
+ASM_OBJ= $(ASM_SRC:.s=.o)
+
+#---  ACQPROC Header files needed by Vnmr -------
+ACQPROC_HDR=			\
+		ACQPROC_strucs.h
+
+#------------------------
+VWACQ_HDR=			\
+		hostAcqStructs.h
+
+
+#---  XRacq Header files needed by Vnmr -------
+XRACQ_HDR=			\
+		ACQ_HAL.h	\
+		ACQ_SUN.h	\
+		STAT_DEFS.h	\
+		acodes.h	\
+		lc.h
+
+#--- PSG objects that are needed for unmrlib 
+PSG_SRC= 			\
+		ap_device.c 	\
+		device.c 	\
+		freq_device.c	\
+		freqfuncs.c	\
+		objerror.c
+
+PSG_OBJ= $(PSG_SRC:.c=.o)
+
+#---  PSG Header files needed by Vnmr -------
+PSG_HDR=			\
+		Pbox_HT.h	\
+		REV_NUMS.h	\
+		ap_device.p	\
+		common.p	\
+		device.p	\
+		freq_device.p	\
+		objerror.h	\
+		oopc.h		\
+		rfconst.h
+
+#---  FT3D Source files needed by Vnmr -------
+FT3D_SRC=			\
+		lock3Dfiles.c
+
+FT3D_OBJ= $(FT3D_SRC:.c=.o)
+
+#---  FT3D Header files needed by Vnmr -------
+FT3D_HDR=			\
+		lock3D.h	\
+		struct3d.h
+
+#------------------------------------------------------------------------
+#--- VNMR objects that are needed for magiclib 
+#	don't move magic.gram.o , creates magic.gram.h needed by others
+#------------------------------------------------------------------------
+MAGICLIB_SRC_COM= 		\
+		exec.c		\
+		dli.c		\
+		fft.c 		\
+		lexjunk.c 	\
+		lpz.c		\
+		matrix.c 	\
+		node.c
+
+MAGICLIB_OBJ_COM= $(MAGICLIB_SRC_COM:.c=.o)
+
+MAGICLIB_SRC_SPC=		\
+		downsample.c	\
+		lpqld.c
+
+MAGICLIB_SRC= $(MAGICLIB_SRC_COM) $(MAGICLIB_SRC_SPC)
+
+MAGICLIB_OBJ= $(MAGICLIB_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#--- VNMR objects that are needed for unmrlib 
+#------------------------------------------------------------------------
+ACQCOMLIB_HDR=			\
+		comm.h
+
+ACQCOMLIB_SRC=			\
+		comm.c		\
+		socket.c	\
+		socket1.c
+
+ACQCOMLIB_OBJ= $(ACQCOMLIB_SRC:.c=.o)
+
+EXPPROC_HDR=                    \
+		expQfuncs.h	\
+		shrstatinfo.h
+
+NCOMM_HDR=			\
+		sockets.h	\
+		mfileObj.h	\
+		errLogLib.h
+
+NCOMM_SRC= 		\
+		mfileObj.c	\
+		errLogLib.c
+
+NCOMM_OBJ= $(NCOMM_SRC:.c=.o) 
+
+#---- The yacc and lex sources for Vnmr -----
+YACC_SRC=			\
+		magic.gram.y	\
+		magic.parser
+
+YACC_OBJ=			\
+		magic.gram.o
+
+LEX_SRC=			\
+		magic.lex.l
+
+LEX_OBJ=			\
+		magic.lex.o
+#------------------------------------------------------------------------
+#--- Array Processor objects that need special recompilation for unmrlib 
+#------------------------------------------------------------------------
+AP_SRC= 			\
+		fft.c 		\
+		sky.c 
+
+#---- All Sources and headers required for compilation -----
+#COMMON_SRC= $(UNMRLIB_SRC) $(UNMRLIB_HDR) $(MAGICLIB_SRC) $(MAGICLIB_HDR) \
+#        $(ASM_SRC) $(YACC_SRC) $(LEX_SRC) $(XRACQ_HDR)  \
+#	$(PSG_SRC) $(PSG_HDR) $(ACQPROC_HDR) $(FT3D_SRC) $(FT3D_HDR)
+
+#ALLSRC= $(COMMON_SRC) $(SV_WIN_SRC) $(SV_WIN_HDR)
+
+ALL_C_SRC= $(UNMRLIB_SRC) $(MAGICLIB_SRC) \
+        $(ASM_SRC) $(YACC_SRC) $(LEX_SRC) \
+	$(PSG_SRC)  $(FT3D_SRC) $(ACQCOMLIB_SRC) $(NCOMM_SRC)
+
+ALL_H_SRC= $(UNMRLIB_HDR) $(MAGICLIB_HDR) \
+        $(AIPLIB_HDR) $(XRACQ_HDR) $(EXPPROC_HDR)  \
+	$(PSG_HDR) $(ACQPROC_HDR) $(FT3D_HDR) $(VWACQ_HDR) $(ACQCOMLIB_HDR) $(NCOMM_HDR)
+
+ALL_P_SRC= common.p        \
+           device.p        \
+           ap_device.p     \
+           freq_device.p
+
+COMMON_SRC= $(ALL_C_SRC) $(ALL_H_SRC)
+
+ALLSRC= $(COMMON_SRC) $(SV_WIN_SRC) $(SV_WIN_HDR)
+
+ALLOBJ= $(UNMRLIB_OBJ) $(FT3D_OBJ) $(MAGICLIB_OBJ) $(ASM_OBJ) $(PSG_OBJ) \
+	$(YACC_OBJ) $(LEX_OBJ) $(SV_WIN_OBJ) $(ACQCOMLIB_OBJ) $(NCOMM_OBJ)
+ 
+COMMON_OBJ= $(UNMRLIB_OBJ_COM) $(MAGICLIB_OBJ_COM) $(FT3D_OBJ) $(PSG_OBJ)
+
+ALLSRC_PP= $(ALLSRC:=.pp)
+
+ 
+#LINTFILES= $(ALLSRC:.c=.ln)
+
+#--- make Targets ----------------------------------------------
+std : acqlib ow
+
+sparc : acqlib ow
+
+# sun3 sun3objs : fpc fpcow fpa fpaow
+# sun3 sun3objs : fpc fpa
+
+sv : $$(MAKEFILE) SV_src Source
+	-( rm -f $(OW_WIN_SRC) $(COM_X_WIN_SRC) $(COM_X_WIN_HDR); $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+        "YACCDIR=/vobj/`arch`"		\
+	"CFLAGS= -O -fsingle -DBSDACQ" \
+	"LPCFLAGS= -O4 -fsingle -dalign -sb" \
+	"WIN_SRC= $(SV_WIN_SRC) $(SV_WIN_HDR)" \
+	"WIN_OBJ= $(SV_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(SVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(SVIEW_GUI_SRC_DIR)$$(@)" \
+	"GUI_TYPE=sv" \
+	   magiclib.a unmrlib.a Vnmr; )
+	@echo "NMR_ID SPARC VNMR SunView libraries complete -------------------"
+
+# SunView icon files are used by XView (OpenWindows) i.e. use of SV_src
+
+ow : $$(MAKEFILE) OW_src Source
+	( rm -f $(SV_WIN_SRC) $(SV_WIN_HDR); $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+        "YACCDIR=/vobj/sol"		\
+	"CFLAGS= -O -fsingle -DVNMRTCL -DBSDACQ $(MINCDIR) -I$(OPENWINHOME)/include" \
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF" \
+	"LPCFLAGS= -O4 -fsingle -dalign" \
+	"LDFLAGS= -L$(OPENWINHOME)/lib $(MLIBDIR) " \
+	"WIN_SRC= $(OW_WIN_SRC) $(COM_X_WIN_HDR) $(COM_X_WIN_SRC)" \
+	"WIN_OBJ= $(OW_WIN_OBJ) $(COM_X_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lcurses -ltermlib -lXm -lXt -lX11 -ll -lm" \
+	"GUI_TYPE=ow" \
+	"WORKLIB= unmrlib.ow.a" "WORKLIB2= magiclib.ow.a" \
+	   magiclib.a magiclib.ow.a unmrlib.ow.a libacqcomm.a Vnmr_ow; )
+	@echo "NMR_ID SPARC VNMR XView libraries complete ---------------------"
+#	"LIBS = -lcurses -ltermlib -lxview -lolgx -lX11 -ll -lm" \
+
+owdyn : $$(MAKEFILE) SV_src OW_src Source
+	( rm -f $(SV_WIN_SRC) $(SV_WIN_HDR); $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+        "YACCDIR=/vobj/sol"		\
+	"CFLAGS= -O -sb -fsingle -DBSDACQ $(MINCDIR) -I$(OPENWINHOME)/include" \
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF" \
+	"LPCFLAGS= -O4 -fsingle -dalign -sb" \
+	"LDFLAGS= -L$(OPENWINHOME)/lib $(MLIBDIR) " \
+	"WIN_SRC= $(OW_WIN_SRC) $(COM_X_WIN_HDR) $(COM_X_WIN_SRC)" \
+	"WIN_OBJ= $(OW_WIN_OBJ) $(COM_X_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lcurses -ltermlib -lXm -lXt -lX11 -ll -lm" \
+	"GUI_TYPE=ow" \
+	"WORKLIB= unmrlib.ow.a" "WORKLIB2= magiclib.ow.a" \
+	   magiclib.a magiclib.ow.a unmrlib.ow.a Vnmr_ow_dyn; )
+	@echo "NMR_ID SPARC VNMR XView libraries complete ---------------------"
+
+
+static : $$(MAKEFILE) Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+        "YACCDIR=/vobj/sol"		\
+        "LDFLAGS=-Bstatic" 		\
+	   magiclib.a unmrlib.a Vnmr_static; )
+	@echo "NMR_ID VNMR libraries complete ------------------------------"
+
+
+svdbx : SV_src Source
+	-( rm -f $(OW_WIN_SRC) $(COM_X_WIN_SRC) $(COM_X_WIN_HDR); $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+        "YACCDIR=/vobj/`arch`"		\
+	"CFLAGS= -g -fsingle -Bstatic -DDBXTOOL -DBCDACQ -DDEBUG $(COPTIONS)" \
+	"LPCFLAGS= -g -fsingle -Bstatic -DDBXTOOL -DBCDACQ -DDEBUG $(COPTIONS)" \
+        "LDFLAGS=-Bstatic" 		\
+	"WIN_SRC= $(SV_WIN_SRC) $(SV_WIN_HDR)" \
+	"WIN_OBJ= $(SV_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(SVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(SVIEW_GUI_SRC_DIR)$$(@)" \
+	 "WORKLIB= unmrlib_dbx.a" "WORKLIB2= magiclib_dbx.a" Vnmr_dbx; )
+	@echo "NMR_ID SPARC VNMR SunView dbx libraries complete ---------------"
+
+svmagdbx : SV_src Source
+	-( rm -f $(OW_WIN_SRC) $(COM_X_WIN_SRC) $(COM_X_WIN_HDR); $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+        "YACCDIR=/vobj/`arch`"		\
+	"CFLAGS= -g -fsingle -Bstatic -DDBXTOOL -DBCDACQ -DDEBUG $(COPTIONS)" \
+	"LPCFLAGS= -g -fsingle -Bstatic -DDBXTOOL -DBCDACQ -DDEBUG $(COPTIONS)" \
+        "LDFLAGS=-Bstatic" 		\
+	"WIN_SRC= $(SV_WIN_SRC) $(SV_WIN_HDR)" \
+	"WIN_OBJ= $(SV_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(SVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(SVIEW_GUI_SRC_DIR)$$(@)" \
+	 "WORKLIB=" "WORKLIB2= magiclib_dbx.a" magiclib_dbx.a; )
+	@echo "NMR_ID SPARC VNMR SunView dbx libraries complete ---------------"
+
+
+# SunView icon files are used by XView (OpenWindows) i.e. use of SV_src
+dbx owdbx : $$(MAKEFILE) svmagdbx SV_src OW_src Source
+	( rm -f $(SV_WIN_SRC) $(SV_WIN_HDR); $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+        "YACCDIR=/vobj/sol"		\
+	"CFLAGS= -g -fsingle -Bstatic -DDBXTOOL -DBSDACQ $(MINCDIR)  \
+		-I$(OPENWINHOME)/include  -DDEBUG $(COPTIONS)" \
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF" \
+	"LPCFLAGS= -g -fsingle -Bstatic -DDBXTOOL -DBCDACQ -DDEBUG $(COPTIONS)" \
+	"LDFLAGS= -Bstatic -L$(OPENWINHOME)/lib $(MLIBDIR)" \
+	"WIN_SRC= $(OW_WIN_SRC) $(COM_X_WIN_HDR) $(COM_X_WIN_SRC)" \
+	"WIN_OBJ= $(OW_WIN_OBJ) $(COM_X_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lcurses -ltermlib -lXm -lXt -lX11 -ll -lm" \
+	"WORKLIB= unmrlib_dbx.ow.a" "WORKLIB2= magiclib_dbx.ow.a" \
+	   Vnmr_ow_dbx)
+	@echo "NMR_ID SPARC VNMR XView dbx libraries complete ----------------"
+
+prof: Source
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -fsingle -pg -Bstatic $(COPTIONS)" \
+	"LPCFLAGS= -O4 -fsingle -dalign -pg -Bstatic $(COPTIONS)"	\
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+        "YACCDIR=/vobj/`arch`"		\
+	"WORKLIB= unmrlib_p.a" "WORKLIB2= magiclib_p.a" Vnmr_p; )
+	@echo "NMR_ID VNMR profiling libraries complete --------------------"
+
+
+# SunView icon files are used by XView (OpenWindows) i.e. use of SV_src
+fpc : $$(MAKEFILE) SV_src Source
+	(export FLOAT_OPTION; FLOAT_OPTION=f68881; \
+	 rm -f $(OW_WIN_SRC) $(COM_X_WIN_SRC); \
+	$(MAKE) -e -f $(MAKEFILE)  \
+	"CFLAGS= -O -sb -fsingle -f68881 -Dfpc -DFPC -DBSDACQ $(COPTIONS)" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"LPCFLAGS= -fsingle -f68881 -Dfpc -DFPC $(COPTIONS)"	\
+	"IN_LINE=/usr/lib/f68881/libm.il" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+        "YACCDIR=/vobj/`arch`"		\
+	"WIN_SRC= $(SV_WIN_SRC) $(SV_WIN_HDR)" \
+	"WIN_OBJ= $(SV_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(SVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(SVIEW_GUI_SRC_DIR)$$(@)" \
+	  "WORKLIB= unmrlib.a" "WORKLIB2= magiclib.a" \
+	  magiclib.a unmrlib.a Vnmr )
+	@echo "NMR_ID VNMR f68881 libraries complete --------------------------"
+
+# SunView icon files are used by XView (OpenWindows) i.e. use of SV_src
+fpcow : $$(MAKEFILE) SV_src OW_src Source
+	(export FLOAT_OPTION; FLOAT_OPTION=f68881; \
+	rm -f $(SV_WIN_SRC); \
+	$(MAKE) -e -f $(MAKEFILE)  \
+	"CFLAGS= -O -sb -fsingle -f68881 -Dfpc -DFPC -DBSDACQ $(MINCDIR)  \
+		-I$(OPENWINHOME)/include" \
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF" \
+	"LPCFLAGS= -fsingle -f68881 -Dfpc -DFPC $(COPTIONS)"	\
+	"IN_LINE=/usr/lib/f68881/libm.il" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+        "YACCDIR=/vobj/`arch`"		\
+	"LDFLAGS= -L$(OPENWINHOME)/lib $(MLIBDIR)" \
+	"WIN_SRC= $(OW_WIN_SRC) $(COM_X_WIN_SRC)" \
+	"WIN_OBJ= $(OW_WIN_OBJ) $(COM_X_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lcurses -ltermlib -lXm -lXt -lX11 -ll -lm" \
+	  "WORKLIB= unmrlib.ow.a" "WORKLIB2= magiclib.ow.a" \
+	  magiclib.ow.a unmrlib.ow.a Vnmr_ow )
+	@echo "NMR_ID VNMR f68881 XView libraries complete --------------------"
+
+
+fpa : $$(MAKEFILE) SV_src Source
+	(export FLOAT_OPTION; FLOAT_OPTION=ffpa; \
+	 rm -f $(OW_WIN_SRC) $(COM_X_WIN_SRC); \
+	$(MAKE) -e -f $(MAKEFILE) 		\
+	"CFLAGS= -O -fsingle -ffpa -Dfpa -DFPA -DBSDACQ $(COPTIONS)" \
+	"LPCFLAGS= -O4 -fsingle -ffpa -Dfpa -DFPA $(COPTIONS)"	\
+	"IN_LINE=/usr/lib/f68881/libm.il" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+        "YACCDIR=/vobj/`arch`"		\
+	"WIN_SRC= $(SV_WIN_SRC) $(SV_WIN_HDR)" \
+	"WIN_OBJ= $(SV_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(SVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(SVIEW_GUI_SRC_DIR)$$(@)" \
+	  "WORKLIB= unmrlibfpa.a" "WORKLIB2= magiclibfpa.a" \
+	  magiclibfpa.a unmrlibfpa.a Vnmr_fpa)
+	@echo "NMR_ID VNMR fpa libraries complete --------------------------"
+
+fpaow : $$(MAKEFILE) SV_src OW_src Source
+	(export FLOAT_OPTION; FLOAT_OPTION=ffpa; \
+	 rm -f $(SV_WIN_SRC); \
+	$(MAKE) -e -f $(MAKEFILE) 		\
+	"CFLAGS= -O -fsingle -ffpa -Dfpa -DFPA -DBSDACQ $(MINCDIR) -I$(OPENWINHOME)/include" \
+	"CPPFLAGS= -DSUN -DX11" \
+	"LPCFLAGS= -O4 -fsingle -ffpa -Dfpa -DFPA $(COPTIONS)"	\
+	"IN_LINE=/usr/lib/f68881/libm.il" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+        "YACCDIR=/vobj/`arch`"		\
+	"LDFLAGS= -L$(OPENWINHOME)/lib $(MLIBDIR)" \
+	"WIN_SRC= $(OW_WIN_SRC) $(COM_X_WIN_SRC)" \
+	"WIN_OBJ= $(OW_WIN_OBJ) $(COM_X_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lcurses -ltermlib -lXm -lXt -lX11 -ll -lm" \
+	  "WORKLIB= unmrlibfpa.ow.a" "WORKLIB2= magiclibfpa.ow.a" \
+	  magiclibfpa.ow.a unmrlibfpa.ow.a Vnmr_ow_fpa)
+	@echo "NMR_ID VNMR fpa XView libraries complete -----------------------"
+
+AIX : $$(MAKEFILE) OW_src Source Magic_ln
+	( $(MAKE) -f $(MAKEFILE) \
+	"CFLAGS= -O -fsingle -DVNMRTCL -DSUN $(COPTIONS)" \
+	"LPCFLAGS= -O -fsingle $(COPTIONS)"	\
+	"CPPFLAGS= -DSUN -DAIX -DX11 -DMOTIF -D_NO_PROTO" \
+	"TARGET_ARCH=-DIBM" \
+	 "COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"WIN_LN_COM_SRC= $(COM_X_WIN_SRC)" \
+	"GUI_COM_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_COM_GET= ln -s $(XVIEW_GUI_SRC_DIR)" \
+	"LDFLAGS= -L$(ibmobjdir)/proglib/vnmr " \
+	"WIN_LN_SRC= $(OW_WIN_SRC) $(COM_X_WIN_HDR)" \
+	"WIN_OBJ= $(OW_WIN_OBJ) $(COM_X_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(MOTIF_GUI_SRC_DIR)" \
+	"LIBS = -lXm -lXt -lX11 -lbsd -ll -lm" \
+	  "WORKLIB= unmrlib.ibm.a" "WORKLIB2= magiclib.ibm.a" \
+	  libacqcomm_ibm.a Vnmr_ibm )
+	@ln -fs Vnmr_ibm Vnmr
+	@echo "NMR_ID IBM AIX VNMR libraries complete --------------------------"
+
+IRIX : $$(MAKEFILE) OW_src Source Magic_ln acqlib_sgi
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS= -O -cckr -float -DVNMRTCL -D_BSD_COMPAT -DIRIX $(COPTIONS)" \
+	"LPCFLAGS= -O $(COPTIONS)"	\
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF -D_NO_PROTO" \
+	"LDFLAGS= -rpath /vnmr/lib -L. " \
+	"YACCDIR= /vobj/sgi"	\
+	"TARGET_ARCH=-DIRIX" \
+	"THISTARGET=irix"	\
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"WIN_LN_COM_SRC= $(COM_X_WIN_SRC)" \
+	"GUI_COM_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_COM_GET= ln -s $(XVIEW_GUI_SRC_DIR)" \
+	"LDFLAGS= -rpath /vnmr/lib -L$(sgiobjdir)/proglib/vnmr -L." \
+	"WIN_LN_SRC= $(OW_WIN_SRC) $(COM_X_WIN_HDR)" \
+	"WIN_OBJ= $(OW_WIN_OBJ) $(COM_X_WIN_OBJ)" \
+	"GUI_SRC_DIR= $(MOTIF_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(MOTIF_GUI_SRC_DIR)" \
+	"LIBS = -s -lmalloc -lXm -lXt -lX11 -lm" \
+	  "WORKLIB= unmrlib.sgi.a" "WORKLIB2= magiclib.sgi.a" \
+	  magiclib.sgi.a unmrlib.sgi.a libacqcomm_sgi.a Vnmr_sgi )
+	@mv -f Vnmr_sgi Vnmr
+	@echo "NMR_ID SGI MOTIF libraries complete --------------------------"
+
+XXSOLARIS : $$(MAKEFILE) SV_src OW_src Source Magic_ln
+	( SOLARIS="y"; export SOLARIS; $(MAKE) -f $(MAKEFILE) \
+	"CFLAGS= -O -sb -fsingle -DVNMRTCL -DBSDACQ $(MINCDIR) -I$(OPENWINHOME)/include" \
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF -DSOLARIS" \
+	"LPCFLAGS= -O -fsingle $(COPTIONS)"	\
+	"TARGET_ARCH=" \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"LDFLAGS= -L$(OPENWINHOME)/lib $(MLIBDIR)" \
+	"WIN_COM_SRC= $(COM_X_WIN_SRC)" \
+	"GUI_COM_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_COM_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"WIN_SRC= $(OW_WIN_SRC) $(COM_X_WIN_HDR)" \
+	"WIN_OBJ= $(OW_WIN_OBJ) $(COM_X_WIN_OBJ)" \
+	"ASM_SRC=" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lXm -lXt -lX11 -ll -lm -lsocket -lnsl" \
+	"GUI_TYPE=ow" \
+	"WORKLIB= unmrlib.ow.a" "WORKLIB2= magiclib.ow.a" \
+	  magiclib.a magiclib.ow.a unmrlib.ow.a libacqcomm.a Vnmr_ow )
+	@mv -f Vnmr_ow Vnmr
+	@echo "NMR_ID Solaris UNITY+ VNMR libraries complete --------------------------"
+SOLARIS : acqlib nessie
+	@echo "NMR_ID Solaris libraries complete -------------------------"
+
+nessie : $$(MAKEFILE) OW_src Source magic.gram.c
+	( SOLARIS="y"; export SOLARIS; $(MAKE) -f $(MAKEFILE) \
+	"CFLAGS= -O -fsingle -DVNMRTCL -DBSDACQ $(MINCDIR) -I$(OPENWINHOME)/include" \
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF -DSOLARIS" \
+	"YACCDIR=/vobj/sol"			\
+	"LPCFLAGS= -O -fsingle $(COPTIONS)"	\
+	"TARGET_ARCH=" \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"LDFLAGS= -L$(OPENWINHOME)/lib -L. $(MLIBDIR) $(RLIBDIR)" \
+	"WIN_COM_SRC= $(COM_X_WIN_SRC)" \
+	"GUI_COM_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_COM_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"WIN_SRC= $(OW_WIN_SRC) $(COM_X_WIN_HDR)" \
+	"WIN_OBJ= $(OW_WIN_OBJ) $(COM_X_WIN_OBJ)" \
+	"ASM_SRC=" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lXm -lXt -lX11 -ll -lm -lsocket -lnsl" \
+	"GUI_TYPE=ow" \
+	"WORKLIB= unmrlib.ow.a" "WORKLIB2= magiclib.ow.a" \
+		magiclib.a magiclib.ow.a unmrlib.ow.a Vnmr_ow )
+	@mv -f Vnmr_ow Vnmr
+	@echo "NMR_ID VNMR libraries complete --------------------------"
+
+dbxsol : $$(MAKEFILE) OW_src Source magic.gram.c
+	( SOLARIS="y"; export SOLARIS; $(MAKE) -f $(MAKEFILE) \
+	"CFLAGS= -g -xsb -fsingle -DDBXTOOL -DDEBUG -DVNMRTCL -DBSDACQ $(MINCDIR) -I$(OPENWINHOME)/include" \
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF -DSOLARIS" \
+	"YACCDIR=/vobj/sol"			\
+	"LPCFLAGS= -O -fsingle $(COPTIONS)"	\
+	"TARGET_ARCH=" \
+	"COMDATE=Compiled: `date '+%m/%d/%y %H:%M'`" \
+	"LDFLAGS= -L$(OPENWINHOME)/lib -L.  $(MLIBDIR) $(RLIBDIR)" \
+	"WIN_COM_SRC= $(COM_X_WIN_SRC)" \
+	"GUI_COM_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_COM_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"WIN_SRC= $(OW_WIN_SRC) $(COM_X_WIN_HDR)" \
+	"WIN_OBJ= $(OW_WIN_OBJ) $(COM_X_WIN_OBJ)" \
+	"ASM_SRC=" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lXm -lXt -lX11 -ll -lm -lsocket -lnsl" \
+	"GUI_TYPE=ow" \
+             "VNMR_GET= $(VNMR_SGET)" 		\
+             "XRACQ_GET= $(XRACQ_SGET)"		\
+             "ACQPROC_GET= $(ACQPROC_SGET)"	\
+             "NCOMM_GET= $(NCOMM_SGET)"	\
+             "PSG_GET= $(PSG_SGET)"		\
+	     "FT3D_GET= $(FT3D_SGET)"		\
+	     "GUI_COM_GET= $(XVIEW_GUI_SGET)" \
+	     "GUI_GET= $(XVIEW_GUI_SGET)"	\
+	"WORKLIB= unmrlib.ow.a" "WORKLIB2= magiclib.ow.a" \
+		magiclib.a magiclib.ow.a unmrlib.ow.a Vnmr_dbx )
+	@mv -f Vnmr_ow Vnmr
+	@echo "NMR_ID VNMR libraries complete --------------------------"
+
+
+acqlib : $$(MAKEFILE) Source
+	( $(MAKE) -f $(MAKEFILE)	\
+	"SHAREDLIB_VER=2.0"		\
+	"CPPFLAGS= $(SOL) -DSUN"	\
+	"CFLAGS= $(PIC) $(DEBUGOPT)"	\
+	libacqcomm.a libacqcomm.so )
+	@echo "target $@ :  is up to date........."
+	@echo "" 
+
+acqlib_sgi : $$(MAKEFILE) Source
+	( $(MAKE) -f $(MAKEFILE) \
+	"SHAREDLIB_VER=2.0"         \
+	"CPPFLAGS= " \
+	"CFLAGS= -O -cckr -float " \
+	libacqcomm_sgi.a libacqcomm.so )
+	@echo "target acqlib_sgi :  is completed------------"
+	@echo ""
+
+depend:	$$(MAKEFILE) depend_src
+	@ echo making dependencies...
+	@ rm -f makedepd
+	-@( for i in $(ALLSRC) ; do \
+	     echo "file: $$i" ;		\
+	     rm -f $${i}.pp	;	\
+	     unifdef -DSUN -DAIX -DUNIX -UVMS $$i > $${i}.pp ; \
+	   done; )
+	   grep '^#include' $(ALL_C_SRC:.c=.c.pp) $(SV_WIN_HDR:.icon=.icon.pp) $(ALL_P_SRC:.p=.p.pp) $(SV_WIN_SRC:.c=.c.pp) $(ALL_H_SRC:.h=.h.pp) \
+		| sed 's/<\([^>]*\)>/"\/usr\/include\/\1"/' \
+		| sed 's/:[^"]*"\([^"]*\)".*/: \1/' \
+		| sed 's/\.p\.pp/.p/' \
+		| sed 's/\.c\.pp/.o/' \
+		| sed 's/\.h\.pp/.h/' \
+		| sed 's/\.icon\.pp/.icon/' \
+		| sed 's/\.y\.pp/.o/' \
+		| sed 's/\.l\.pp/.o/' \
+		| sed 's/\.y/.o/' \
+		| sed 's/\.lex\.l/.lex.o/' >makedepd ;
+	@ ls -1 $(ALL_C_SRC) $(SV_WIN_SRC) | awk "{ {len = length(\$$0)} {s2 = substr(\$$0, 1, len - 2)} {print s2 \".o: \", \$$0 >> \"makedepd\"} } "
+	@ awk "{ if ( \$$2 !~ /\/usr\// ) { print \$$0; } }" makedepd | sort > makedep
+	@ echo '/^# DO NOT DELETE THIS LINE/+2,$$d' >eddep
+	@ echo '$$r makedep' >>eddep
+	@ echo 'w' >>eddep
+	@ cp $(MAKEFILE) $(MAKEFILE).bak
+	@ ed - $(MAKEFILE) < eddep
+	@ rm eddep makedep makedepd
+	@ echo '# DEPENDENCIES MUST END AT END OF FILE' >> $(MAKEFILE)
+	@ echo '# IF YOU PUT STUFF HERE IT WILL GO AWAY' >> $(MAKEFILE)
+	@ echo '# see make depend above' >> $(MAKEFILE)
+
+depend_src :
+	(  $(MAKE) -e -f $(MAKEFILE)	\
+             "VNMR_SRC_DIR= $(VNMR_SCCS_SRC)"   \
+             "XRACQ_SRC_DIR= $(XRACQ_SCCS_SRC)"	\
+             "ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)"	\
+             "PSG_SRC_DIR= $(PSG_SCCS_SRC)"	\
+	     "AIP_SRC_DIR= $(AIP_SCCS_SRC)"	\
+	     "FT3D_SRC_DIR= $(FT3D_SCCS_SRC)"	\
+	     "NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)"	\
+	     "EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)"	\
+             "VNMR_GET= $(VNMR_SGET)" 		\
+             "XRACQ_GET= $(XRACQ_SGET)"		\
+             "ACQPROC_GET= $(ACQPROC_SGET)"	\
+             "PSG_GET= $(PSG_SGET)"		\
+	     "FT3D_GET= $(FT3D_SGET)"		\
+	     "NCOMM_GET= $(NCOMM_SGET)"		\
+	     "EXPPROC_GET= $(EXPPROC_SGET)"		\
+	     "AIP_GET= $(AIP_SGET)"		\
+               src ;  \
+	     $(MAKE) -e -f $(MAKEFILE)	\
+	     "SVIEW_GUI_SRC_DIR= $(SVIEW_GUI_SCCS_SRC)" \
+	     "SVIEW_GUI_GET= $(SVIEW_GUI_SGET)"	\
+	     "WIN_SRC= $(SV_WIN_SRC) $(SV_WIN_HDR)" \
+	     "GUI_SRC_DIR= $(SVIEW_GUI_SCCS_SRC)" \
+               win_src)
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE)	\
+	"VNMR_SRC_DIR= $(VNMR_SCCS_SRC)"   \
+	"XRACQ_SRC_DIR= $(XRACQ_SCCS_SRC)"	\
+	"ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)"	\
+	"PSG_SRC_DIR= $(PSG_SCCS_SRC)"	\
+	"FT3D_SRC_DIR= $(FT3D_SCCS_SRC)"	\
+	"NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)"	\
+	"EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)"	\
+        "AIP_SRC_DIR= $(AIP_SCCS_SRC)" \
+	"VNMR_GET= $(VNMR_SGET)" 		\
+	"XRACQ_GET= $(XRACQ_SGET)"		\
+	"ACQPROC_GET= $(ACQPROC_SGET)"	\
+	"PSG_GET= $(PSG_SGET)"		\
+	"FT3D_GET= $(FT3D_SGET)"		\
+	"NCOMM_GET= $(NCOMM_SGET)"		\
+	"EXPPROC_GET= $(EXPPROC_SGET)"		\
+	"VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)"         \
+	"VWACQ_GET= $(VWACQ_SGET)" 		\
+	"AIP_GET= $(AIP_SGET)"			\
+	src)
+ 
+SV_src :
+	( if [ ! -d $(SRC_DIR)sv ] ; then mkdir $(SRC_DIR)sv; fi ; \
+	   cd $(SRC_DIR)sv; $(MAKE) -e -f ../$(MAKEFILE)	\
+	     "SVIEW_GUI_SRC_DIR= $(SVIEW_GUI_SCCS_SRC)" \
+	     "SVIEW_GUI_GET= $(SVIEW_GUI_SGET)"	\
+	     "WIN_SRC= $(SV_WIN_SRC) $(SV_WIN_HDR)" \
+	     "GUI_SRC_DIR= $(SVIEW_GUI_SCCS_SRC)" \
+	     "GUI_GET= $(SVIEW_GUI_SGET)" \
+               win_src)
+
+OW_src :
+	( if [ ! -d $(SRC_DIR)ow ] ; then mkdir $(SRC_DIR)ow; fi ; \
+          cd $(SRC_DIR)ow; $(MAKE) -e -f ../$(MAKEFILE)	\
+	"XVIEW_GUI_SRC_DIR= $(XVIEW_GUI_SCCS_SRC)" \
+	"XVIEW_GUI_GET= $(XVIEW_GUI_SGET)"	\
+	"WIN_SRC= $(OW_WIN_SRC) $(COM_X_WIN_HDR) $(COM_X_WIN_SRC)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SCCS_SRC)" \
+	"GUI_GET= $(XVIEW_GUI_SGET)" \
+	win_src)
+
+# Since IBM can't stand a null target even if not used, we pass a dummy value to
+#  WIN_OBJ so errors and weird stuff (like trying to compile *.icon files will
+#  not happen.
+MOTIF_src :
+	( if [ ! -d $(SRC_DIR)motif ] ; then mkdir $(SRC_DIR)motif; fi ; \
+	   cd $(SRC_DIR)motif; $(MAKE) -f ../$(MAKEFILE)	\
+	     "WIN_SRC= $(OW_WIN_SRC) $(COM_X_WIN_HDR) $(COM_X_WIN_SRC)" \
+	     "WIN_OBJ= graphics_win.o" \
+	     "GUI_SRC_DIR= $(MOTIF_GUI_SCCS_SRC)" \
+	     "GUI_GET= $(MOTIF_GUI_SGET)" \
+               win_src)
+
+#--- Recursive Targets ------------------------------
+
+src : $$(MAKEFILE) $(COMMON_SRC) revdate.c
+	@echo target src :  is up  to date.........
+	@echo ""
+
+win_src : $$(MAKEFILE) $(WIN_SRC)
+	@echo target win_src :  is up to date.........
+	@echo ""
+
+unmrlib.a unmrlib_dbx.a unmrlib_p.a \
+	unmrlibfpa.a unmrlibfpa_dbx.a unmrlibfpa_p.a \
+	unmrlib.ow.a unmrlib_dbx.ow.a \
+	unmrlibfpa.ow.a unmrlibfpa_dbx.ow.a  \
+	 : getunmrobj \
+	    $(UNMRLIB_OBJ) $(WIN_OBJ) $(PSG_OBJ) $(FT3D_OBJ) revdate.o
+	- (umask 2; rm -f $@ )
+	@echo Remake Library $@ 
+	@(umask 2; ar rv $@ `lorder $(UNMRLIB_OBJ) revdate.o $(WIN_OBJ) $(PSG_OBJ) \
+			$(FT3D_OBJ) | tsort 2>/dev/null` 1>/dev/null)
+	@(umask 2; if [ x$$SOLARIS != "xy" ]; then	\
+		 echo ranlib $@; 			\
+		 ranlib $@; 				\
+	 fi)
+	-@(umask 2; if [ x$$SOLARIS != "xy" ]; then		\
+		echo remove objects;				\
+		rm -f $(UNMRLIB_OBJ) revdate.o $(WIN_OBJ) $(PSG_OBJ) $(FT3D_OBJ); \
+	 fi)
+
+magiclib.a magiclib_dbx.a magiclib_p.a \
+	magiclibfpa.a magiclibfpa_dbx.a magiclibfpa_p.a \
+	 : getmagicobj \
+	    $(YACC_OBJ) $(LEX_OBJ) $(MAGICLIB_OBJ) $(ASM_OBJ)
+	- (umask 2; rm -f $@ )
+	@echo Remake Library $@ 
+	@(umask 2; ar rv $@ `lorder $(YACC_OBJ) $(LEX_OBJ) $(MAGICLIB_OBJ) \
+			$(ASM_OBJ) | tsort 2>/dev/null` 1>/dev/null)
+	@(umask 2; if [ x$$SOLARIS != "xy" ]; then	\
+		 echo ranlib $@; 			\
+		 ranlib $@; 				\
+	 fi)
+	-@(umask 2; if [ x$$SOLARIS != "xy" ]; then		\
+		echo remove objects;				\
+		rm -f $(YACC_OBJ) $(LEX_OBJ) $(MAGICLIB_OBJ) $(ASM_OBJ); \
+	 fi)
+
+
+libacqcomm.a libacqcomm_dbx.a: $(ACQCOMLIB_OBJ) $(NCOMM_OBJ)
+	(umask 2; ar rv $(@:.so=.a)  $(ACQCOMLIB_OBJ) $(NCOMM_OBJ) )
+	(umask 2; $(RANLIB) $@; )
+	@echo libacqcomm.a is completed .........
+	@echo ""
+
+libacqcomm.so : $(ACQCOMLIB_OBJ) $(NCOMM_OBJ)
+	-(umask 2; ld $(LDSOFLAGS) -o $@.$(SHAREDLIB_VER)                  \
+			$(ACQCOMLIB_OBJ) $(NCOMM_OBJ);		\
+		rm -f $@;						\
+		$(SLINK) $@.$(SHAREDLIB_VER) $@; )
+	@echo libacqcomm.so.x  is completed .........
+	@echo ""
+
+libacqcomm_ibm.a : $(ACQCOMLIB_OBJ) $(NCOMM_OBJ)
+	(umask 2; ar rv $@ $(ACQCOMLIB_OBJ) $(NCOMM_OBJ) )
+	(umask 2; ranlib $@; )
+	mv libacqcomm_ibm.a libacqcomm.a
+	@echo libacqcomm.a is complete
+
+libacqcomm_sgi.a : $(ACQCOMLIB_OBJ) $(NCOMM_OBJ)
+	(umask 2; ar -rsv $@ $(ACQCOMLIB_OBJ) $(NCOMM_OBJ) )
+	mv libacqcomm_sgi.a libacqcomm.a
+	ld -shared $(ACQCOMLIB_OBJ) $(NCOMM_OBJ) -o libacqcomm.so
+	@echo "libacqcomm_sgi.a is completed and moved to libacqcomm.a------"
+	@echo ""
+
+# for the IBM we leave all the objects out of the library, since extracting the
+#  objects from the library gives them the extraction date not the lib data
+#  therefore the *.o are allways newer than source & will never be recompiled
+#   again.  Good job IBM on your ar $#%$@!!$@@
+
+unmrlib.ibm.a : 	\
+	    $(UNMRLIB_OBJ) $(WIN_OBJ) $(PSG_OBJ) $(FT3D_OBJ) revdate.o
+	- (umask 2; rm -f $@ )
+	@echo Remake Library $@ 
+	@(umask 2; ar rv $@ `lorder $(UNMRLIB_OBJ) revdate.o $(WIN_OBJ) \
+		 	$(PSG_OBJ) $(FT3D_OBJ)	| tsort 2>/dev/null` 1>/dev/null)
+	(umask 2; ranlib $@ )
+	@ln -fs unmrlib.ibm.a unmrlib.a
+
+magiclib.ibm.a : \
+	    $(YACC_OBJ) $(LEX_OBJ) $(MAGICLIB_OBJ) $(ASM_OBJ)
+	- (umask 2; rm -f $@ )
+	@echo Remake Library $@ 
+	@(umask 2; ar rv $@ `lorder $(YACC_OBJ) $(LEX_OBJ) $(MAGICLIB_OBJ) \
+			$(ASM_OBJ) | tsort 2>/dev/null` 1>/dev/null)
+	(umask 2; ranlib $@ )
+	@ln -fs magiclib.ibm.a magiclib.a
+
+# SGI lib 
+
+
+unmrlib.sgi.a :   \
+		$(UNMRLIB_OBJ) $(WIN_OBJ) $(PSG_OBJ) $(FT3D_OBJ) revdate.o
+	@echo Remake Library $@
+	- (umask 2; rm -f $@ )
+	@(umask 2; ar -rsv $@ $(UNMRLIB_OBJ) revdate.o $(WIN_OBJ) $(PSG_OBJ) $(FT3D_OBJ) )
+	@rm -f unmrlib.a
+	@ln -sf unmrlib.sgi.a unmrlib.a
+	@echo "$@ is completed ........."
+	@echo ""
+
+magiclib.sgi.a :  \
+		$(YACC_OBJ) $(LEX_OBJ) $(MAGICLIB_OBJ) $(ASM_OBJ)
+	@echo Remake Library $@
+	- (umask 2; rm -f $@ )
+	@(umask 2; ar -rsv $@ $(LEX_OBJ) $(YACC_OBJ) $(MAGICLIB_OBJ) $(ASM_OBJ) )
+	@rm -f magiclib.a
+	@ln -sf magiclib.sgi.a magiclib.a
+	@echo "$@ is completed ........."
+	@echo ""
+ 
+#
+# magiclib for Xview is the same from SunView therefore just make a link
+#
+magiclib.ow.a magiclib_dbx.ow.a magiclibfpa.ow.a :
+	ln -s $(@:.ow.a=.a) $@
+
+
+# for IBM & SGI symbolic to magic.gram.c & magic.gram.h in /vobj/sol/proglib/vnmr
+Magic_ln :
+	@echo doing target Magic_ln :  ..........
+	rm -f magic.gram.c magic.gram.h
+	rm -f magic.lex.c
+	ln -s $(solobjdir)/proglib/vnmr/magic.gram.c magic.gram.c
+	ln -s $(solobjdir)/proglib/vnmr/magic.gram.h magic.gram.h
+	ln -s $(solobjdir)/proglib/vnmr/magic.lex.c magic.lex.c
+	@echo done with target Magic_ln :  .........
+	@echo ""
+
+Vnmr Vnmr_p Vnmr_static Vnmr_ow Vnmr_ow_dyn Vnmr_ibm Vnmr_sgi : $$(WORKLIB2) $$(WORKLIB)
+	(umask 2; $(LINK.c) -o $@ $(WORKLIB) $(WORKLIB2) $(WORKLIB) -lacqcomm $(LIBS)  )
+
+Vnmr_dbx Vnmr_ow_dbx : $$(WORKLIB2) $$(WORKLIB)
+	(umask 2; $(LINK.c) -o $@ $(WORKLIB) $(WORKLIB2) $(WORKLIB) ./libacqcomm.a $(LIBS)  )
+
+Vnmr_fpa Vnmr_fpadbx Vnmr_fpap Vnmr_ow_fpa: $$(WORKLIB2) $$(WORKLIB)
+	(umask 2; \
+	$(LINK.c) -o $@ $(WORKLIB) $(WORKLIB2) $(WORKLIB) $(LIBS)  )
+
+unmrlibibm.a : getunmrobj \
+	    $(UNMRLIB_OBJ) $(PSG_OBJ) $(FT3D_OBJ) revdate.o
+	- (umask 2; rm -f $@ )
+	@echo Remake Library $@ 
+	@(umask 2; ar rv $@ `lorder $(UNMRLIB_OBJ) revdate.o $(PSG_OBJ) $(FT3D_OBJ) \		| tsort 2>/dev/null` 1>/dev/null)
+	(umask 2; ranlib $@ )
+	@echo remove objects
+	-@ (umask 2; rm -f $(UNMRLIB_OBJ) revdate.o $(PSG_OBJ) $(FT3D_OBJ) )
+
+magiclibibm.a : getmagicobj \
+	    $(YACC_OBJ) $(LEX_OBJ) $(MAGICLIB_OBJ) $(ASM_OBJ)
+	- (umask 2; rm -f $@ )
+	@echo Remake Library $@ 
+	@(umask 2; ar rv $@ `lorder $(YACC_OBJ) $(LEX_OBJ) $(MAGICLIB_OBJ) \
+			$(ASM_OBJ) | tsort 2>/dev/null` 1>/dev/null)
+	(umask 2; ranlib $@ )
+	@echo remove objects
+	-@ (umask 2; rm -f $(YACC_OBJ) $(LEX_OBJ) $(MAGICLIB_OBJ) $(ASM_OBJ) )
+
+getunmrobj :                                                       
+	-@(umask 2; if [ x$$SOLARIS != "xy" ]; then				\
+		echo extract $(WORKLIB) objects from library;			\
+		ar xo $(WORKLIB) $(UNMRLIB_OBJ) $(WIN_OBJ) $(PSG_OBJ) $(FT3D_OBJ); \
+	 fi)
+
+getmagicobj :                                                       
+	-@(umask 2; if [ x$$SOLARIS != "xy" ]; then				\
+		echo extract $(WORKLIB2) objects from library;			\
+		ar xo $(WORKLIB2) $(MAGICLIB_OBJ) $(YACC_OBJ) $(LEX_OBJ) $(ASM_OBJ); \
+	 fi)
+
+#--- vmake Target ---------------------------------------------------------
+
+fromlibs: revdate.o $(OBJ) $(OBJS) $(LEXOBJ) $(GRAMOBJ) 
+	(umask 2; $(LINK.c) -o $(Vnmr) $(OBJ) $(OBJS) \
+           $(UNMRLIB) $(MAGICLIB) $(UNMRLIB) 		\
+	   $(ACQCOMMLIB) 			\
+		$(SKYLIB) $(ld_LIBS) )
+#	cc -Qoption ld -M $(LINKFLGS) $(LIBINC) -o $(Vnmr) $(OBJ) $(OBJS) \
+#           $(UNMRLIB) $(MAGICLIB) $(UNMRLIB) $(SKYLIB) $(ld_LIBS)
+ 
+# clean		:
+#	rm -f $(OBJ) magic.gram.c magic.gram.h magic.lex.c
+
+#--- Beware ACQPROC_strucs.h in vnmr sccs is a software link to acqproc sccs
+
+#--- Object Targets ---------------------------
+
+$(COMMON_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(WIN_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(ACQCOMLIB_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(NCOMM_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#exec.o		: $(@:.o=.c)
+#	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+#	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+#--- Special Object Targets ----------------------
+
+# This object is always compiled, VNMR_REV_ID & VNMR_REV_DATE are envirionment
+# variables and COMDATE is a makefile define passed to the makefile via a recusive
+# make call or from vmake itself.
+# REVISION_ID typically - "VERSION 4.2 REVISION A"
+# REVISION_DATE typically - "Aug. 17, 1993"
+# COMPDATE typically - "Compiled: 8/17/92 15:45"
+#
+revdate.o	: revdate.c doit
+	(umask 2; $(COMPILE.c) -DREVISION_ID='"$(VNMR_REV_ID)"' -DREVISION_DATE='"$(REV_DATE)"' -DCOMPDATE='"$(COMDATE)"' $(@:.o=.c) )
+
+revdate.c	:
+	$(VNMR_GET) $@
+
+doit :
+
+
+acqhdl.o	: $(@:.o=.c)
+	(umask 2; $(COMPILE.c) -DACQPROC_LC $(@:.o=.c) )
+
+
+displayops.o	: $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) $(IN_LINE) )
+
+
+foldj.o		: $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) $(IN_LINE) )
+
+lpqld.o		: $(@:.o=.c)
+	(umask 2; $(LPCOMPILE.c) $(@:.o=.c) )
+
+magic.gram.c    : magic.gram.y magic.parser
+	(umask 2; if ( test  "x$(THISTARGET)" != "xirix" ); then	\
+		$(YACCDIR)/yacc/yacc -fd magic.parser $(@:.c=.y);	\
+		mv y.tab.c $@   ;					\
+		mv y.tab.h $(@:.c=.h);					\
+	fi )
+
+# stub for vmake, magic.gram.o is compiled first to be sure magic.gram.h is present
+# otherwise will always attempt to compile magic.gram.o
+magic.gram.h	: 
+
+magic.gram.o	:
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+magic.lex.c     : magic.lex.l
+	(umask 2; if ( test  "x$(THISTARGET)" != "xirix" ); then                \
+		lex $(@:.c=.l); \
+		mv lex.yy.c $@; \
+	fi )
+
+magic.lex.o	:
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) :
+	$(VNMR_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(UNMRLIB_SRC) $(UNMRLIB_HDR) $(MAGICLIB_SRC) $(ASM_SRC) \
+		$(ACQCOMLIB_HDR) $(ACQCOMLIB_SRC)	 \
+		$(YACC_SRC) $(LEX_SRC): $$(VNMR_SRC_DIR)$$(@)
+	$(VNMR_GET) $@
+
+$(WIN_SRC) : $$(GUI_SRC_DIR)$$(@)
+	$(GUI_GET) $@
+
+$(WIN_COM_SRC) : $$(GUI_COM_SRC_DIR)$$(@)
+	$(GUI_COM_GET) $@
+
+$(AIPLIB_SRC) $(AIPLIB_HDR): $$(AIP_SRC_DIR)$$(@)
+	$(AIP_GET) $@
+
+#---- special link command target is needed for SGI since one can not pass
+#     a MACRO=$$(@) construct, (syntax error)
+#
+$(WIN_LN_SRC) : $$(GUI_SRC_DIR)$$(@)
+	$(GUI_GET)$@ $@
+
+$(WIN_LN_COM_SRC) : $$(GUI_COM_SRC_DIR)$$(@)
+	$(GUI_COM_GET)$@ $@
+
+#-------------------------------------
+
+$(XRACQ_HDR) : $$(XRACQ_SRC_DIR)$$(@)
+	$(XRACQ_GET) $@
+
+$(ACQPROC_HDR) : $$(ACQPROC_SRC_DIR)$$(@)
+	$(ACQPROC_GET) $@
+
+$(VWACQ_HDR) : $$(VWACQ_SRC_DIR)$$(@)
+	$(VWACQ_GET) $@
+
+$(PSG_SRC) $(PSG_HDR) : $$(PSG_SRC_DIR)$$(@)
+	$(PSG_GET) $@
+
+$(FT3D_SRC) $(FT3D_HDR) : $$(FT3D_SRC_DIR)$$(@)
+	$(FT3D_GET) $@
+
+$(NCOMM_SRC) $(NCOMM_HDR) : $$(NCOMM_SRC_DIR)$$(@)
+	$(NCOMM_GET) $@
+
+$(EXPPROC_HDR) : $$(EXPPROC_SRC_DIR)$$(@)
+	$(EXPPROC_GET) $@
+
+# These are missed by make depend
+set3dproc.o: ftpar.h
+# DO NOT DELETE THIS LINE -- make depend uses it
+# DEPENDENCIES MUST END AT END OF FILE
+acqfuncs.o:  acqfuncs.c
+acqfuncs.o: ACQ_HAL.h
+acqfuncs.o: ACQ_SUN.h
+acqfuncs.o: acquisition.h
+acqfuncs.o: group.h
+acqfuncs.o: locksys.h
+acqfuncs.o: params.h
+acqfuncs.o: pvars.h
+acqfuncs.o: shims.h
+acqfuncs.o: tools.h
+acqfuncs.o: variables.h
+acqfuncs.o: vnmrsys.h
+acqhdl.o:  acqhdl.c
+acqhdl.o: ACQ_HAL.h
+acqhdl.o: ACQ_SUN.h
+acqhdl.o: acqerrmsges.h
+acqhdl.o: acquisition.h
+acqhdl.o: errorcodes.h
+acqhdl.o: group.h
+acqhdl.o: locksys.h
+acqhdl.o: pvars.h
+acqhdl.o: shims.h
+acqhdl.o: tools.h
+acqhdl.o: variables.h
+acqhdl.o: vnmrsys.h
+acqhdl.o: whenmask.h
+acqhwcmd.o:  acqhwcmd.c
+acqhwcmd.o: ACQ_SUN.h
+acqhwcmd.o: STAT_DEFS.h
+acqhwcmd.o: acquisition.h
+acqhwcmd.o: group.h
+acqhwcmd.o: locksys.h
+acqhwcmd.o: params.h
+acqhwcmd.o: pvars.h
+acqhwcmd.o: shims.h
+acqhwcmd.o: sockets.h
+acqhwcmd.o: variables.h
+acqhwcmd.o: vnmrsys.h
+acqhwcmd.o: wjunk.h
+addsub.o:  addsub.c
+addsub.o: allocate.h
+addsub.o: data.h
+addsub.o: disp.h
+addsub.o: group.h
+addsub.o: init2d.h
+addsub.o: pvars.h
+addsub.o: sky.h
+addsub.o: tools.h
+addsub.o: variables.h
+addsub.o: vnmrsys.h
+addsub.o: wjunk.h
+ai.o:  ai.c
+ai.o: data.h
+ai.o: group.h
+ai.o: init2d.h
+ai.o: variables.h
+ai.o: vnmrsys.h
+allocate.o:  allocate.c
+ap_device.o:  ap_device.c
+ap_device.o: acodes.h
+ap_device.o: ap_device.p
+ap_device.o: oopc.h
+ap_device.p: device.p
+ap_device.p: device.p
+asm.o:  asm.c
+asm.o: acquisition.h
+asm.o: group.h
+asm.o: pvars.h
+asm.o: vnmrsys.h
+asm.o: wjunk.h
+asmfuncs.o:  asmfuncs.c
+asmfuncs.o: asm.h
+assign.o:  assign.c
+assign.o: allocate.h
+assign.o: group.h
+assign.o: params.h
+assign.o: pvars.h
+assign.o: tools.h
+assign.o: variables.h
+assign.o: wjunk.h
+banner.o:  banner.c
+banner.o: vnmrsys.h
+bgvars.o:  bgvars.c
+bgvars.o: group.h
+bgvars.o: symtab.h
+bgvars.o: variables.h
+bootup.o:  bootup.c
+bootup.o: acquisition.h
+bootup.o: data.h
+bootup.o: group.h
+bootup.o: init2d.h
+bootup.o: locksys.h
+bootup.o: pvars.h
+bootup.o: tools.h
+bootup.o: variables.h
+bootup.o: vnmrsys.h
+bootup.o: wjunk.h
+builtin.o:  builtin.c
+builtin.o: allocate.h
+builtin.o: group.h
+builtin.o: pvars.h
+builtin.o: symtab.h
+builtin.o: tools.h
+builtin.o: variables.h
+builtin.o: vnmrsys.h
+builtin.o: wjunk.h
+builtin1.o:  builtin1.c
+builtin1.o: allocate.h
+builtin1.o: group.h
+builtin1.o: params.h
+builtin1.o: pvars.h
+builtin1.o: symtab.h
+builtin1.o: tools.h
+builtin1.o: variables.h
+builtin1.o: vnmrsys.h
+builtin1.o: wjunk.h
+buttons.o:  buttons.c
+buttons.o: allocate.h
+buttons.o: tools.h
+buttons.o: vnmrsys.h
+buttons.o: wjunk.h
+calcq.o:  calcq.c
+calcq.o: data.h
+calcq.o: group.h
+calcq.o: init2d.h
+calcq.o: tools.h
+calcq.o: variables.h
+calcq.o: vnmrsys.h
+comm.o:  comm.c
+comm.o: ACQPROC_strucs.h
+comm.o: acquisition.h
+comm.o: comm.h
+comm.o: errLogLib.h
+comm.o: shrstatinfo.h
+createparams.o:  createparams.c
+createparams.o: group.h
+createparams.o: vnmrsys.h
+data.o:  data.c
+data.o: allocate.h
+data.o: data.h
+data.o: group.h
+data.o: vnmrsys.h
+data.o: wjunk.h
+dcon.o:  dcon.c
+dcon.o: data.h
+dcon.o: disp.h
+dcon.o: graphics.h
+dcon.o: group.h
+dcon.o: init2d.h
+dcon.o: pvars.h
+dcon.o: variables.h
+dcon.o: vnmrsys.h
+dconi.o:  dconi.c
+dconi.o: data.h
+dconi.o: disp.h
+dconi.o: graphics.h
+dconi.o: group.h
+dconi.o: init2d.h
+dconi.o: vnmrsys.h
+ddf.o:  ddf.c
+ddf.o: data.h
+ddf.o: group.h
+ddf.o: pvars.h
+ddf.o: tools.h
+ddf.o: variables.h
+ddf.o: vnmrsys.h
+ddif.o:  ddif.c
+ddif.o: data.h
+ddif.o: group.h
+ddif.o: pvars.h
+ddif.o: tools.h
+ddif.o: variables.h
+ddif.o: vnmrsys.h
+ddif.o: wjunk.h
+ddph.o:  ddph.c
+ddph.o: data.h
+ddph.o: group.h
+ddph.o: init2d.h
+ddph.o: tools.h
+ddph.o: variables.h
+ddph.o: vnmrsys.h
+debug.o:  debug.c
+debug.o: vnmrsys.h
+debug.o: wjunk.h
+device.o:  device.c
+device.o: device.p
+device.o: oopc.h
+device.p: common.p
+device.p: common.p
+df2d.o:  df2d.c
+df2d.o: data.h
+df2d.o: ftpar.h
+df2d.o: group.h
+df2d.o: process.h
+df2d.o: pvars.h
+df2d.o: sky.h
+df2d.o: tools.h
+df2d.o: variables.h
+df2d.o: vnmrsys.h
+df2d.o: wjunk.h
+dfid.o:  dfid.c
+dfid.o: data.h
+dfid.o: disp.h
+dfid.o: graphics.h
+dfid.o: group.h
+dfid.o: init2d.h
+dfid.o: tools.h
+dfid.o: variables.h
+dfid.o: vnmrsys.h
+dfww.o:  dfww.c
+dfww.o: data.h
+dfww.o: disp.h
+dfww.o: graphics.h
+dfww.o: group.h
+dfww.o: init2d.h
+dfww.o: tools.h
+dfww.o: variables.h
+dfww.o: vnmrsys.h
+dg.o:  dg.c
+dg.o: graphics.h
+dg.o: group.h
+dg.o: pvars.h
+dg.o: tools.h
+dg.o: variables.h
+dg.o: vnmrsys.h
+dg.o: wjunk.h
+disp3Dmap.o:  disp3Dmap.c
+disp3Dmap.o: data.h
+disp3Dmap.o: group.h
+disp3Dmap.o: init2d.h
+disp3Dmap.o: tools.h
+disp3Dmap.o: variables.h
+disp3Dmap.o: vnmrsys.h
+displayops.o:  displayops.c
+displayops.o: group.h
+dli.o:  dli.c
+dli.o: allocate.h
+dli.o: data.h
+dli.o: disp.h
+dli.o: group.h
+dli.o: init2d.h
+dli.o: pvars.h
+dli.o: tools.h
+dli.o: variables.h
+dli.o: vnmrsys.h
+dli.o: wjunk.h
+dll.o:  dll.c
+dll.o: data.h
+dll.o: disp.h
+dll.o: graphics.h
+dll.o: group.h
+dll.o: init2d.h
+dll.o: pvars.h
+dll.o: tools.h
+dll.o: variables.h
+dll.o: vnmrsys.h
+dll.o: wjunk.h
+dosyfit.o:  dosyfit.c
+dosyfit.o: data.h
+dosyfit.o: disp.h
+dosyfit.o: graphics.h
+dosyfit.o: group.h
+dosyfit.o: init2d.h
+dosyfit.o: vnmrsys.h
+dosyfit3D.o:  dosyfit3D.c
+dosyfit3D.o: data.h
+dosyfit3D.o: disp.h
+dosyfit3D.o: graphics.h
+dosyfit3D.o: group.h
+dosyfit3D.o: init2d.h
+dosyfit3D.o: vnmrsys.h
+downsample.o:  downsample.c
+downsample.o: allocate.h
+downsample.o: data.h
+downsample.o: ftpar.h
+downsample.o: group.h
+downsample.o: pvars.h
+downsample.o: variables.h
+downsample.o: vnmrsys.h
+downsample.o: wjunk.h
+dpcon.o:  dpcon.c
+dpcon.o: data.h
+dpcon.o: disp.h
+dpcon.o: graphics.h
+dpcon.o: group.h
+dpcon.o: init2d.h
+dpcon.o: vnmrsys.h
+dpf.o:  dpf.c
+dpf.o: data.h
+dpf.o: graphics.h
+dpf.o: group.h
+dpf.o: init2d.h
+dpf.o: tools.h
+dpf.o: variables.h
+dpf.o: vnmrsys.h
+dps.o:  dps.c
+dps.o: REV_NUMS.h
+dps.o: dps_menu.icon
+dps.o: dpsdef.h
+dps.o: graphics.h
+dps.o: group.h
+dps.o: pvars.h
+dps.o: symtab.h
+dps.o: tools.h
+dps.o: variables.h
+dps.o: vfilesys.h
+dps.o: vnmrsys.h
+dps.o: wjunk.h
+ds.o:  ds.c
+ds.o: data.h
+ds.o: disp.h
+ds.o: graphics.h
+ds.o: group.h
+ds.o: init2d.h
+ds.o: pvars.h
+ds.o: tools.h
+ds.o: variables.h
+ds.o: vnmrsys.h
+ds.o: wjunk.h
+dscale.o:  dscale.c
+dscale.o: allocate.h
+dscale.o: data.h
+dscale.o: disp.h
+dscale.o: graphics.h
+dscale.o: group.h
+dscale.o: init2d.h
+dscale.o: pvars.h
+dscale.o: sky.h
+dscale.o: tools.h
+dscale.o: wjunk.h
+dsn.o:  dsn.c
+dsn.o: data.h
+dsn.o: graphics.h
+dsn.o: group.h
+dsn.o: init2d.h
+dsn.o: pvars.h
+dsn.o: tools.h
+dsn.o: variables.h
+dsn.o: vnmrsys.h
+dsn.o: wjunk.h
+dsp.o:  dsp.c
+dsp.o: allocate.h
+dsp.o: data.h
+dsp.o: group.h
+dsp.o: init2d.h
+dsp.o: pvars.h
+dsp.o: sky.h
+dsp.o: tools.h
+dsp.o: variables.h
+dsp.o: vnmrsys.h
+dsp.o: wjunk.h
+dsww.o:  dsww.c
+dsww.o: data.h
+dsww.o: disp.h
+dsww.o: graphics.h
+dsww.o: group.h
+dsww.o: init2d.h
+dsww.o: pvars.h
+dsww.o: tools.h
+dsww.o: variables.h
+dsww.o: vnmrsys.h
+dsww.o: wjunk.h
+element.o:  element.c
+element.o: element.h
+element.o: tools.h
+element.o: vnmrsys.h
+emouse.o:  emouse.c
+emouse.o: vnmrsys.h
+errLogLib.o:  errLogLib.c
+exec.o:  exec.c
+exec.o: allocate.h
+exec.o: group.h
+exec.o: magic.gram.h
+exec.o: node.h
+exec.o: params.h
+exec.o: pvars.h
+exec.o: tools.h
+exec.o: variables.h
+exec.o: vnmrsys.h
+exec.o: wjunk.h
+execcmd.o:  execcmd.c
+execcmd.o: vnmrsys.h
+fft.o:  fft.c
+fiddle.o:  fiddle.c
+fiddle.o: data.h
+fiddle.o: group.h
+fiddle.o: pvars.h
+fiddle.o: tools.h
+fiddle.o: variables.h
+fiddle.o: vnmrsys.h
+fiddle.o: wjunk.h
+files.o:  files.c
+files.o: element.h
+files.o: tools.h
+files.o: vnmrsys.h
+flashc.o:  flashc.c
+flashc.o: data.h
+flashc.o: group.h
+flashc.o: mfileObj.h
+flashc.o: symtab.h
+flashc.o: variables.h
+flashc.o: vnmrsys.h
+foldj.o:  foldj.c
+foldj.o: allocate.h
+foldj.o: data.h
+foldj.o: disp.h
+foldj.o: group.h
+foldj.o: init2d.h
+foldj.o: pvars.h
+foldj.o: sky.h
+foldj.o: tools.h
+foldj.o: variables.h
+foldj.o: vnmrsys.h
+foldj.o: wjunk.h
+freq_device.o:  freq_device.c
+freq_device.o: acodes.h
+freq_device.o: freq_device.p
+freq_device.o: oopc.h
+freq_device.o: rfconst.h
+freq_device.p: ap_device.p
+freq_device.p: ap_device.p
+freqfuncs.o:  freqfuncs.c
+freqfuncs.o: group.h
+freqfuncs.o: params.h
+freqfuncs.o: variables.h
+ft.o:  ft.c
+ft.o: allocate.h
+ft.o: data.h
+ft.o: ftpar.h
+ft.o: group.h
+ft.o: process.h
+ft.o: pvars.h
+ft.o: sky.h
+ft.o: tools.h
+ft.o: variables.h
+ft.o: vnmrsys.h
+ft.o: wjunk.h
+ft2d.o:  ft2d.c
+ft2d.o: allocate.h
+ft2d.o: data.h
+ft2d.o: ftpar.h
+ft2d.o: group.h
+ft2d.o: process.h
+ft2d.o: pvars.h
+ft2d.o: sky.h
+ft2d.o: tools.h
+ft2d.o: variables.h
+ft2d.o: vnmrsys.h
+ft2d.o: wjunk.h
+ftinit.o:  ftinit.c
+ftinit.o: allocate.h
+ftinit.o: data.h
+ftinit.o: ftpar.h
+ftinit.o: group.h
+ftinit.o: process.h
+ftinit.o: pvars.h
+ftinit.o: tools.h
+ftinit.o: variables.h
+ftinit.o: vnmrsys.h
+ftinit.o: wjunk.h
+full.o:  full.c
+full.o: disp.h
+full.o: group.h
+full.o: tools.h
+full.o: vnmrsys.h
+gdevsw.o:  gdevsw.c
+gdevsw.o: graphics.h
+gdevsw.o: vnmrsys.h
+glide.o:  glide.c
+glide.o: group.h
+glide.o: pvars.h
+glide.o: variables.h
+glide.o: vglide.h
+glide.o: vnmrsys.h
+glide.o: wjunk.h
+go.o:  go.c
+go.o: REV_NUMS.h
+go.o: STAT_DEFS.h
+go.o: acquisition.h
+go.o: data.h
+go.o: group.h
+go.o: locksys.h
+go.o: params.h
+go.o: pvars.h
+go.o: sockets.h
+go.o: symtab.h
+go.o: tools.h
+go.o: variables.h
+go.o: vfilesys.h
+go.o: vnmrsys.h
+go.o: whenmask.h
+go.o: wjunk.h
+gradfit.o:  gradfit.c
+gradfit.o: data.h
+gradfit.o: group.h
+gradfit.o: tools.h
+gradfit.o: variables.h
+gradfit.o: vnmrsys.h
+graphics.o:  graphics.c
+graphics.o: graphics.h
+graphics.o: group.h
+graphics.o: vnmrsys.h
+graphics_win.o:  graphics_win.c
+graphics_win.o: graphics.h
+graphics_win.o: group.h
+graphics_win.o: vnmrsys.h
+gxyzcalib.o:  gxyzcalib.c
+gxyzcalib2.o:  gxyzcalib2.c
+gxyzmap.o:  gxyzmap.c
+gxyzmap.o: data.h
+gxyzmap.o: group.h
+gxyzmap.o: init2d.h
+gxyzmap.o: tools.h
+gxyzmap.o: variables.h
+gxyzmap.o: vnmrsys.h
+gzfit.o:  gzfit.c
+gzfit.o: data.h
+gzfit.o: group.h
+gzfit.o: group.h
+gzfit.o: pvars.h
+gzfit.o: tools.h
+gzfit.o: variables.h
+gzfit.o: vnmrsys.h
+handler.o:  handler.c
+handler.o: wjunk.h
+help.o:  help.c
+help.o: vfilesys.h
+help.o: vnmrsys.h
+history.o:  history.c
+hpa.o:  hpa.c
+hpa.o: data.h
+hpa.o: graphics.h
+hpa.o: group.h
+hpa.o: tools.h
+hpa.o: variables.h
+hpa.o: vnmrsys.h
+ht.o:  ht.c
+ht.o: Pbox_HT.h
+ht.o: allocate.h
+ht.o: data.h
+ht.o: ftpar.h
+ht.o: group.h
+ht.o: process.h
+ht.o: pvars.h
+ht.o: sky.h
+ht.o: variables.h
+ht.o: vnmrsys.h
+ht.o: wjunk.h
+init2d.o:  init2d.c
+init2d.o: data.h
+init2d.o: disp.h
+init2d.o: graphics.h
+init2d.o: group.h
+init2d.o: pvars.h
+init2d.o: variables.h
+init2d.o: vnmrsys.h
+init2d.o: wjunk.h
+init_display.o:  init_display.c
+init_display.o: disp.h
+init_display.o: group.h
+init_display.o: pvars.h
+init_display.o: variables.h
+init_proc.o:  init_proc.c
+init_proc.o: disp.h
+init_proc.o: group.h
+init_proc.o: process.h
+init_proc.o: variables.h
+integ.o:  integ.c
+integ.o: data.h
+integ.o: group.h
+integ.o: init2d.h
+integ.o: pvars.h
+integ.o: tools.h
+integ.o: variables.h
+integ.o: vnmrsys.h
+io.o:  io.c
+io.o: group.h
+io.o: magic.gram.h
+io.o: node.h
+io.o: vnmrsys.h
+jexp.o:  jexp.c
+jexp.o: data.h
+jexp.o: group.h
+jexp.o: init2d.h
+jexp.o: locksys.h
+jexp.o: pvars.h
+jexp.o: shims.h
+jexp.o: tools.h
+jexp.o: variables.h
+jexp.o: vfilesys.h
+jexp.o: vnmrsys.h
+jexp.o: wjunk.h
+lexjunk.o:  lexjunk.c
+lexjunk.o: magic.gram.h
+lexjunk.o: node.h
+lexjunk.o: variables.h
+lexjunk.o: vnmrsys.h
+ll2d.o:  ll2d.c
+ll2d.o: data.h
+ll2d.o: disp.h
+ll2d.o: graphics.h
+ll2d.o: group.h
+ll2d.o: init2d.h
+ll2d.o: tools.h
+ll2d.o: variables.h
+ll2d.o: vnmrsys.h
+lock3Dfiles.o:  lock3Dfiles.c
+lock3Dfiles.o: lock3D.h
+lockfreqfunc.o:  lockfreqfunc.c
+lockfreqfunc.o: group.h
+lockfreqfunc.o: vnmrsys.h
+locksys.o:  locksys.c
+locksys.o: locksys.h
+locksys.o: tools.h
+locksys.o: vnmrsys.h
+locksys.o: wjunk.h
+lookup.o:  lookup.c
+lookup.o: group.h
+lookup.o: pvars.h
+lookup.o: tools.h
+lookup.o: vnmrsys.h
+lookup.o: wjunk.h
+lpqld.o:  lpqld.c
+lpqld.o: ftpar.h
+lpqld.o: group.h
+lpqld.o: process.h
+lpqld.o: variables.h
+lpz.o:  lpz.c
+lpz.o: data.h
+lpz.o: group.h
+lpz.o: process.h
+lpz.o: variables.h
+lpz.o: vnmrsys.h
+lstring.o:  lstring.c
+lstring.o: allocate.h
+lstring.o: tools.h
+macro.o:  macro.c
+macro.o: node.h
+macro.o: symtab.h
+macro.o: vnmrsys.h
+magic.gram.o:  magic.gram.y
+magic.gram.o: node.h
+magic.gram.o: stack.h
+magic.gram.o: wjunk.h
+magic.lex.o:  magic.lex.l
+magic.lex.o: magic.gram.h
+magic.lex.o: node.h
+magic.lex.o: stack.h
+magic.pars.o:  magic.parser
+magnetom.o:  magnetom.c
+magnetom.o: data.h
+magnetom.o: element.h
+magnetom.o: group.h
+magnetom.o: init2d.h
+magnetom.o: variables.h
+magnetom.o: vnmrsys.h
+main.o:  main.c
+main.o: vnmrsys.h
+makeslice.o:  makeslice.c
+makeslice.o: data.h
+makeslice.o: disp.h
+makeslice.o: group.h
+makeslice.o: tools.h
+makeslice.o: variables.h
+makeslice.o: vnmrsys.h
+master.o:  master.c
+master.o: acquisition.h
+master.o: locksys.h
+master_win.o:  master_win.c
+master_win.o: locksys.h
+master_win.o: master.icon
+master_win.o: vnmr_text.icon
+matrix.o:  matrix.c
+matrix.o: vnmrsys.h
+md5c.o:  md5c.c
+md5c.o: md5.h
+md5c.o: md5global.h
+mfdata.o:  mfdata.c
+mfdata.o: data.h
+mfdata.o: group.h
+mfdata.o: mfileObj.h
+mfdata.o: tools.h
+mfdata.o: variables.h
+mfdata.o: vnmrsys.h
+mfileObj.o:  mfileObj.c
+mfileObj.o: errLogLib.h
+mfileObj.o: mfileObj.h
+node.o:  node.c
+node.o: allocate.h
+node.o: magic.gram.h
+node.o: node.h
+node.o: stack.h
+node.o: vnmrsys.h
+objerror.o:  objerror.c
+objerror.o: objerror.h
+objerror.o: oopc.h
+ops.o:  ops.c
+ops.o: variables.h
+p11Tools.o:  p11Tools.c
+part11.h: group.h
+part11.h: md5.h
+part11.h: md5global.h
+part11.h: shims.h
+part11.h: tools.h
+part11.h: variables.h
+part11.h: vnmrsys.h
+part11.o:  part11.c
+part11.o: allocate.h
+part11.o: locksys.h
+part11.o: part11.h
+pcmap.o:  pcmap.c
+pcmap.o: data.h
+pcmap.o: group.h
+pcmap.o: mfileObj.h
+pcmap.o: phase_correct.h
+pcmap.o: tools.h
+pcmap.o: variables.h
+pcmap.o: vnmrsys.h
+phase_fid.o:  phase_fid.c
+phase_fid.o: allocate.h
+phase_fid.o: data.h
+phase_fid.o: epi_recon.h
+phase_fid.o: group.h
+phase_fid.o: mfileObj.h
+phase_fid.o: mfileObj.h
+phase_fid.o: phase_correct.h
+phase_fid.o: process.h
+phase_fid.o: symtab.h
+phase_fid.o: variables.h
+phase_fid.o: vnmrsys.h
+plot_construct.o:  plot_construct.c
+plot_construct.o: graphics.h
+plot_construct.o: group.h
+plot_construct.o: pvars.h
+plot_construct.o: sockets.h
+plot_construct.o: variables.h
+plot_construct.o: vnmrsys.h
+plot_construct.o: wjunk.h
+plot_handlers.o:  plot_handlers.c
+plot_handlers.o: graphics.h
+plot_handlers.o: group.h
+plot_handlers.o: pvars.h
+plot_handlers.o: tools.h
+plot_handlers.o: vnmrsys.h
+proc2d.o:  proc2d.c
+proc2d.o: data.h
+proc2d.o: disp.h
+proc2d.o: group.h
+proc2d.o: init2d.h
+proc2d.o: process.h
+proc2d.o: vnmrsys.h
+pvars.h: variables.h
+pvars.o:  pvars.c
+pvars.o: group.h
+pvars.o: params.h
+pvars.o: symtab.h
+pvars.o: variables.h
+pvars.o: vnmrsys.h
+pvars.o: wjunk.h
+ras_dump.o:  ras_dump.c
+ras_dump.o: data.h
+ras_dump.o: graphics.h
+ras_dump.o: init2d.h
+ras_dump.o: vnmrsys.h
+readlk.o:  readlk.c
+readlk.o: acquisition.h
+readlk.o: tools.h
+readlk.o: vnmrsys.h
+recon_all.o:  recon_all.c
+recon_all.o: allocate.h
+recon_all.o: data.h
+recon_all.o: epi_recon.h
+recon_all.o: group.h
+recon_all.o: mfileObj.h
+recon_all.o: mfileObj.h
+recon_all.o: phase_correct.h
+recon_all.o: process.h
+recon_all.o: pvars.h
+recon_all.o: symtab.h
+recon_all.o: variables.h
+recon_all.o: vfilesys.h
+recon_all.o: vnmrsys.h
+recon_all.o: wjunk.h
+recon_mm.o:  recon_mm.c
+recon_mm.o: allocate.h
+recon_mm.o: data.h
+recon_mm.o: epi_recon.h
+recon_mm.o: group.h
+recon_mm.o: mfileObj.h
+recon_mm.o: mfileObj.h
+recon_mm.o: phase_correct.h
+recon_mm.o: process.h
+recon_mm.o: pvars.h
+recon_mm.o: symtab.h
+recon_mm.o: variables.h
+recon_mm.o: vnmrsys.h
+recon_mm.o: wjunk.h
+rtvarcmds.o:  rtvarcmds.c
+savretphf.o:  savretphf.c
+savretphf.o: data.h
+savretphf.o: disp.h
+savretphf.o: group.h
+savretphf.o: init2d.h
+savretphf.o: vnmrsys.h
+set3dproc.o:  set3dproc.c
+set3dproc.o: data.h
+set3dproc.o: group.h
+set3dproc.o: lock3D.h
+set3dproc.o: params.h
+set3dproc.o: process.h
+set3dproc.o: struct3d.h
+set3dproc.o: tools.h
+set3dproc.o: variables.h
+set3dproc.o: vnmrsys.h
+shellcmds.o:  shellcmds.c
+shellcmds.o: group.h
+shellcmds.o: tools.h
+shellcmds.o: vnmrsys.h
+shims.o:  shims.c
+shims.o: group.h
+shrstatinfo.h: hostAcqStructs.h
+sky.o:  sky.c
+smagic.o:  smagic.c
+smagic.o: acquisition.h
+smagic.o: locksys.h
+smagic.o: vnmrsys.h
+smagic_win.o:  smagic_win.c
+smagic_win.o: locksys.h
+smagic_win.o: tools.h
+smagic_win.o: vnmr.icon
+smagic_win.o: vnmrsys.h
+socket.o:  socket.c
+socket.o: ACQ_SUN.h
+socket.o: acquisition.h
+socket.o: comm.h
+socket.o: expQfuncs.h
+socket.o: mfileObj.h
+socket.o: shrstatinfo.h
+socket.o: variables.h
+socket1.o:  socket1.c
+socket1.o: acquisition.h
+socket1.o: comm.h
+specfreq.o:  specfreq.c
+specfreq.o: ACQ_HAL.h
+specfreq.o: ACQ_SUN.h
+specfreq.o: group.h
+specfreq.o: oopc.h
+specfreq.o: params.h
+specfreq.o: rfconst.h
+specfreq.o: tools.h
+specfreq.o: variables.h
+specfreq.o: vnmrsys.h
+sread.o:  sread.c
+sread.o: data.h
+sread.o: group.h
+sread.o: params.h
+sread.o: tools.h
+sread.o: variables.h
+sread.o: vnmrsys.h
+struct3d.h: ftpar.h
+swrite.o:  swrite.c
+swrite.o: data.h
+swrite.o: group.h
+swrite.o: init2d.h
+swrite.o: symtab.h
+swrite.o: tools.h
+swrite.o: variables.h
+swrite.o: vnmrsys.h
+symtab.o:  symtab.c
+symtab.o: allocate.h
+symtab.o: symtab.h
+table.o:  table.c
+table.o: tools.h
+table.o: vnmrsys.h
+table.o: wjunk.h
+tempstuff.o:  tempstuff.c
+terminal.o:  terminal.c
+terminal.o: vnmrsys.h
+terminal.o: wjunk.h
+text.o:  text.c
+text.o: allocate.h
+text.o: data.h
+text.o: disp.h
+text.o: graphics.h
+text.o: group.h
+text.o: init2d.h
+text.o: pvars.h
+text.o: tools.h
+text.o: variables.h
+text.o: vfilesys.h
+text.o: vnmrsys.h
+text.o: wjunk.h
+tools.o:  tools.c
+tools.o: allocate.h
+tools.o: tools.h
+tools.o: vnmrsys.h
+variables1.o:  variables1.c
+variables1.o: allocate.h
+variables1.o: graphics.h
+variables1.o: group.h
+variables1.o: init.h
+variables1.o: params.h
+variables1.o: pvars.h
+variables1.o: symtab.h
+variables1.o: tools.h
+variables1.o: variables.h
+variables1.o: wjunk.h
+vcolor.o:  vcolor.c
+vcolor.o: graphics.h
+vcolor.o: group.h
+vcolor.o: vnmrsys.h
+vdialog.o:  vdialog.c
+vdialog.o: allocate.h
+vdialog.o: group.h
+vdialog.o: variables.h
+vdialog.o: vglide.h
+vdialog.o: vnmrsys.h
+vfilesys.o:  vfilesys.c
+vfilesys.o: allocate.h
+vfilesys.o: group.h
+vfilesys.o: pvars.h
+vfilesys.o: tools.h
+vfilesys.o: vnmrsys.h
+vfilesys.o: wjunk.h
+vfontselect.o:  vfontselect.c
+vfontselect.o: group.h
+vfontselect.o: vnmrsys.h
+weight.o:  weight.c
+weight.o: data.h
+weight.o: disp.h
+weight.o: group.h
+weight.o: pvars.h
+weight.o: sky.h
+weight.o: vnmrsys.h
+weight.o: wjunk.h
+wjunk.o:  wjunk.c
+wjunk.o: graphics.h
+wjunk.o: group.h
+wjunk.o: node.h
+wjunk.o: stack.h
+wjunk.o: vnmrsys.h
+wti.o:  wti.c
+wti.o: allocate.h
+wti.o: data.h
+wti.o: ftpar.h
+wti.o: graphics.h
+wti.o: group.h
+wti.o: init2d.h
+wti.o: process.h
+wti.o: pvars.h
+wti.o: sky.h
+wti.o: variables.h
+wti.o: vnmrsys.h
+wti.o: wjunk.h
+# DEPENDENCIES MUST END AT END OF FILE
+# IF YOU PUT STUFF HERE IT WILL GO AWAY
+# see make depend above

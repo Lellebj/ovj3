@@ -1,0 +1,352 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makenvinfoproc  make file
+#
+# make -f makeinfoproc, creates Infoproc and it's library
+# make -f makeinfoproc static, creates static version of Infoproc 
+#
+#
+
+MAKEFILE= makenvinfoproc.lnx
+
+.PRECIOUS= libInfoproc.a
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory 
+
+SCCSDIR=$(sccsdir)
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+
+## SRC_DIR=$(SRCDIR)/sysinfoproc/
+SRC_DIR=./
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+PROJCAT=
+
+# NDDSHOME = /sw/NDDS/ndds.3.1a
+# NDDSHOME = /sw/NDDS/build_ndds_ver
+NDDSHOME = $(nddsdir)
+NDDSHOME_GEN = $(nddsgendir)
+NDDSLIBPATH = lib/LinuxLibs
+
+syslibs_Linux = -ldl -lnsl -lm -lpthread -lstdc++
+ 
+#NDDSLIBS = -L$(NDDSHOME)/lib/i86Linux2.4gcc3.2 \
+#	-lndds -lnddsutils -lnddscdr -lutilsxx -lutilsip \
+#	$(syslibs_Linux)
+
+NDDSLIBS = -L$(NDDSHOME)/lib/LinuxLibs \
+	-lndds -lnddsutils -lnddscdr -lutilsxx -lutilsip \
+	$(syslibs_Linux)
+
+NDDS4xLIBS = -L$(NDDSHOME)/lib/i86Linux2.6gcc3.4.3 \
+        -lnddscz -lnddscorez \
+        $(syslibs_Linux)
+
+INCLUDES = -I$(NDDSHOME)/include/unix \
+	-I$(NDDSHOME)/include/share
+
+INCLUDES4X = -I$(NDDSHOME)/include \
+        -I$(NDDSHOME)/include/ndds
+
+# where the NDDS include and libraries are
+NDDS_HOME = $(NDDSHOME)
+
+# NDDSGEN = $(NDDS_HOME)/bin/i86Linux2.4gcc3.2/nddsgen
+NDDSGEN = $(NDDS_HOME)/bin/LinuxBin/nddsgen
+NDDSGEN4X = $(NDDS_HOME)/scripts/nddsgen -language C -notypecode -replace
+
+LIBS= $(NDDSLIBS)
+
+CC= gcc $(INCLUDES)
+CFLAGS = -m32 -O -DLINUX -DNODUMMY -DRTI_UNIX -DNOASYNC -DNIRVANA -DUSE_HTONS
+CDEFINE = -DLINUX -DNODUMMY -DRTI_UNIX -DNOASYNC -DNIRVANA
+LDFLAGS= -m32 -Wl,-rpath /vnmr/lib
+CPPFLAGS=
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+# LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+
+
+#---- Infoproc library being updated. -----
+WORKLIB= libInfoproc.a
+
+#--- SCCS Sources ----
+NVINFOPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvinfoproc/SCCS/s.
+INFOPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)infoproc/SCCS/s.
+ACQPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)acqproc/SCCS/s.
+EXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)expproc/SCCS/s.
+XRACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)xracq/SCCS/s.
+VWACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vwacq/SCCS/s.
+STAT_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)stat/SCCS/s.
+NVEXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvexpproc/SCCS/s.
+NVACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvacq/SCCS/s.
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+
+NVINFOPROC_SRC_DIR= $(NVINFOPROC_SCCS_SRC)
+INFOPROC_SRC_DIR= $(INFOPROC_SCCS_SRC)
+ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)
+EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)
+XRACQ_SRC_DIR= $(XRACQ_SCCS_SRC)
+VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)
+STAT_SRC_DIR= $(STAT_SCCS_SRC)
+NVEXPPROC_SRC_DIR= $(NVEXPPROC_SCCS_SRC)
+NVACQ_SRC_DIR= $(NVACQ_SCCS_SRC)
+NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)
+
+#---  SCCS Extraction Commands for Sources Needed In True Source Dir.  -------
+NVEXPPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvexpproc/SCCS get
+NVINFOPROC_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)nvinfoproc get
+INFOPROC_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)infoproc get
+ACQPROC_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)acqproc get
+EXPPROC_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)expproc get
+XRACQ_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)xracq get
+VWACQ_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)vwacq get
+STAT_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)stat get
+NVACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvacq/SCCS get
+NCOMM_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ncomm/SCCS get
+
+#------------------------------------------------------------------------
+#-- NDDS Types Source  files
+#------------------------------------------------------------------------
+
+NDDS_TYPES = Console_Stat.x App_HB.x
+NDDS4X_TYPES = Console_Stat.idl App_HB.idl
+
+NDDS_C_SRC= $(NDDS_TYPES:.x=.c)
+NDDS_C_HDR= $(NDDS_TYPES:.x=.h)
+NDDS_OBJ= $(NDDS_TYPES:.x=.o)
+
+NDDS4x_C_SRCLIST = Console_Stat.c Console_StatPlugin.c Console_StatSupport.c
+NDDS4x_C_HDRLIST = Console_Stat.h Console_StatPlugin.h Console_StatSupport.h App_HB.h
+NDDS4x_OBJ = Console_Stat.o Console_StatPlugin.o Console_StatSupport.o
+
+#------------------------------------------------------------------------
+#-- Nirvana Infoproc sources files 
+#------------------------------------------------------------------------
+NVINFOPROC_HDR=			\
+		acqinfo.h
+
+NVINFOPROC_SRC=			\
+		infoproc.c	\
+		nddsinfofuncs.c	\
+		info_svc.c	\
+		info_svc_funcs.c
+
+NVINFOPROC_OBJ= $(NVINFOPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#-- common Infoproc sources files 
+#------------------------------------------------------------------------
+INFOPROC_SRC=			\
+		infoqueu.c	\
+		infosockets.c
+
+INFOPROC_OBJ= $(INFOPROC_SRC:.c=.o)
+
+#----- Infoproc header files that are needed
+ACQPROC_HDR=			\
+		ACQPROC_strucs.h
+
+#----- Expproc header files that are needed
+EXPPROC_HDR=			\
+		shrstatinfo.h
+
+EXPPROC_SRC=			\
+		statfuncs.c
+
+EXPPROC_OBJ= $(EXPPROC_SRC:.c=.o)
+
+#----- xracq header files that are needed
+XRACQ_HDR=			\
+		ACQ_HALstruc.h	\
+		STAT_DEFS.h	\
+		SUN_HAL.h
+
+#----- vwacq header files that are needed
+VWACQ_HDR=			\
+		hostAcqStructs.h
+
+#----- stat header files that are needed
+STAT_HDR=
+
+# STAT_HDR=			\
+# 		acqinfo.h
+
+#------------------------------------------------------------------------
+#--- NCOMM Sources that are needed
+#------------------------------------------------------------------------
+# Communications libraries
+
+NCOMM_HDR_LIB=                  \
+		errLogLib.h	\
+		ipcKeyDbm.h     \
+		mfileObj.h      \
+		semLib.h        \
+		sockets.h	\
+		shrMLib.h
+
+NCOMM_SRC_LIB=                  \
+		errLogLib.c	\
+		semLib.c	\
+		sockets.c	\
+		mfileObj.c      \
+		shrMLib.c
+
+NCOMM_OBJ_LIB= $(NCOMM_SRC_LIB:.c=.o)
+
+
+#------------------------------------------------------------------------
+#-- NDDS comm Source  files
+#------------------------------------------------------------------------
+
+NVACQ_HDR=			\
+		crc32.h		\
+		sysUtils.h	\
+		NDDS_Obj.h	\
+		NDDS_PubFuncs.h	\
+		NDDS_SubFuncs.h	
+
+NVACQ_SRC=			\
+		crc32.c         \
+		sysUtils.c      \
+		NDDS_Obj.c      \
+		NDDS_PubFuncs.c \
+		NDDS_SubFuncs.c	
+
+NVACQ_OBJ= $(NVACQ_SRC:.c=.o)
+
+#---- All Sources and headers required for compilation -----
+
+ALL_C_SRC=  $(INFOPROC_SRC) $(NVACQ_SRC) $(NCOMM_SRC_LIB) $(NVINFOPROC_SRC) $(NDDS_C_SRC) $(EXPPROC_SRC)
+
+ALL_C_OBJ= $(ALL_C_SRC:.c=.o)
+
+ALLSRC= $(INFOPROC_SRC) $(EXPPROC_HDR) $(EXPPROC_SRC) $(ACQPROC_HDR)  \
+	 $(XRACQ_HDR) $(VWACQ_HDR) $(STAT_HDR) $(NVACQ_SRC) $(NVACQ_HDR)  \
+	$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) $(NVINFOPROC_SRC) $(NVINFOPROC_HDR) $(NDDS_C_SRC)
+
+#--- PAID Targets ------------------------------------------
+
+all std LINUX: Source Infoproc
+	@echo NMR_ID all Infoprocs complete
+
+ndds4x : 
+	$(MAKE) -e -f $(MAKEFILE) \
+        "NDDSLIBS = $(NDDS4xLIBS)" \
+        "INCLUDES = $(INCLUDES4X)" \
+        "NDDSGEN = $(NDDSGEN4X)" \
+        "NDDS_TYPES = " \
+        "NDDS_C_SRC= $(NDDS4x_C_SRCLIST)" \
+        "NDDS_C_HDR= " \
+        "NDDS_OBJ= $(NDDS4x_OBJ)" \
+        "NDDS4x_C_SRC = $(NDDS4x_C_SRCLIST)" \
+        "NDDS4x_C_HDR = $(NDDS4x_C_HDRLIST)" \
+        "NDDSGEN_SRCTRG =  $(NDDSGEN4x_SRCTRG)" \
+        "NDDSGEN_HDRTRG =  $(NDDSGEN4x_HDRTRG)" \
+        "CFLAGS = $(CFLAGS) -DRTI_NDDS_4x"      \
+        Infoproc
+	@echo NDDS 4x version complete
+
+$(NDDS_C_SRC) : $(NDDS_TYPES)
+	( umask 2; export NDDSHOME;  NDDSHOME=$(NDDSHOME_GEN); $(NDDSGEN) -replace  $(@:.c=.x) )
+
+$(NDDS_C_HDR) : $(NDDS_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDSHOME_GEN); $(NDDSGEN) -replace  $(@:.h=.x) )
+
+
+$(NDDS4x_C_SRC) : $(NDDS4X_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN) $(@:.c=.idl) )
+
+$(NDDS4x_C_HDR) : $(NDDS4X_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN) $(@:.h=.idl) )
+
+
+
+#-----------  generate dependency list of targets ------------------------
+
+Source src : $(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+depend: src
+	makedepend -f $(MAKEFILE) $(CDEFINE) -Y -I./ $(ALL_C_SRC) 2>/dev/null
+
+
+Infoproc Infoproc_dbx : $(ALL_C_OBJ)
+	@echo Making $@...
+	( umask 2;					\
+	 $(LINK.c) -o $@ $(ALL_C_OBJ) $(RLIBDIR) $(NDDSLIBS) $(LIBS)  )
+
+
+#--- Object Targets ------------------------------------------------------
+
+
+$(INFOPROC_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) -DSUN -DDATASEG $(@:.o=.c))
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(INFOPROC_SGET) $@
+	( cd $(SRC_DIR); $(INFOPROC_SGET) $@ )
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(NVINFOPROC_SRC) $(NVINFOPROC_HDR) : % :$(NVINFOPROC_SRC_DIR)%
+	$(NVINFOPROC_SGET) $@
+
+$(INFOPROC_SRC) : % :$(INFOPROC_SRC_DIR)%
+	$(INFOPROC_SGET) $@
+
+$(ACQPROC_HDR) : % :$(ACQPROC_SRC_DIR)%
+	$(ACQPROC_SGET) $@
+
+$(EXPPROC_SRC) $(EXPPROC_HDR) : % :$(EXPPROC_SRC_DIR)%
+	$(EXPPROC_SGET) $@
+
+$(XRACQ_HDR) : % :$(XRACQ_SRC_DIR)%
+	$(XRACQ_SGET) $@
+
+$(VWACQ_HDR): % :$(VWACQ_SRC_DIR)%
+	$(VWACQ_SGET) $@
+
+$(NVACQ_SRC) $(NVACQ_HDR) $(NDDS_TYPES) $(NDDS4X_TYPES): % :$(NVACQ_SRC_DIR)%
+	$(NVACQ_SGET) $@
+
+$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) $(CHANOBJ_SRC) $(CHANOBJ_HDR) : % :$(NCOMM_SRC_DIR)%
+	$(NCOMM_SGET) $@
+
+$(STAT_HDR): % :$(STAT_SRC_DIR)%
+	$(STAT_SGET) $@
+
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+
+infoqueu.o: ACQPROC_strucs.h hostAcqStructs.h shrstatinfo.h infoqueu.c
+infosockets.o: SUN_HAL.h ACQ_HALstruc.h ACQPROC_strucs.h sockets.h infosockets.c
+crc32.o: crc32.h
+sysUtils.o: errLogLib.h
+NDDS_Obj.o: errLogLib.h NDDS_Obj.h
+NDDS_PubFuncs.o: errLogLib.h NDDS_Obj.h
+NDDS_SubFuncs.o: errLogLib.h NDDS_Obj.h
+semLib.o: errLogLib.h semLib.h mfileObj.h
+mfileObj.o: errLogLib.h mfileObj.h
+shrMLib.o: errLogLib.h shrMLib.h mfileObj.h
+infoproc.o: errLogLib.h sockets.h
+nddsinfofuncs.o: errLogLib.h NDDS_Obj.h NDDS_SubFuncs.h NDDS_PubFuncs.h
+nddsinfofuncs.o: Console_Stat.h hostAcqStructs.h App_HB.h
+info_svc.o: acqinfo.h
+info_svc_funcs.o: acqinfo.h
+Console_Stat.o: Console_Stat.h NDDS_Obj.h
+statfuncs.o: errLogLib.h hostAcqStructs.h mfileObj.h shrMLib.h shrstatinfo.h
+sockets.o: sockets.h sockets.c

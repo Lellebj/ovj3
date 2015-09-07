@@ -1,0 +1,7 @@
+Copyright (c) Agilent Technologies  All Rights Reserved.
+*******************************************************************************
+focus -  utility to send the keyboard focus to Vnmr input window
+*******************************************************************************
+
+  The focus command sends keyboard focus to the Vnmr input window.  This
+  is only useful for macro programming.

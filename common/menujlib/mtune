@@ -1,0 +1,21 @@
+" Copyright (c) Agilent Technologies  All Rights Reserved. "
+"  ****  M E N U :   MTUNE  ****  "
+
+mlabel=''
+mstring=''
+micon=''
+
+$vjm=1
+if (crmode = 'b') then
+  mlabel[$vjm]='Cursor'
+  micon[$vjm]='1D1cur.gif'
+else
+  mlabel[$vjm]='Box'
+  micon[$vjm]='1D2cur.gif'
+endif
+mstring[$vjm]='ds(`toggle`)'
+
+$vjm=$vjm+1
+mlabel[$vjm]='Return'
+micon[$vjm]='return.gif'
+mstring[$vjm]='aa(`Tuning Complete`) menu(`main`)'

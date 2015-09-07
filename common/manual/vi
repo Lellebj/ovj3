@@ -1,0 +1,14 @@
+" Copyright (c) Agilent Technologies  All Rights Reserved. "
+
+*******************************************************************************
+vi	 - 	vi a file
+*******************************************************************************
+
+  The vi command edits a file..   On the Sun workstation, a pop-up 
+  screen contains the edit.   On the Graphon, the edit is done on the 
+  entire terminal.
+
+  Usage  -  vi('file')
+
+  Examples:
+	    vi('dan')

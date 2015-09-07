@@ -1,0 +1,8 @@
+showtray('close')
+
+checkenterdir:$ret 
+if ($ret) then 
+   walkupQ('new','enter') 
+else
+   walkupQ('logout')
+endif

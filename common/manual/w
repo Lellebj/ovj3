@@ -1,0 +1,10 @@
+" Copyright (c) Agilent Technologies  All Rights Reserved. "
+
+*******************************************************************************
+w	 - 	who type unix command
+*******************************************************************************
+
+  This command is like the who command on Unix. It gives information
+  about who is using the system.
+
+  Usage  -  w

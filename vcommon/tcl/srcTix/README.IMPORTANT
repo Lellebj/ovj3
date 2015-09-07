@@ -1,0 +1,26 @@
+
+			IMPORTANT NOTE !
+			~~~~~~~~~~~~~~~~
+
+The Tix shared object libraries have dependencies on the tcl and tk
+shared object libraries, libtcl.so and libtk.so.  For these to be
+found successfully without setting the LD_LIBRARY_PATH, libtix.so MUST
+be compiled with the flag "-R /vnmr/lib".  This can be done by
+manually editing the appropriate makefile after running "configure" in
+the base Tix directory.  For example, change the rules for making the
+library file in the makefile "Tix4.1.0/unix/tk8.0/Makefile" to read:
+
+$(TIX_LIB_FILE): $(OBJS)
+	rm -f $(TIX_LIB_FILE)
+	${SHLIB_LD} -R /vnmr/lib -o libtix4.1.8.0.so ${OBJS} ${LIBS}
+	$(RANLIB) $(TIX_LIB_FILE)
+
+Then type "make" in the base Tix directory to complete compilation.
+
+To check this, look at the library with:
+
+	dump -Lv libtix4.1.8.0.so | grep RPATH
+
+This should produce something like:
+
+	[8]     RPATH       /vnmr/lib

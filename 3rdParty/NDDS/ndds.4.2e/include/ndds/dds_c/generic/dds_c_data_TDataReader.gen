@@ -1,0 +1,1014 @@
+/* $Id: TDataReader.c,v 1.16 2007/07/20 16:28:57 edward Exp $
+
+ (c) Copyright, Real-Time Innovations, $Date: 2007/07/20 16:28:57 $.
+ All rights reserved.
+ No duplications, whole or partial, manual or electronic, may be made
+ without express written permission.  Any such copies, or
+ revisions thereof, must display this notice unaltered.
+ This code contains trade secrets of Real-Time Innovations, Inc.
+
+modification history
+--------------------
+1.0q,19jul07,eh  Add as_reader/writer() that "widen" TDataReader/Writers
+1.0 ,19jul06,kaj 64 bit: replace API long w/ DDS_Long
+1.0h,12jan06,fcs Changed the implementation of the narrow
+                 function in order to support data readers
+                 defined inside a C++ namespace.
+1.0g,26jul05,kaj Added API for FooDataReader lookup_instance.
+1.0g,14jul05,jml Bug #9595: provide type safety TDataWriter and 
+                 and TDataReader narrow methods 
+1.0e,01apr05,eys Fixed bug 9595. Added narrow method.
+1.0e,10jan05,rw  Bug #9993: use DDS_Boolean instead of RTIBool
+1.0e,22oct04,rw  Added string parameter to BAD_PARAMETER msg format
+1.0d,05jun04,rw  Fixed bug in return_loan()
+1.0d,10may04,eys Added dataSize parameter to read_or_take internal API
+1.0d,30apr04,eys Added struct keyword
+1.0d,20apr04,eys Added additional read/take API
+1.0d,17apr04,eys Remove LifecycleState, Added ViewState and InstanceState
+                 Renamed finish() to be return_loan()
+1.0d,16apr04,eys Update read/take api
+1.0d,05apr04,eys Created
+===================================================================== */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "dds_c/dds_c_common.h"
+#include "dds_c/dds_c_log_impl.h"
+#include "dds_c/dds_c_subscription_impl.h"
+
+/* ================================================================== */
+/*i
+   <<INTERFACE>> 
+
+   Defines:   TDataReader, TData
+
+   Organized using the well-documented "Generics Pattern" for
+   implementing generics in C and C++.
+*/
+
+#ifndef dds_c_subscription_h
+  #include "dds_c/dds_c_subscription.h"
+#endif
+
+/* ================================================================== */
+/*i
+   <<IMPLEMENTATION>> 
+
+   Defines:  TDataReader, TData
+*/
+#if defined(TDataReader) && defined(TDataSeq) && defined(TData)
+/* ----------------------------------------------------------------- */
+/* Defines submodule for logging purposes
+ */
+#define DDS_CURRENT_SUBMODULE  DDS_SUBMODULE_MASK_DATA
+
+struct TDataReader {
+    DDS_DataReader* _parent;
+};
+
+/*
+ * Two step procedure needed for stringize the value of a macro 
+ */
+#define _QUOTE(x) # x
+#define QUOTE(x) _QUOTE(x)
+
+#define concatenate(A, B)  A ## B
+
+#define TDataReader_narrow_c(TDataReader) concatenate(TDataReader, _narrow)
+#define TDataReader_narrow TDataReader_narrow_c(TDataReader)
+
+#define TDataReader_as_datareader_c(TDataReader) concatenate(TDataReader, _as_datareader)
+#define TDataReader_as_datareader TDataReader_as_datareader_c(TDataReader)
+
+#define TDataReader_read_c(TDataReader) concatenate(TDataReader, _read)
+#define TDataReader_read TDataReader_read_c(TDataReader)
+
+#define TDataReader_take_c(TDataReader) concatenate(TDataReader, _take)
+#define TDataReader_take TDataReader_take_c(TDataReader)
+
+#define TDataReader_read_w_condition_c(TDataReader) concatenate(TDataReader, _read_w_condition)
+#define TDataReader_read_w_condition TDataReader_read_w_condition_c(TDataReader)
+
+#define TDataReader_take_w_condition_c(TDataReader) concatenate(TDataReader, _take_w_condition)
+#define TDataReader_take_w_condition TDataReader_take_w_condition_c(TDataReader)
+
+#define TDataReader_read_next_sample_c(TDataReader) concatenate(TDataReader, _read_next_sample)
+#define TDataReader_read_next_sample TDataReader_read_next_sample_c(TDataReader)
+
+#define TDataReader_take_next_sample_c(TDataReader) concatenate(TDataReader, _take_next_sample)
+#define TDataReader_take_next_sample TDataReader_take_next_sample_c(TDataReader)
+
+#define TDataReader_read_instance_c(TDataReader) concatenate(TDataReader, _read_instance)
+#define TDataReader_read_instance TDataReader_read_instance_c(TDataReader)
+
+#define TDataReader_take_instance_c(TDataReader) concatenate(TDataReader, _take_instance)
+#define TDataReader_take_instance TDataReader_take_instance_c(TDataReader)
+
+#define TDataReader_read_next_instance_c(TDataReader) concatenate(TDataReader, _read_next_instance)
+#define TDataReader_read_next_instance TDataReader_read_next_instance_c(TDataReader)
+
+#define TDataReader_take_next_instance_c(TDataReader) concatenate(TDataReader, _take_next_instance)
+#define TDataReader_take_next_instance TDataReader_take_next_instance_c(TDataReader)
+
+#define TDataReader_read_next_instance_w_condition_c(TDataReader) concatenate(TDataReader, _read_next_instance_w_condition)
+#define TDataReader_read_next_instance_w_condition TDataReader_read_next_instance_w_condition_c(TDataReader)
+
+#define TDataReader_take_next_instance_w_condition_c(TDataReader) concatenate(TDataReader, _take_next_instance_w_condition)
+#define TDataReader_take_next_instance_w_condition TDataReader_take_next_instance_w_condition_c(TDataReader)
+
+#define TDataReader_return_loan_c(TDataReader) concatenate(TDataReader, _return_loan)
+#define TDataReader_return_loan TDataReader_return_loan_c(TDataReader)
+
+#define TDataReader_get_key_value_c(TDataReader) concatenate(TDataReader, _get_key_value)
+#define TDataReader_get_key_value TDataReader_get_key_value_c(TDataReader)
+
+#define TDataReader_lookup_instance_c(TDataReader) concatenate(TDataReader, _lookup_instance)
+#define TDataReader_lookup_instance TDataReader_lookup_instance_c(TDataReader)
+
+#define TDataReader_read_or_takeI_c(TDataReader) concatenate(TDataReader, _read_or_takeI)
+#define TDataReader_read_or_takeI TDataReader_read_or_takeI_c(TDataReader)
+
+#define TDataReader_read_or_take_w_conditionI_c(TDataReader) concatenate(TDataReader, _read_or_take_w_conditionI)
+#define TDataReader_read_or_take_w_conditionI TDataReader_read_or_take_w_conditionI_c(TDataReader)
+
+#define TDataReader_read_or_take_next_sampleI_c(TDataReader) concatenate(TDataReader, _read_or_take_next_sample_I)
+#define TDataReader_read_or_take_next_sampleI TDataReader_read_or_take_next_sampleI_c(TDataReader)
+
+#define TDataReader_read_or_take_instanceI_c(TDataReader) concatenate(TDataReader, _read_or_take_instanceI)
+#define TDataReader_read_or_take_instanceI TDataReader_read_or_take_instanceI_c(TDataReader)
+
+#define TDataReader_read_or_take_next_instanceI_c(TDataReader) concatenate(TDataReader, _read_or_take_next_instanceI)
+#define TDataReader_read_or_take_next_instanceI TDataReader_read_or_take_next_instanceI_c(TDataReader)
+
+#define TDataReader_read_or_take_next_instance_w_conditionI_c(TDataReader) concatenate(TDataReader, _read_or_take_next_instance_w_conditionI)
+#define TDataReader_read_or_take_next_instance_w_conditionI TDataReader_read_or_take_next_instance_w_conditionI_c(TDataReader)
+
+#define TDataSeq_get_length_c(TDataSeq) concatenate(TDataSeq, _get_length)
+#define TDataSeq_get_length TDataSeq_get_length_c(TDataSeq)
+
+#define TDataSeq_get_maximum_c(TDataSeq) concatenate(TDataSeq, _get_maximum)
+#define TDataSeq_get_maximum TDataSeq_get_maximum_c(TDataSeq)
+
+#define TDataSeq_has_ownership_c(TDataSeq) concatenate(TDataSeq, _has_ownership)
+#define TDataSeq_has_ownership TDataSeq_has_ownership_c(TDataSeq)
+
+#define TDataSeq_get_contiguous_bufferI_c(TDataSeq) concatenate(TDataSeq, _get_contiguous_bufferI)
+#define TDataSeq_get_contiguous_bufferI TDataSeq_get_contiguous_bufferI_c(TDataSeq)
+
+#define TDataSeq_get_discontiguous_bufferI_c(TDataSeq) concatenate(TDataSeq, _get_discontiguous_bufferI)
+#define TDataSeq_get_discontiguous_bufferI TDataSeq_get_discontiguous_bufferI_c(TDataSeq)
+
+#define TDataSeq_set_length_c(TDataSeq) concatenate(TDataSeq, _set_length)
+#define TDataSeq_set_length TDataSeq_set_length_c(TDataSeq)
+
+#define TDataSeq_get_reference_c(TDataSeq) concatenate(TDataSeq, _get_reference)
+#define TDataSeq_get_reference TDataSeq_get_reference_c(TDataSeq)
+
+#define TDataSeq_loan_discontiguous_c(TDataSeq) concatenate(TDataSeq, _loan_discontiguous)
+#define TDataSeq_loan_discontiguous TDataSeq_loan_discontiguous_c(TDataSeq)
+
+#define TDataSeq_set_maximum_c(TDataSeq) concatenate(TDataSeq, _set_maximum)
+#define TDataSeq_set_maximum TDataSeq_set_maximum_c(TDataSeq)
+
+#define TDataSeq_unloan_c(TDataSeq) concatenate(TDataSeq, _unloan)
+#define TDataSeq_unloan TDataSeq_unloan_c(TDataSeq)
+
+Private
+DDS_ReturnCode_t TDataReader_read_or_takeI(
+    TDataReader *self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    DDS_SampleStateMask sample_states,
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states,
+    DDS_Boolean take);
+
+Private
+DDS_ReturnCode_t TDataReader_read_or_take_w_conditionI(
+    TDataReader *self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    DDS_ReadCondition* condition,
+    DDS_Boolean take);
+
+Private
+DDS_ReturnCode_t TDataReader_read_or_take_next_sampleI(
+    TDataReader *self,
+    struct TData* received_data,
+    struct DDS_SampleInfo* sample_info,
+    DDS_Boolean take);
+
+Private
+DDS_ReturnCode_t TDataReader_read_or_take_instanceI(
+    TDataReader* self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t* a_handle,
+    DDS_SampleStateMask sample_states, 
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states,
+    DDS_Boolean take);
+
+Private
+DDS_ReturnCode_t TDataReader_read_or_take_next_instanceI(
+    TDataReader* self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t* previous_handle,
+    DDS_SampleStateMask sample_states, 
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states,
+    DDS_Boolean take);
+
+Private
+DDS_ReturnCode_t TDataReader_read_or_take_next_instance_w_conditionI(
+    TDataReader* self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t* previous_handle,
+    DDS_ReadCondition* condition,
+    DDS_Boolean take);
+
+/* ---------------------------------------------------------------------
+   Public Methods
+   --------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------- */
+
+TDataReader* TDataReader_narrow(DDS_DataReader* reader) {
+    const char *METHOD_NAME = "TDataReader_narrow";        
+
+    if (reader == NULL) {
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,"null reader");
+        return NULL;
+    }
+
+#ifndef TTYPENAME
+    /* Compatibility with ndds.4.0g where TTYPENAME is not defined 
+       for the data reader */
+    if (!DDS_DataReader_compare_typeI(reader,QUOTE(TData))) {
+#else
+    /* This solution allows to work with DataReaders defined inside C++ namespaces 
+       where TData doesn't match with the TYPENAME asssigned by nddsgen */
+    if (!DDS_DataReader_compare_typeI(reader,TTYPENAME)) {
+#endif
+
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,
+                         "wrong type reader");
+        return NULL; 
+    }
+    
+    return (TDataReader *)reader;
+}
+
+
+DDS_DataReader* TDataReader_as_datareader(TDataReader* reader) {
+    const char *METHOD_NAME = "TDataReader_as_datareader";        
+
+    if (reader == NULL) {
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,"null reader");
+        return NULL;
+    }
+
+    return (DDS_DataReader *)reader;
+}
+
+                                                                     
+DDS_ReturnCode_t TDataReader_read(TDataReader* self,
+				  struct TDataSeq* received_data,
+				  struct DDS_SampleInfoSeq* info_seq,
+				  DDS_Long max_samples,
+				  DDS_SampleStateMask sample_states, 
+				  DDS_ViewStateMask view_states,
+				  DDS_InstanceStateMask instance_states) {
+    return TDataReader_read_or_takeI(
+	self, received_data, info_seq, max_samples, sample_states, view_states,
+	instance_states,
+	DDS_BOOLEAN_FALSE /* read */);
+}
+                                                                     
+DDS_ReturnCode_t TDataReader_take(TDataReader* self,
+				  struct TDataSeq* received_data,
+				  struct DDS_SampleInfoSeq* info_seq,
+				  DDS_Long max_samples,
+				  DDS_SampleStateMask sample_states,
+				  DDS_ViewStateMask view_states,
+				  DDS_InstanceStateMask instance_states) {
+    return TDataReader_read_or_takeI(
+	self, received_data, info_seq, max_samples, sample_states, view_states,
+	instance_states, DDS_BOOLEAN_TRUE /*take*/);
+}
+
+DDS_ReturnCode_t TDataReader_read_w_condition(
+    TDataReader* self,
+    struct TDataSeq* received_data,   
+    struct DDS_SampleInfoSeq* info_seq,     
+    DDS_Long max_samples,
+    DDS_ReadCondition* condition) {
+    return TDataReader_read_or_take_w_conditionI(
+	self, received_data, info_seq, max_samples, condition,
+	DDS_BOOLEAN_FALSE /* take */);
+}
+
+DDS_ReturnCode_t TDataReader_take_w_condition(
+    TDataReader* self,
+    struct TDataSeq* received_data ,   
+    struct DDS_SampleInfoSeq* info_seq,     
+    DDS_Long max_samples,
+    DDS_ReadCondition* condition) {
+    return TDataReader_read_or_take_w_conditionI(
+	self, received_data, info_seq, max_samples, condition,
+	DDS_BOOLEAN_TRUE /* take */);
+}
+ 
+DDS_ReturnCode_t TDataReader_read_next_sample(
+    TDataReader* self,
+    struct TData* received_data,
+    struct DDS_SampleInfo* sample_info) {
+    return TDataReader_read_or_take_next_sampleI(
+	self, received_data, sample_info, DDS_BOOLEAN_FALSE /* read */);
+}
+                                                                     
+DDS_ReturnCode_t TDataReader_take_next_sample(
+    TDataReader* self,
+    struct TData* received_data,
+    struct DDS_SampleInfo* sample_info) {
+    return TDataReader_read_or_take_next_sampleI(
+	self, received_data, sample_info, DDS_BOOLEAN_TRUE /*take*/);
+}
+ 
+DDS_ReturnCode_t TDataReader_read_instance(
+    TDataReader* self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t* a_handle,
+    DDS_SampleStateMask sample_states, 
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states) {
+    return TDataReader_read_or_take_instanceI(
+	self, received_data, info_seq, max_samples, a_handle,
+	sample_states, view_states, instance_states,
+	DDS_BOOLEAN_FALSE /* read */);
+}
+                                                                     
+DDS_ReturnCode_t TDataReader_take_instance(
+    TDataReader* self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t* a_handle,
+    DDS_SampleStateMask sample_states,
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states) {
+    return TDataReader_read_or_take_instanceI(
+	self, received_data, info_seq, max_samples, a_handle,
+	sample_states, view_states,
+	instance_states, DDS_BOOLEAN_TRUE /*take*/);
+}
+
+DDS_ReturnCode_t TDataReader_read_next_instance(
+    TDataReader* self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t* previous_handle,
+    DDS_SampleStateMask sample_states, 
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states) {
+    return TDataReader_read_or_take_next_instanceI(
+	self, received_data, info_seq, max_samples, previous_handle,
+	sample_states, view_states, instance_states,
+	DDS_BOOLEAN_FALSE /* read */);
+}
+                                                                     
+DDS_ReturnCode_t TDataReader_take_next_instance(
+    TDataReader* self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t* previous_handle,
+    DDS_SampleStateMask sample_states,
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states) {
+    return TDataReader_read_or_take_next_instanceI(
+	self, received_data, info_seq, max_samples, previous_handle,
+	sample_states, view_states,
+	instance_states, DDS_BOOLEAN_TRUE /*take*/);
+}
+
+DDS_ReturnCode_t TDataReader_read_next_instance_w_condition(
+    TDataReader* self,
+    struct TDataSeq* received_data,   
+    struct DDS_SampleInfoSeq* info_seq,     
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t* previous_handle,    
+    DDS_ReadCondition* condition) {
+    return TDataReader_read_or_take_next_instance_w_conditionI(
+	self, received_data, info_seq, max_samples, previous_handle, condition,
+	DDS_BOOLEAN_FALSE /* take */);
+}
+
+DDS_ReturnCode_t TDataReader_take_next_instance_w_condition(
+    TDataReader* self,
+    struct TDataSeq* received_data ,   
+    struct DDS_SampleInfoSeq* info_seq,     
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t* previous_handle,
+    DDS_ReadCondition* condition) {
+    return TDataReader_read_or_take_next_instance_w_conditionI(
+	self, received_data, info_seq, max_samples, previous_handle, condition,
+	DDS_BOOLEAN_TRUE /* take */);
+}
+                                                                   
+DDS_ReturnCode_t TDataReader_return_loan(TDataReader* self,
+					 struct TDataSeq* received_data,
+					 struct DDS_SampleInfoSeq* info_seq) {
+    DDS_ReturnCode_t result = DDS_RETCODE_OK;
+    const char *METHOD_NAME = "TDataReader_return_loan";
+
+    /* --- Check parameters --- */
+    /*DDS_DataReader_return_loan_untypedI() will check the other arguments.*/
+    if (received_data == NULL) {
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,
+                         "received_data");
+	result = DDS_RETCODE_BAD_PARAMETER;
+        goto done;
+    }    
+
+    /* --- Check for loan --- */
+    if (TDataSeq_has_ownership(received_data) &&
+            DDS_SampleInfoSeq_has_ownership(info_seq)) {
+        /* No loan to return: exit successfully now.
+         * Only do this if *both* sequences have ownership. Otherwise,
+         * we could fail to catch the user error of passing mismatched
+         * sequences.
+         */
+        goto done;
+    }
+
+    /* call return loan */
+    {
+        DDS_Long dataSeqMaxLen = TDataSeq_get_maximum(received_data);
+        struct TData **dataSeqDiscontiguousBuffer
+            = TDataSeq_get_discontiguous_bufferI(received_data);
+        result = DDS_DataReader_return_loan_untypedI(
+	    (DDS_DataReader *)self,
+	    (void **)dataSeqDiscontiguousBuffer, dataSeqMaxLen, info_seq);
+        if (result != DDS_RETCODE_OK) {
+            /* DDS_DataReader_return_loan_untypedI() should already have
+             * logged this error.
+             */
+            goto done;
+        }
+        /* Don't unloan sequence unless DDS_DataReader_return_loan_untypedI()
+         * returns successfully. Otherwise, we will leave the sequences in
+         * an inconsistent state.
+         */
+        if (!TDataSeq_unloan(received_data)) {
+            DDSLog_exception(METHOD_NAME, &RTI_LOG_ANY_FAILURE_s,
+                             "unloan sequence");
+            result = DDS_RETCODE_ERROR;
+            goto done;
+        }
+    }
+
+ done:
+    return result;
+}
+
+
+DDS_ReturnCode_t TDataReader_get_key_value(TDataReader* self,
+					   struct TData* key_holder,
+					   const DDS_InstanceHandle_t* handle) {
+
+    return DDS_DataReader_get_key_value_untypedI(
+	(DDS_DataReader *)self, key_holder, handle);
+}                     
+
+
+DDS_InstanceHandle_t TDataReader_lookup_instance(TDataReader* self,
+    const struct TData* key_holder) { 
+
+    return DDS_DataReader_lookup_instance_untypedI(
+        (DDS_DataReader *)self, key_holder);
+}                                                             
+                                                                     
+/* ---------------------------------------------------------------------
+   Private Methods
+   --------------------------------------------------------------------- */
+
+DDS_ReturnCode_t TDataReader_read_or_takeI(
+    TDataReader *self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    DDS_SampleStateMask sample_states,
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states,
+    DDS_Boolean take) {
+
+    DDS_Long dataSeqLen = 0;
+    DDS_Long dataSeqMaxLen = 0;
+    DDS_Boolean dataSeqHasOwnership = DDS_BOOLEAN_FALSE;
+    DDS_Boolean isLoan = DDS_BOOLEAN_TRUE;
+    void **dataPtrArray = NULL;
+    int dataCount = 0;
+    DDS_ReturnCode_t result;
+    struct TData *dataSeqContiguousBuffer = NULL;
+    const char *METHOD_NAME = "TDataReader_read_or_take";
+
+    /* --- Check parameters --- */
+    /* Other arguments will be checked by
+     * DDS_DataReader_read_or_take_untypedI().
+     */
+    if (received_data == NULL) {
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,
+                         "received_data");
+	return DDS_RETCODE_BAD_PARAMETER;
+    }    
+
+    /* --- get dataSeq information --- */
+    dataSeqLen = TDataSeq_get_length(received_data);
+    dataSeqMaxLen = TDataSeq_get_maximum(received_data);
+    dataSeqHasOwnership = TDataSeq_has_ownership(received_data);
+    dataSeqContiguousBuffer = TDataSeq_get_contiguous_bufferI(received_data);
+
+    /* --- Read/take data --- */
+    result = DDS_DataReader_read_or_take_untypedI(
+	(DDS_DataReader *)self, &isLoan, &dataPtrArray, &dataCount,
+	info_seq,
+	dataSeqLen, dataSeqMaxLen, dataSeqHasOwnership,
+	dataSeqContiguousBuffer, sizeof(struct TData),
+	max_samples, sample_states, view_states, instance_states,
+	take);
+
+    if (result == DDS_RETCODE_NO_DATA) {
+	TDataSeq_set_length(received_data, (DDS_Long)0);
+	goto done;
+    }
+
+    if (result != DDS_RETCODE_OK) {
+        goto done;
+    }
+
+    if (isLoan) {
+	/* loan buffer to sequence */
+	if (!TDataSeq_loan_discontiguous(received_data,
+					  (struct TData **)dataPtrArray, dataCount,
+					  dataCount)) {
+	    /* this should never happen */
+	    result = DDS_RETCODE_ERROR;
+	    /* since we failed to loan data to data seq, but data is already
+	       taken, we will need to return it still.
+	       Note that data will be lost in this case */
+	    DDS_DataReader_return_loan_untypedI((DDS_DataReader *)self,
+						dataPtrArray, dataCount,
+						info_seq);
+        }
+    } else {
+	/* data is already copied to dataSeqContiguousBuffer */
+	if (!TDataSeq_set_length(received_data, dataCount)) {
+	    /* this should never happnen */
+	    result = DDS_RETCODE_ERROR;
+	}
+    }
+
+  done:
+
+    return result;
+}
+
+DDS_ReturnCode_t TDataReader_read_or_take_w_conditionI(
+    TDataReader *self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    DDS_ReadCondition* condition,
+    DDS_Boolean take) {
+
+    DDS_Long dataSeqLen = 0;
+    DDS_Long dataSeqMaxLen = 0;
+    DDS_Boolean dataSeqHasOwnership = DDS_BOOLEAN_FALSE;
+    DDS_Boolean isLoan = DDS_BOOLEAN_TRUE;
+    void **dataPtrArray = NULL;
+    int dataCount = 0;
+    DDS_ReturnCode_t result;
+    struct TData *dataSeqContiguousBuffer = NULL;
+    const char *METHOD_NAME = "TDataReader_read_or_take_w_conditionI";
+
+    /* --- Check parameters --- */
+    if (received_data == NULL) {
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,
+                         "received_data");
+	return DDS_RETCODE_BAD_PARAMETER;
+    }    
+
+    /* --- get dataSeq information --- */
+    dataSeqLen = TDataSeq_get_length(received_data);
+    dataSeqMaxLen = TDataSeq_get_maximum(received_data);
+    dataSeqHasOwnership = TDataSeq_has_ownership(received_data);
+    dataSeqContiguousBuffer = TDataSeq_get_contiguous_bufferI(received_data);
+
+    /* --- Read/take data --- */
+    result = DDS_DataReader_read_or_take_w_condition_untypedI(
+	(DDS_DataReader *)self, &isLoan, &dataPtrArray, &dataCount,
+	info_seq,
+	dataSeqLen, dataSeqMaxLen, dataSeqHasOwnership,
+	dataSeqContiguousBuffer, sizeof(struct TData),
+	max_samples, condition, take);
+
+    if (result == DDS_RETCODE_NO_DATA) {
+	TDataSeq_set_length(received_data, 0);
+	goto done;
+    }
+
+    if (result != DDS_RETCODE_OK) {
+        goto done;
+    }
+
+    if (isLoan) {
+	/* loan buffer to sequence */
+	if (!TDataSeq_loan_discontiguous(received_data,
+					  (struct TData **)dataPtrArray, dataCount,
+					  dataCount)) {
+	    /* this should never happend */
+	    result = DDS_RETCODE_ERROR;
+	    /* since we failed to loan data to data seq, but data is already
+	       taken, we will need to return it still.
+	       Note that data will be lost in this case */
+	    DDS_DataReader_return_loan_untypedI((DDS_DataReader *)self,
+						dataPtrArray, dataCount,
+						info_seq);
+	}
+    } else {
+	/* data is already copied to dataSeqContiguousBuffer */
+	if (!TDataSeq_set_length(received_data, dataCount)) {
+	    /* this should never happnen */
+	    result = DDS_RETCODE_ERROR;
+	}
+    }
+
+  done:
+
+    return result;
+}
+
+DDS_ReturnCode_t TDataReader_read_or_take_next_sampleI(
+    TDataReader *self,
+    struct TData* received_data,
+    struct DDS_SampleInfo* sample_info,
+    DDS_Boolean take) {
+
+    /* --- Read data --- */
+    return DDS_DataReader_read_or_take_next_sample_untypedI(
+	(DDS_DataReader *)self, received_data, sample_info, take);
+}
+
+DDS_ReturnCode_t TDataReader_read_or_take_instanceI(
+    TDataReader* self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t* a_handle,
+    DDS_SampleStateMask sample_states, 
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states,
+    DDS_Boolean take) {
+
+    DDS_Long dataSeqLen = 0;
+    DDS_Long dataSeqMaxLen = 0;
+    DDS_Boolean dataSeqHasOwnership = DDS_BOOLEAN_FALSE;
+    DDS_Boolean isLoan = DDS_BOOLEAN_TRUE;
+    void **dataPtrArray = NULL;
+    int dataCount = 0;
+    DDS_ReturnCode_t result;
+    struct TData *dataSeqContiguousBuffer = NULL;
+    const char *METHOD_NAME = "TDataReader_read_or_take_instanceI";
+
+    /* --- Check parameters --- */
+    if (received_data == NULL) {
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,
+                         "received_data");
+        return DDS_RETCODE_BAD_PARAMETER;
+    }    
+
+    /* --- get dataSeq information --- */
+    dataSeqLen = TDataSeq_get_length(received_data);
+    dataSeqMaxLen = TDataSeq_get_maximum(received_data);
+    dataSeqHasOwnership = TDataSeq_has_ownership(received_data);
+    dataSeqContiguousBuffer = TDataSeq_get_contiguous_bufferI(received_data);
+
+    /* --- Read/take data --- */
+    result = DDS_DataReader_read_or_take_instance_untypedI(
+	(DDS_DataReader *)self, &isLoan, &dataPtrArray, &dataCount,
+	info_seq,
+	dataSeqLen, dataSeqMaxLen, dataSeqHasOwnership,
+	dataSeqContiguousBuffer, sizeof(struct TData),
+	max_samples, a_handle, sample_states, view_states, instance_states,
+	take);
+
+    if (result == DDS_RETCODE_NO_DATA) {
+	TDataSeq_set_length(received_data, 0);
+	goto done;
+    }
+
+    if (result != DDS_RETCODE_OK) {
+        goto done;
+    }
+
+    if (isLoan) {
+	/* loan buffer to sequence */
+	if (!TDataSeq_loan_discontiguous(received_data,
+					  (struct TData **)dataPtrArray, dataCount,
+					  dataCount)) {
+	    /* this should never happend */
+	    result = DDS_RETCODE_ERROR;
+	    /* since we failed to loan data to data seq, but data is already
+	       taken, we will need to return it still.
+	       Note that data will be lost in this case */
+	    DDS_DataReader_return_loan_untypedI((DDS_DataReader *)self,
+						dataPtrArray, dataCount,
+						info_seq);
+	}
+    } else {
+	/* data is already copied to dataSeqContiguousBuffer */
+	if (!TDataSeq_set_length(received_data, dataCount)) {
+	    /* this should never happnen */
+	    result = DDS_RETCODE_ERROR;
+	}
+    }
+
+  done:
+
+    return result;
+}
+
+DDS_ReturnCode_t TDataReader_read_or_take_next_instanceI(
+    TDataReader* self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t* previous_handle,
+    DDS_SampleStateMask sample_states, 
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states,
+    DDS_Boolean take) {
+
+    DDS_Long dataSeqLen = 0;
+    DDS_Long dataSeqMaxLen = 0;
+    DDS_Boolean dataSeqHasOwnership = DDS_BOOLEAN_FALSE;
+    DDS_Boolean isLoan = DDS_BOOLEAN_TRUE;
+    void **dataPtrArray = NULL;
+    int dataCount = 0;
+    DDS_ReturnCode_t result;
+    struct TData *dataSeqContiguousBuffer = NULL;
+    const char *METHOD_NAME = "TDataReader_read_or_take_next_instanceI";
+
+    /* --- Check parameters --- */
+    if (received_data == NULL) {
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,
+                         "received_data");
+	return DDS_RETCODE_BAD_PARAMETER;
+    }    
+
+    /* --- get dataSeq information --- */
+    dataSeqLen = TDataSeq_get_length(received_data);
+    dataSeqMaxLen = TDataSeq_get_maximum(received_data);
+    dataSeqHasOwnership = TDataSeq_has_ownership(received_data);
+    dataSeqContiguousBuffer = TDataSeq_get_contiguous_bufferI(received_data);
+
+    /* --- Read/take data --- */
+    result = DDS_DataReader_read_or_take_next_instance_untypedI(
+	(DDS_DataReader *)self, &isLoan, &dataPtrArray, &dataCount,
+	info_seq,
+	dataSeqLen, dataSeqMaxLen, dataSeqHasOwnership,
+	dataSeqContiguousBuffer, sizeof(struct TData),
+	max_samples, previous_handle, sample_states, view_states,
+	instance_states,
+	take);
+
+    if (result == DDS_RETCODE_NO_DATA) {
+	TDataSeq_set_length(received_data, 0);
+	goto done;
+    }
+
+    if (result != DDS_RETCODE_OK) {
+        goto done;
+    }
+
+    if (isLoan) {
+	/* loan buffer to sequence */
+	if (!TDataSeq_loan_discontiguous(received_data,
+					  (struct TData **)dataPtrArray, dataCount,
+					  dataCount)) {
+	    /* this should never happend */
+	    result = DDS_RETCODE_ERROR;
+	    /* since we failed to loan data to data seq, but data is already
+	       taken, we will need to return it still.
+	       Note that data will be lost in this case */
+	    DDS_DataReader_return_loan_untypedI((DDS_DataReader *)self,
+						dataPtrArray, dataCount,
+						info_seq);
+	}
+    } else {
+	/* data is already copied to dataSeqContiguousBuffer */
+	if (!TDataSeq_set_length(received_data, dataCount)) {
+	    /* this should never happnen */
+	    result = DDS_RETCODE_ERROR;
+	}
+    }
+
+  done:
+
+    return result;
+}
+
+DDS_ReturnCode_t TDataReader_read_or_take_next_instance_w_conditionI(
+    TDataReader* self,
+    struct TDataSeq* received_data,
+    struct DDS_SampleInfoSeq* info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t* previous_handle,
+    DDS_ReadCondition* condition,
+    DDS_Boolean take) {
+
+    DDS_Long dataSeqLen = 0;
+    DDS_Long dataSeqMaxLen = 0;
+    DDS_Boolean dataSeqHasOwnership = DDS_BOOLEAN_FALSE;
+    DDS_Boolean isLoan = DDS_BOOLEAN_TRUE;
+    void **dataPtrArray = NULL;
+    int dataCount = 0;
+    DDS_ReturnCode_t result;
+    struct TData *dataSeqContiguousBuffer = NULL;
+    const char *METHOD_NAME =
+	"TDataReader_read_or_take_next_instance_w_conditionI";
+
+    /* --- Check parameters --- */
+    if (received_data == NULL) {
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,
+                         "received_data");
+        return DDS_RETCODE_BAD_PARAMETER;
+    }    
+
+    /* --- get dataSeq information --- */
+    dataSeqLen = TDataSeq_get_length(received_data);
+    dataSeqMaxLen = TDataSeq_get_maximum(received_data);
+    dataSeqHasOwnership = TDataSeq_has_ownership(received_data);
+    dataSeqContiguousBuffer = TDataSeq_get_contiguous_bufferI(received_data);
+
+    /* --- Read/take data --- */
+    result = DDS_DataReader_read_or_take_next_instance_w_condition_untypedI(
+	(DDS_DataReader *)self, &isLoan, &dataPtrArray, &dataCount,
+	info_seq,
+	dataSeqLen, dataSeqMaxLen, dataSeqHasOwnership,
+	dataSeqContiguousBuffer, sizeof(struct TData),
+	max_samples, previous_handle, condition, take);
+
+    if (result == DDS_RETCODE_NO_DATA) {
+	TDataSeq_set_length(received_data, (DDS_Long)0);
+	goto done;
+    }
+
+    if (result != DDS_RETCODE_OK) {
+        goto done;
+    }
+
+    if (isLoan) {
+	/* loan buffer to sequence */
+	if (!TDataSeq_loan_discontiguous(received_data,
+					  (struct TData **)dataPtrArray, dataCount,
+					  dataCount)) {
+	    /* this should never happend */
+	    result = DDS_RETCODE_ERROR;
+	    /* since we failed to loan data to data seq, but data is already
+	       taken, we will need to return it still.
+	       Note that data will be lost in this case */
+	    DDS_DataReader_return_loan_untypedI((DDS_DataReader *)self,
+						dataPtrArray, dataCount,
+						info_seq);
+	}
+    } else {
+	/* data is already copied to dataSeqContiguousBuffer */
+	if (!TDataSeq_set_length(received_data, dataCount)) {
+	    /* this should never happnen */
+	    result = DDS_RETCODE_ERROR;
+	}
+    }
+
+  done:
+
+    return result;
+}
+
+#undef concatenate
+
+#undef TDataReader_narrow_c
+#undef TDataReader_narrow
+
+#undef TDataReader_as_datareader_c
+#undef TDataReader_as_datareader
+
+#undef TDataReader_read_c
+#undef TDataReader_read
+
+#undef TDataReader_take_c
+#undef TDataReader_take
+
+#undef TDataReader_read_w_condition_c
+#undef TDataReader_read_w_condition
+
+#undef TDataReader_read_w_condition_c
+#undef TDataReader_read_w_condition
+
+#undef TDataReader_read_next_sample_c
+#undef TDataReader_read_next_sample
+
+#undef TDataReader_take_next_sample_c
+#undef TDataReader_take_next_sample
+
+#undef TDataReader_read_instance_c
+#undef TDataReader_read_instance
+
+#undef TDataReader_take_instance_c
+#undef TDataReader_take_instance
+
+#undef TDataReader_read_next_instance_c
+#undef TDataReader_read_next_instance
+
+#undef TDataReader_take_next_instance_c
+#undef TDataReader_take_next_instance
+
+#undef TDataReader_read_next_instance_w_condition_c
+#undef TDataReader_read_next_instance_w_condition
+
+#undef TDataReader_take_next_instance_w_condition_c
+#undef TDataReader_take_next_instance_w_condition
+
+#undef TDataReader_return_loan_c
+#undef TDataReader_return_loan
+
+#undef TDataReader_get_key_value_c
+#undef TDataReader_get_key_value
+
+#undef TDataReader_lookup_instance_c
+#undef TDataReader_lookup_instance
+
+#undef TDataReader_read_or_takeI_c
+#undef TDataReader_read_or_takeI
+
+#undef TDataReader_read_or_take_w_conditionI_c
+#undef TDataReader_read_or_take_w_conditionI
+
+#undef TDataReader_read_or_take_next_sampleI_c
+#undef TDataReader_read_or_take_next_sampleI
+
+#undef TDataReader_read_or_take_instanceI_c
+#undef TDataReader_read_or_take_instanceI
+
+#undef TDataReader_read_or_take_next_instanceI_c
+#undef TDataReader_read_or_take_next_instanceI
+
+#undef TDataReader_read_or_take_next_instance_w_conditionI_c
+#undef TDataReader_read_or_take_next_instance_w_conditionI
+
+#undef TDataSeq_get_length_c
+#undef TDataSeq_get_length
+
+#undef TDataSeq_get_maximum_c
+#undef TDataSeq_get_maximum
+
+#undef TDataSeq_get_contiguous_bufferI_c
+#undef TDataSeq_get_contiguous_bufferI
+
+#undef TDataSeq_get_discontiguous_bufferI_c
+#undef TDataSeq_get_discontiguous_bufferI
+
+#undef TDataSeq_has_ownership_c
+#undef TDataSeq_has_ownership
+
+#undef TDataSeq_set_length_c
+#undef TDataSeq_set_length
+
+#undef TDataSeq_get_reference_c
+#undef TDataSeq_get_reference
+
+#undef TDataSeq_loan_discontiguous_c
+#undef TDataSeq_loan_discontiguous
+
+#undef TDataSeq_set_maximum_c
+#undef TDataSeq_set_maximum
+
+#undef TDataSeq_unloan_c
+#undef TDataSeq_unloan
+
+#undef DDS_CURRENT_SUBMODULE
+#endif /* defined(TDataReader) && defined(TDataSeq) && defined(TData) */
+
+/* End $Id: TDataReader.c,v 1.16 2007/07/20 16:28:57 edward Exp $ */

@@ -1,0 +1,49 @@
+
+#ifndef INCrobocmdsh
+#define INCrobocmdsh
+
+/* ------------- Make C header file C++ compliant ------------------- */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+/*-------------------------------------------------------------------------
+|       recvcmds.h
+|
+|       This include file contains the names, addresses, and other
+|       information about all commands.
++-------------------------------------------------------------------------*/
+#include <stdio.h>
+
+struct _cmd { char   *n;
+              int   (*f)();
+	      char   *d;
+            };
+typedef struct _cmd cmd;
+
+/* commands MUST be alphabetized */
+extern int changeSample();
+extern int debugLevel();
+extern int listCmds();
+extern int mapIn();
+extern int mapOut();
+extern int resetRoboproc();
+extern int terminate();
+ 
+cmd table[] = { 
+    {"chgsmp"	, changeSample, "Change Sample" },
+    {"reset"	, resetRoboproc,"Reset Procproc, Clear Qs, Abort BG processing" },
+    {"term"	, terminate, 	"Terminate Sendproc" },
+    {"debug"	, debugLevel, 	"Changed Debug Level" },
+    {"mapin"	, mapIn, 	"Map in a Shared Memory Segment" },
+    {"mapout"	, mapOut, 	"Map out a Shared Memory Segment" },
+    {"?"	, listCmds, 	"List Known Commands" },
+    {NULL	,  NULL, 	NULL    }
+              };
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* INCrobocmdsh */

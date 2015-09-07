@@ -1,0 +1,303 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makerecvproc  make file
+#
+# make -f makerecvproc creates Recvproc
+#
+
+MAKEFILE= makerecvproc.lnx
+
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+SCCSDIR=$(sccsdir)
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+LIBS = -lm -lnsl
+NCOMMDIR = $(lnxobjdir)/proglib/ncomm
+OBJDIR = lnx
+DEBUGOPT =
+CFLAGS= -DLINUX -O2 -DDEBUG -m32
+OPTIMIZE= -O2 
+CPPFLAGS=
+LDFLAGS= -m32
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(LDFLAGS) $(TARGET_ARCH)
+COMPILEDSP.c= $(CC) -m32 -c
+
+#--- SCCS Sources ----
+RECVPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)recvproc/SCCS/s.
+PROCPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)procproc/SCCS/s.
+SENDPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)sendproc/SCCS/s.
+EXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)expproc/SCCS/s.
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+ROBOPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)roboproc/SCCS/s.
+VWACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vwacq/SCCS/s.
+VNMR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmr/SCCS/s.
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+RECVPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)recvproc/SCCS get
+PROCPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)procproc/SCCS get
+SENDPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)sendproc/SCCS get
+ROBOPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)roboproc/SCCS get
+NCOMM_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ncomm/SCCS get
+EXPPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)expproc/SCCS get
+VWACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vwacq/SCCS get
+VNMR_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vnmr/SCCS get
+ 
+#------------------------------------------------------------------------
+#--- NCOMM Sources that are needed for Recvproc
+#------------------------------------------------------------------------
+# Communications libraries
+NCOMM_HDR_LIB=			\
+		errLogLib.h	\
+                eventHandler.h  \
+                eventQueue.h    \
+                eventQueueP.h   \
+		hhashLib.h	\
+		ipcKeyDbm.h	\
+		ipcMsgQLib.h	\
+                listObj.h       \
+		mfileObj.h	\
+		msgQLib.h	\
+		semLib.h	\
+		shrMLib.h
+
+NCOMM_SRC_LIB=			\
+		asyncIo.c	\
+		errLogLib.c	\
+                eventHandler.c  \
+                eventQueue.c    \
+		hhashLib.c	\
+		ipcKeyDbm.c	\
+		ipcMsgQLib.c	\
+                listObj.c       \
+		mfileObj.c	\
+		semLib.c	\
+		msgQLib.c	\
+		shrMLib.c
+
+NCOMM_OBJ_LIB= $(NCOMM_SRC_LIB:.c=.o)
+
+#------------------------------------------------------------------------
+#--- Channel Sources that are needed for Recvproc
+#------------------------------------------------------------------------
+CHANOBJ_HDR=			\
+		chanLib.h	\
+		chanLibP.h	\
+		sockets.h
+
+CHANOBJ_SRC=			\
+		chanLib.c	\
+		sockets.c	\
+		signals.c	\
+		fdmask.c
+
+CHANOBJ_OBJ=$(CHANOBJ_SRC:.c=.o)
+
+
+#------------------------------------------------------------------------
+#--- Expproc Sources & Headers that are needed for Recvproc
+#------------------------------------------------------------------------
+EXPPROC_HDR=                    \
+		expQfuncs.h	\
+                commfuncs.h 	\
+                parser.h 	\
+                expDoneCodes.h \
+                hostMsgChannels.h \
+		shrstatinfo.h   \
+		shrexpinfo.h
+
+
+EXPPROC_SRC=			\
+                commfuncs.c 	\
+                excepthandler.c \
+		expQfuncs.c	\
+                statfuncs.c 	\
+                parser.c 	\
+		daemon.c
+
+
+EXPPROC_OBJ= $(EXPPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#--- Roboproc Sources & Headers that are needed for Recvproc
+#------------------------------------------------------------------------
+ROBOPROC_HDR=
+ROBOPROC_SRC=
+ROBOPROC_OBJ= $(ROBOPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#--- Procproc Sources & Headers that are needed for Recvproc
+#------------------------------------------------------------------------
+PROCPROC_HDR=			\
+		procQfuncs.h
+
+PROCPROC_SRC=			\
+		procQfuncs.c
+
+PROCPROC_OBJ= $(PROCPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#--- Sendproc Sources & Headers that are needed for Recvproc
+#------------------------------------------------------------------------
+SENDPROC_HDR=
+SENDPROC_SRC=
+SENDPROC_OBJ= $(SENDPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#--- Vnmr Sources & Headers that are needed for Recvproc
+#------------------------------------------------------------------------
+VNMR_HDR=			\
+		data.h
+VNMR_SRC=
+VNMR_OBJ= $(VNMR_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#--- Acquisition Sources & Headers that are needed for Recvproc
+#------------------------------------------------------------------------
+VWACQ_HDR=			\
+		hostAcqStructs.h
+VWACQ_SRC=
+VWACQ_OBJ= $(VWACQ_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#-- Recvproc Source & Header files 
+#------------------------------------------------------------------------
+RECVPROC_HDR=			\
+		dspfuncs.h
+
+RECVPROC_SRC=			\
+		dspfuncs.c	\
+		recvcmds.c	\
+		recvproc.c	\
+		recvfuncs.c
+
+
+RECVPROC_OBJ= $(RECVPROC_SRC:.c=.o)
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= 				\
+	$(CHANOBJ_SRC) $(CHANOBJ_HDR) 	\
+	$(EXPPROC_SRC) $(EXPPROC_HDR)	\
+	$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) \
+	$(PROCPROC_SRC) $(PROCPROC_HDR)  \
+	$(RECVPROC_SRC) $(RECVPROC_HDR)  \
+	$(ROBOPROC_SRC) $(ROBOPROC_HDR)  \
+	$(SENDPROC_SRC) $(SENDPROC_HDR)  \
+	$(VNMR_SRC) $(VNMR_HDR)		\
+	$(VWACQ_SRC) $(VWACQ_HDR)
+ 
+std  LINUX : $(MAKEFILE) $(ALLSRC)
+	( $(MAKE) -e -f $(MAKEFILE) \
+	Recvproc )
+	@echo "NMR_ID Recvproc complete -------------------------------------"
+
+all: std
+	@echo NMR_ID all Recvproc(s) complete
+
+# ---- Be sure True Source that we link to are upto date.
+Source : $(ALLSRC)
+
+Recvproc : $(RECVPROC_OBJ) $(EXPPROC_OBJ) $(PROCPROC_OBJ)
+	(umask 2; $(LINK.c) -o $@ -Wl,-rpath /vnmr/lib -L$(NCOMMDIR) $(RECVPROC_OBJ) $(EXPPROC_OBJ) $(PROCPROC_OBJ) -lncomm $(LIBS))
+	@echo Recvproc is complete
+
+depend:	Source
+	makedepend -f $(MAKEFILE) -Y $(CDEFINE) $(ALLSRC) 2>/dev/null
+
+#--- Object Targets ----------------------------------------------
+
+dspfuncs.o : dspfuncs.c
+	-(umask 2; $(COMPILEDSP.c) -O4 $(@:.o=.c) )
+
+$(ALLOBJS) : $(@:.o=.c)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(RECVPROC_MAN_LIB) : $(@:.nr=.c)
+	-(umask 2; mangen $(@:.nr=.c) ; nroff -man $@ > $(@:.nr=.man) )
+
+$(RECVPROC_INSTALLMAN_LIB) : $(@:.2=.c)
+	-(umask 2; mangen $(@:.2=.c) ; mv $(@:.2=.nr) $@ )
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(RECVPROC_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(RECVPROC_SRC) $(RECVPROC_HDR) : % : $(RECVPROC_SCCS_SRC)%
+	$(RECVPROC_SGET) $@
+
+$(PROCPROC_SRC) $(PROCPROC_HDR) : % : $(PROCPROC_SCCS_SRC)%
+	$(PROCPROC_SGET) $@
+
+$(SENDPROC_SRC) $(SENDPROC_HDR) : % : $(SENDPROC_SCCS_SRC)%
+	$(SENDPROC_SGET) $@
+
+$(ROBOPROC_SRC) $(ROBOPROC_HDR) : % : $(ROBOPROC_SCCS_SRC)%
+	$(ROBOPROC_SGET) $@
+
+$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) $(CHANOBJ_SRC) $(CHANOBJ_HDR) : % : $(NCOMM_SCCS_SRC)%
+	$(NCOMM_SGET) $@
+
+$(EXPPROC_SRC) $(EXPPROC_HDR) : % : $(EXPPROC_SCCS_SRC)%
+	$(EXPPROC_SGET) $@
+
+$(VNMR_SRC) $(VNMR_HDR) : % : $(VNMR_SCCS_SRC)%
+	$(VNMR_SGET) $@
+
+$(VWACQ_SRC) $(VWACQ_HDR) : % : $(VWACQ_SCCS_SRC)%
+	$(VWACQ_SGET) $@
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+
+chanLib.o: errLogLib.h chanLibP.h sockets.h chanLib.h listObj.h
+chanLib.o: eventHandler.h
+sockets.o: errLogLib.h sockets.h
+chanLibP.o: sockets.h chanLib.h
+commfuncs.o: sockets.h hostMsgChannels.h hostAcqStructs.h msgQLib.h
+commfuncs.o: ipcMsgQLib.h shrMLib.h mfileObj.h errLogLib.h
+excepthandler.o: errLogLib.h
+expQfuncs.o: errLogLib.h mfileObj.h shrMLib.h shrexpinfo.h expQfuncs.h
+statfuncs.o: errLogLib.h hostAcqStructs.h mfileObj.h shrMLib.h shrstatinfo.h
+parser.o: errLogLib.h hhashLib.h parser.h
+shrstatinfo.o: hostAcqStructs.h
+asyncIo.o: eventHandler.h errLogLib.h
+eventHandler.o: errLogLib.h listObj.h eventQueue.h eventHandler.h
+eventQueue.o: eventQueueP.h eventQueue.h
+hhashLib.o: errLogLib.h hhashLib.h
+ipcKeyDbm.o: errLogLib.h shrMLib.h mfileObj.h ipcKeyDbm.h
+ipcMsgQLib.o: errLogLib.h ipcMsgQLib.h
+listObj.o: listObj.h
+mfileObj.o: errLogLib.h mfileObj.h
+semLib.o: errLogLib.h semLib.h mfileObj.h
+msgQLib.o: errLogLib.h hostMsgChannels.h chanLib.h mfileObj.h msgQLib.h
+msgQLib.o: ipcMsgQLib.h shrMLib.h
+shrMLib.o: errLogLib.h shrMLib.h mfileObj.h
+eventQueueP.o: eventQueue.h
+ipcKeyDbm.o: shrMLib.h mfileObj.h
+msgQLib.o: ipcMsgQLib.h shrMLib.h mfileObj.h
+shrMLib.o: mfileObj.h
+procQfuncs.o: errLogLib.h mfileObj.h shrMLib.h shrexpinfo.h procQfuncs.h
+dspfuncs.o: errLogLib.h mfileObj.h shrMLib.h shrexpinfo.h shrstatinfo.h
+dspfuncs.o: hostAcqStructs.h dspfuncs.h
+recvcmds.o: parser.h
+recvproc.o: hostMsgChannels.h msgQLib.h ipcMsgQLib.h shrMLib.h mfileObj.h
+recvproc.o: errLogLib.h procQfuncs.h eventHandler.h commfuncs.h shrstatinfo.h
+recvproc.o: hostAcqStructs.h
+recvfuncs.o: errLogLib.h mfileObj.h shrMLib.h shrexpinfo.h shrstatinfo.h
+recvfuncs.o: hostAcqStructs.h chanLib.h expDoneCodes.h msgQLib.h ipcMsgQLib.h
+recvfuncs.o: hostMsgChannels.h expQfuncs.h procQfuncs.h data.h dspfuncs.h
+dspfuncs.o: shrexpinfo.h

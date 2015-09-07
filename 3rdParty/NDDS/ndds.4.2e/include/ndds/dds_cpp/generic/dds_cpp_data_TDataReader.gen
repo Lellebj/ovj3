@@ -1,0 +1,907 @@
+/* $Id: TDataReader.cxx,v 1.23 2006/09/24 08:30:12 elaine Exp $
+
+ (c) Copyright, Real-Time Innovations, $Date: 2006/09/24 08:30:12 $.
+ All rights reserved.
+ No duplications, whole or partial, manual or electronic, may be made
+ without express written permission.  Any such copies, or
+ revisions thereof, must display this notice unaltered.
+ This code contains trade secrets of Real-Time Innovations, Inc.
+
+modification history
+--------------------
+1.0h,24jul06,kaj replace long with DDS_Long
+1.0h,12jan06,fcs Changed the implementation of the narrow
+                 function in order to support data readers
+                 defined inside a C++ namespace.
+1.0h,12dec05,fcs Removed unneeded forward delcarations
+1.0g,26jul05,kaj Added API for FooDataReader lookup_instance.
+1.0g,13jul05,kaj Added DDSEntity::get_instance_handle
+1.0g,14jul05,jml Bug #9595: provide type safety TDataWriter and 
+                 and TDataReader narrow methods 
+1.0f,12jul05,kaj Renamed DDS_StatusKindMask to DDS_StatusMask
+1.0f,11jul05,kaj get_matched_publication params change: pointer -> reference
+1.0f,08jul05,kaj Renamed SubscriptionMatchedStatus and member functions.
+1.0f,01apr05,eys Fixed bug 9595. Added narrow method.
+1.0f,21mar05,rw  Bug #8660: return DDS_ReturnCode_t instead of void
+1.0e,18feb05,rw  Bug #9332: get_status_condition() -> get_statuscondition
+1.0e,14feb05,rw  Renamed supertype accessor for consistency
+1.0e,10jan05,rw  Bug #9993: use DDS_Boolean instead of RTIBool
+1.0d,07jun04,rw  Fixed bug in return_loan()
+1.0d,10may04,eys Added dataSize parameter to read_or_take internal API
+1.0d,21apr04,eys Added get_matched_publications and
+                 get_matched_publication_data
+1.0d,20apr04,eys Added additional read/take API
+1.0d,17apr04,eys Remove LifecycleState, Added ViewState and InstanceState
+1.0d,15apr04,eys Parameters for DataReader_create_read_condition() and
+                 DataReader_create_query_condition() has been changed
+1.0d,15apr04,eys Added new methods according to FTF spec.
+1.0d,13apr04,eys Removed assert_liveliness() from DataReader.
+1.0d,08mar04,eys  Bug #8143: Added ReadCondition
+1.0c,21nov03,eys  Bug #8143: copied here from dds/psm-cpp
+1.0a,30oct03,eys Added forward declarations
+1.0a,23oct03,eys Changed DDSSampleInfoSeq to DDSSampleInfoPtrSeq
+1.0a,20oct03,eys loan and unloan buffer to user data sequence
+1.0a,13oct03,eys Fixed compiler warnings for unused variables.
+1.0a,10oct03,eys Use external shallow sequence for user data so that we don't
+                 need to copy.
+1.0a,09oct03,seb Added new delete operator for windows to remove warnings
+1.0a,08oct03,rw  Added TDataReader_impl::finish()
+1.0a,06oct03,eys Refactored TDataReader to allow definition of multiple types
+                 in same file
+1.0a,03oct03,rw  Pass additional arg. when creating Presentation reader
+1.0a,23sep03,rw  Reflected small change in superclass lifecycle API
+1.0a,21sep03,rw  Finished initial implementation; reformatted comments
+                 in response to review feedback
+1.0a,21sep03,rw  Reflected change in DDSDataReader_impl ctor signature
+1.0a,09sep03,rw  Changed suffix of get_impl and get_interface methods
+                 from X to I: they are Internal, not eXtensions;
+                 wrapped long lines
+1.0a,04sep03,rw  Removed dependency on TECHNOLOGY_PLATFORM
+1.0a,25aug03,rw  Removed DDS namespace and added DDS prefix to names
+1.0a,18aug03,rj  Removed dependency on log_impl.h
+1.0a,11aug03,rj  Removed dependency on rtilib/makeheader.h
+1.0a,08aug03,rj  Now includes dds_log_impl.h
+1.0a,08aug03,rj  Now conditionally including based on TECHNOLOGY_PLATFORM
+1.0a,24jul03,rj  Removed delete_querycondition()
+1.0a,24jul03,rj  Added get_key_valueX()
+1.0a,16jun03,rj  Fixed takeX() to compile on sparcSol2.8cc5.0
+1.0a,07jun03,rj  Now just a minimal type safe wrapper for 
+		 PLATFORM_SPECIFIC_NAME(DDSDataReader_impl), which does all 
+		 the real work.
+1.0a,06jun03,rj  Now extends PLATFORM_SPECIFIC_NAME(DDSDataReader_impl)
+1.0a,05jun03,rj  Added get_impl_X() and get_interface_X()
+1.0a,03jun03,rj  _impl should be the FIRST base class 
+1.0a,28may03,rj  Implemented read()/take() variants
+1.0a,23may03,rj  Created: refactored from TDataReader.gencxx. 
+                 Conforms to the documented "generics pattern".
+===================================================================== */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "dds_c/dds_c_common.h"
+#include "dds_c/dds_c_log_impl.h"
+
+/* ================================================================== */
+/*i
+   <<INTERFACE>> 
+
+   Defines:   TDataReader, TDataPtrSeq, TData
+
+   Organized using the well-documented "Generics Pattern" for
+   implementing generics in C and C++.
+*/
+
+#ifndef dds_cpp_subscription_h
+  #include "dds_cpp/dds_cpp_subscription.h"
+#endif
+
+/* ================================================================== */
+/*i
+   <<IMPLEMENTATION>> 
+
+   Defines:  TDataReader, TData
+*/
+#if defined(TDataReader) && defined(TDataSeq) && defined(TData)
+/* ----------------------------------------------------------------- */
+/* Defines submodule for logging purposes
+ */
+#define DDS_CURRENT_SUBMODULE  DDS_SUBMODULE_MASK_DATA
+
+/*
+ * Two step procedure needed for stringize the value of a macro 
+ */
+#define _QUOTE(x) # x
+#define QUOTE(x) _QUOTE(x)
+
+// ---------------------------------------------------------------------
+// Public Methods
+// ---------------------------------------------------------------------
+
+//DDSEntity* TDataReader::get_interface_EntityI() {
+//    return DDSDataReader::get_interface_EntityI();
+//}
+
+DDSEntity_impl* TDataReader::get_impl_EntityI() {
+    return DDSDataReader::get_impl_EntityI();
+}
+
+TDataReader* TDataReader::narrow(DDSDataReader *reader) {
+    const char *METHOD_NAME = "TDataReader::narrow";        
+
+    if (reader == NULL) {
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,"null reader");
+        return NULL;
+    }
+
+#ifndef TTYPENAME
+    /* Compatibility with ndds.4.0g where TTYPENAME is not defined 
+       for the data reader */
+    if (!reader->compare_typeI(QUOTE(TData))) {
+#else
+    /* This solution allows to work with DataReaders defined inside C++ namespaces 
+       where TData doesn't match with the TYPENAME asssigned by nddsgen */
+    if (!reader->compare_typeI(TTYPENAME)) {
+#endif
+
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,
+                         "wrong type reader");
+        return NULL; 
+    }
+      
+    return (TDataReader *)reader;
+}
+
+// --- <<lifecycle>>: --------------------------------------------------
+
+TDataReader* TDataReader::createI(DDSDataReader* dataReader) {
+
+    TDataReader* typedDataReader = new TDataReader(dataReader);
+
+    return typedDataReader;
+}
+
+DDS_ReturnCode_t TDataReader::destroyI(
+        TDataReader* reader) {
+    // nothing need to be done
+    delete reader;
+    return DDS_RETCODE_OK;
+}
+
+// ---------------------------------------------------------------------
+
+DDS_ReturnCode_t TDataReader::read(TDataSeq& received_data,
+				   DDS_SampleInfoSeq& info_seq,
+				   DDS_Long max_samples,
+				   DDS_SampleStateMask sample_states,
+				   DDS_ViewStateMask view_states,
+				   DDS_InstanceStateMask instance_states) {
+    return read_or_takeI(received_data, info_seq, max_samples, sample_states,
+			 view_states, instance_states,
+			 false /* read */);
+}
+                                                                     
+DDS_ReturnCode_t TDataReader::take(TDataSeq& received_data,
+				   DDS_SampleInfoSeq& info_seq,
+				   DDS_Long max_samples,
+				   DDS_SampleStateMask sample_states,
+				   DDS_ViewStateMask view_states,
+				   DDS_InstanceStateMask instance_states) {
+    return read_or_takeI(received_data, info_seq, max_samples,
+			 sample_states, view_states, instance_states,
+			 true /*take*/);
+}
+
+DDS_ReturnCode_t TDataReader::read_w_condition(
+    TDataSeq& received_data,
+    DDS_SampleInfoSeq& info_seq,
+    DDS_Long max_samples,
+    DDSReadCondition* condition)
+{
+    return read_or_take_w_conditionI(received_data, info_seq, max_samples,
+				     condition,
+				     false /*read*/);
+}
+
+DDS_ReturnCode_t TDataReader::take_w_condition(
+    TDataSeq& received_data,
+    DDS_SampleInfoSeq& info_seq,
+    DDS_Long max_samples,
+    DDSReadCondition* condition) {
+    return read_or_take_w_conditionI(received_data, info_seq, max_samples,
+				     condition,
+				     true /*take*/);
+}
+
+DDS_ReturnCode_t TDataReader::read_next_sample(
+    TData& received_data,
+    DDS_SampleInfo& sample_info) {
+    return read_or_take_next_sampleI(received_data, sample_info,
+				     false /* read */);
+}
+
+DDS_ReturnCode_t TDataReader::take_next_sample(
+    TData& received_data,
+    DDS_SampleInfo& sample_info) {
+    return read_or_take_next_sampleI(received_data, sample_info,
+				     true /* take */);
+}
+
+DDS_ReturnCode_t TDataReader::read_instance(
+    TDataSeq& received_data,
+    DDS_SampleInfoSeq& info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t& a_handle,
+    DDS_SampleStateMask sample_states,
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states) {
+    return read_or_take_instanceI(
+	received_data, info_seq, max_samples, a_handle,
+	sample_states,
+	view_states, instance_states,
+	false /* read */);
+}
+
+DDS_ReturnCode_t TDataReader::take_instance(
+    TDataSeq& received_data,
+    DDS_SampleInfoSeq& info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t& a_handle,
+    DDS_SampleStateMask sample_states,
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states) {
+    return read_or_take_instanceI(
+	received_data, info_seq, max_samples, a_handle,
+	sample_states,
+	view_states, instance_states,
+	true /* take */);
+}
+
+DDS_ReturnCode_t TDataReader::read_next_instance(
+    TDataSeq& received_data,
+    DDS_SampleInfoSeq& info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t& previous_handle,
+    DDS_SampleStateMask sample_states,
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states) {
+    return read_or_take_next_instanceI(
+	received_data, info_seq, max_samples, previous_handle,
+	sample_states,
+	view_states, instance_states,
+	false /* read */);
+}
+
+DDS_ReturnCode_t TDataReader::take_next_instance(
+    TDataSeq& received_data,
+    DDS_SampleInfoSeq& info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t& previous_handle,
+    DDS_SampleStateMask sample_states,
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states) {
+    return read_or_take_next_instanceI(
+	received_data, info_seq, max_samples, previous_handle,
+	sample_states,
+	view_states, instance_states,
+	true /* take */);
+}
+ 
+DDS_ReturnCode_t TDataReader::read_next_instance_w_condition(
+    TDataSeq& received_data,
+    DDS_SampleInfoSeq& info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t& previous_handle,
+    DDSReadCondition* condition)
+{
+    return read_or_take_next_instance_w_conditionI(
+	received_data, info_seq, max_samples,
+	previous_handle,
+	condition,
+	false /*read*/);
+}
+
+DDS_ReturnCode_t TDataReader::take_next_instance_w_condition(
+    TDataSeq& received_data,
+    DDS_SampleInfoSeq& info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t& previous_handle,
+    DDSReadCondition* condition)
+{
+    return read_or_take_next_instance_w_conditionI(
+	received_data, info_seq, max_samples,
+	previous_handle,
+	condition,
+	true /*take*/);
+}
+                                                                    
+DDS_ReturnCode_t TDataReader::return_loan(TDataSeq& received_data,
+					  DDS_SampleInfoSeq& info_seq) {
+    const char *const METHOD_NAME = "TDataReader::return_loan";
+    DDS_ReturnCode_t result = DDS_RETCODE_OK;
+
+    // --- Check for loan --- //
+    if (received_data.has_ownership() && info_seq.has_ownership()) {
+        /* No loan to return: exit successfully now.
+         * Only do this if *both* sequences have ownership. Otherwise,
+         * we could fail to catch the user error of passing mismatched
+         * sequences.
+         */
+        goto done;
+    }
+
+    // --- Return loan --- //
+    {
+        DDS_Long dataSeqMaxLen = received_data.maximum();
+        TData** dataSeqDiscontiguousBuffer
+            = received_data.get_discontiguous_bufferI();
+        result = return_loan_untypedI((void**) dataSeqDiscontiguousBuffer,
+	                              dataSeqMaxLen, info_seq);
+        if (result != DDS_RETCODE_OK) {
+            // return_loan_untypedI() should already have logged this error.
+            goto done;
+        }
+        /* Don't unloan sequence unless return_loan_untypedI() returns
+         * successfully. Otherwise, we will leave the sequences in an
+         * inconsistent state.
+         */
+        if (!received_data.unloan()) {
+            DDSLog_exception(METHOD_NAME, &RTI_LOG_ANY_FAILURE_s,
+                             "unloan sequence");
+            result = DDS_RETCODE_ERROR;
+            goto done;
+        }
+    }
+
+ done:
+    return result;
+}
+
+
+DDS_ReturnCode_t TDataReader::get_key_value(
+    TData& key_holder,
+    const DDS_InstanceHandle_t& handle){
+    //
+    return DDSDataReader::get_key_value_untypedI(&key_holder, handle);
+}                     
+
+
+DDS_InstanceHandle_t TDataReader::lookup_instance(
+    const TData& key_holder) { 
+    //
+    return DDSDataReader::lookup_instance_untypedI(&key_holder);
+}                                                             
+                                                                     
+// --- From DDSDataReader_impl: ----------------------------------------
+
+DDSReadCondition* TDataReader::create_readcondition(
+    DDS_SampleStateMask sample_states, 
+    DDS_ViewStateMask view_states, 
+    DDS_InstanceStateMask instance_states) { 
+    return DDSDataReader::create_readcondition(sample_states, view_states,
+					       instance_states);
+}
+    
+DDS_ReturnCode_t TDataReader::delete_readcondition(
+        DDSReadCondition* condition) {
+  //
+    return DDSDataReader::delete_readcondition(condition);
+}
+    
+DDSQueryCondition* TDataReader::create_querycondition(
+    DDS_SampleStateMask sample_states, 
+    DDS_ViewStateMask view_states, 
+    DDS_InstanceStateMask instance_states,
+    const char* query,
+    const DDS_StringSeq& query_parameters) {
+  //
+    return DDSDataReader::create_querycondition(sample_states, view_states,
+						instance_states,
+						query, query_parameters);
+}
+ 
+DDS_ReturnCode_t TDataReader::delete_contained_entities() {
+  //
+    return DDSDataReader::delete_contained_entities();
+}
+
+DDS_ReturnCode_t TDataReader::wait_for_historical_data(
+    const DDS_Duration_t& max_wait) {
+  //
+    return DDSDataReader::wait_for_historical_data(max_wait);
+}
+
+DDS_ReturnCode_t TDataReader::get_matched_publications(
+    DDS_InstanceHandleSeq& publication_handles) {
+  // C++ to C++, both use references
+    return DDSDataReader::get_matched_publications(publication_handles);
+}
+
+DDS_ReturnCode_t TDataReader::get_matched_publication_data(
+    DDS_PublicationBuiltinTopicData& publication_data,
+    const DDS_InstanceHandle_t& publication_handle) {
+  // C++ to C++, both use references
+    return DDSDataReader::get_matched_publication_data(
+	publication_data, publication_handle);
+}
+
+DDSTopicDescription* TDataReader::get_topicdescription() {
+  //
+    return DDSDataReader::get_topicdescription();
+}
+
+DDSSubscriber* TDataReader::get_subscriber() {
+  //
+    return DDSDataReader::get_subscriber();
+}
+   
+DDS_ReturnCode_t TDataReader::set_qos(
+        const DDS_DataReaderQos& qos) {
+    //
+    return DDSDataReader::set_qos(qos);
+}
+    
+DDS_ReturnCode_t TDataReader::get_qos(DDS_DataReaderQos& qos) {
+    return DDSDataReader::get_qos(qos);
+}
+    
+DDS_ReturnCode_t TDataReader::set_listener(
+        DDSDataReaderListener* listener, DDS_StatusMask mask) {
+    //
+    return DDSDataReader::set_listener(listener, mask);
+}
+    
+DDSDataReaderListener* TDataReader::get_listener() {
+    return DDSDataReader::get_listener();
+}
+    
+DDS_ReturnCode_t TDataReader::get_sample_rejected_status(
+				DDS_SampleRejectedStatus& status) {
+    return DDSDataReader::get_sample_rejected_status(status);
+}
+    
+DDS_ReturnCode_t TDataReader::get_liveliness_changed_status(
+	DDS_LivelinessChangedStatus& status) {
+    return DDSDataReader::get_liveliness_changed_status(status);
+}
+    
+DDS_ReturnCode_t TDataReader::get_requested_deadline_missed_status(
+	DDS_RequestedDeadlineMissedStatus& status) {
+    return DDSDataReader::get_requested_deadline_missed_status(status);
+}
+    
+DDS_ReturnCode_t TDataReader::get_requested_incompatible_qos_status(
+	DDS_RequestedIncompatibleQosStatus& status) {
+    return DDSDataReader::get_requested_incompatible_qos_status(status);
+}
+
+DDS_ReturnCode_t TDataReader::get_sample_lost_status(
+	DDS_SampleLostStatus& status) {
+    return DDSDataReader::get_sample_lost_status(status);
+}
+
+DDS_ReturnCode_t TDataReader::get_subscription_matched_status(
+	DDS_SubscriptionMatchedStatus& status) {
+    return DDSDataReader::get_subscription_matched_status(status);
+}
+
+DDS_ReturnCode_t TDataReader::enable() {
+    return DDSDataReader::enable();
+}
+    
+DDSStatusCondition* TDataReader::get_statuscondition() {
+    return DDSDataReader::get_statuscondition();
+}
+    
+DDS_StatusMask TDataReader::get_status_changes() {
+    return DDSDataReader::get_status_changes();
+}
+                                       
+DDS_InstanceHandle_t TDataReader::get_instance_handle() {
+    return DDSDataReader::get_instance_handle();
+}
+// ---------------------------------------------------------------------
+// Protected Methods
+// ---------------------------------------------------------------------
+
+// --- Constructors & destructors: -------------------------------------
+
+TDataReader::TDataReader(DDSDataReader* impl)
+    : DDSDataReader(impl) {
+    // empty
+}
+
+
+/*i
+ * This destructor is a no-op. All tear-down is done in the
+ * destroy_datareaderI() method.
+ */
+TDataReader::~TDataReader() {
+    // empty
+}                   
+
+
+
+// ---------------------------------------------------------------------
+// Private Methods
+// ---------------------------------------------------------------------
+
+// --- <<lifecycle>>: --------------------------------------------------
+
+//void* TDataReader_impl::operator new(
+//    size_t size,
+//    DDS_DataReader* cDataReader) {
+//    //
+//    void* buffer = NULL;
+//    if (check_new_size("TDataReader_impl::operator new",
+//		       PRES_LOCAL_ENDPOINT_USERBUFFER_LENGTH_MAX,
+//		       size)) {
+//	buffer = (void*)DDS_Entity_get_user_dataI(
+//	    DDS_DataReader_as_entity(cDataReader));
+//    }
+//	
+//    return buffer;
+//}
+
+
+//void TDataReader_impl::operator delete(void* reader) {
+    // nothinig need to be done
+//}
+
+// ---------------------------------------------------------------------
+
+
+DDS_ReturnCode_t TDataReader::read_or_takeI(
+    TDataSeq& received_data,
+    DDS_SampleInfoSeq& info_seq,
+    DDS_Long max_samples,
+    DDS_SampleStateMask sample_states,
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states,
+    bool take) {
+
+    DDS_Long dataSeqLen = 0;
+    DDS_Long dataSeqMaxLen = 0;
+    DDS_Boolean dataSeqHasOwnership = DDS_BOOLEAN_FALSE;
+    DDS_Boolean isLoan = DDS_BOOLEAN_TRUE;
+    void **dataPtrArray = NULL;
+    int dataCount = 0;
+    DDS_ReturnCode_t result;
+    TData *dataSeqContiguousBuffer = NULL;
+
+    /* --- get dataSeq information --- */
+    dataSeqLen = received_data.length();
+    dataSeqMaxLen = received_data.maximum();
+    dataSeqHasOwnership = received_data.has_ownership();
+    dataSeqContiguousBuffer = received_data.get_contiguous_bufferI();
+
+    /* --- Read/take data --- */
+    result = DDSDataReader::read_or_take_untypedI(
+	&isLoan, &dataPtrArray, &dataCount,
+	info_seq,
+	dataSeqLen, dataSeqMaxLen, dataSeqHasOwnership,
+	dataSeqContiguousBuffer, sizeof(TData),
+	max_samples, sample_states, view_states, instance_states,
+	take);
+
+    if (result == DDS_RETCODE_NO_DATA) {
+	received_data.length((DDS_Long)0);
+	goto done;
+    }
+
+    if (result != DDS_RETCODE_OK) {
+        goto done;
+    }
+
+    if (isLoan) {
+	/* loan buffer to sequence */
+	if (!received_data.loan_discontiguous(
+	    (TData **)dataPtrArray, dataCount, dataCount)) {
+	    /* this should never happen */
+	    result = DDS_RETCODE_ERROR;
+	    /* since we failed to loan data to data seq, but data is already
+	       taken, we will need to return it still.
+	       Note that data will be lost in this case */
+	    DDSDataReader::return_loan_untypedI(dataPtrArray, dataCount,
+						info_seq);
+	}
+    } else {
+	/* data is already copied to dataSeqContiguousBuffer */
+	if (!received_data.length(dataCount)) {
+	    /* this should never happnen */
+	    result = DDS_RETCODE_ERROR;
+	}
+    }
+
+  done:
+
+    return result;
+}
+
+DDS_ReturnCode_t TDataReader::read_or_take_w_conditionI(
+    TDataSeq& received_data,
+    DDS_SampleInfoSeq& info_seq,
+    DDS_Long max_samples,
+    DDSReadCondition* condition,
+    bool take) {
+
+    DDS_Long dataSeqLen = 0;
+    DDS_Long dataSeqMaxLen = 0;
+    DDS_Boolean dataSeqHasOwnership = DDS_BOOLEAN_FALSE;
+    DDS_Boolean isLoan = DDS_BOOLEAN_TRUE;
+    void **dataPtrArray = NULL;
+    int dataCount = 0;
+    DDS_ReturnCode_t result;
+    TData *dataSeqContiguousBuffer = NULL;
+
+    /* --- get dataSeq information --- */
+    dataSeqLen = received_data.length();
+    dataSeqMaxLen = received_data.maximum();
+    dataSeqHasOwnership = received_data.has_ownership();
+    dataSeqContiguousBuffer = received_data.get_contiguous_bufferI();
+
+    /* --- Read/take data --- */
+    result = DDSDataReader::read_or_take_w_condition_untypedI(
+	&isLoan, &dataPtrArray, &dataCount,
+	info_seq,
+	dataSeqLen, dataSeqMaxLen, dataSeqHasOwnership,
+	dataSeqContiguousBuffer, sizeof(TData),
+	max_samples, condition, take);
+
+    if (result == DDS_RETCODE_NO_DATA) {
+	received_data.length((DDS_Long)0);
+	goto done;
+    }
+
+    if (result != DDS_RETCODE_OK) {
+        goto done;
+    }
+
+    if (isLoan) {
+	/* loan buffer to sequence */
+	if (!received_data.loan_discontiguous(
+	    (TData **)dataPtrArray, dataCount,
+	    dataCount)) {
+	    /* this should never happend */
+	    result = DDS_RETCODE_ERROR;
+	    /* since we failed to loan data to data seq, but data is already
+	       taken, we will need to return it still.
+	       Note that data will be lost in this case */
+	    DDSDataReader::return_loan_untypedI(
+		dataPtrArray, dataCount, info_seq);
+	}
+    } else {
+	/* data is already copied to dataSeqContiguousBuffer */
+	if (!received_data.length(dataCount)) {
+	    /* this should never happnen */
+	    result = DDS_RETCODE_ERROR;
+	}
+    }
+
+  done:
+
+    return result;
+}
+
+DDS_ReturnCode_t TDataReader::read_or_take_next_sampleI(
+    TData& received_data,
+    DDS_SampleInfo& sample_info,
+    bool take) {
+
+    /* --- Read data --- */
+    return DDSDataReader::read_or_take_next_sample_untypedI(
+	(void *)&received_data, sample_info, take);
+}
+
+DDS_ReturnCode_t TDataReader::read_or_take_instanceI(
+    TDataSeq& received_data,
+    DDS_SampleInfoSeq& info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t& a_handle,
+    DDS_SampleStateMask sample_states, 
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states,
+    bool take) {
+
+    DDS_Long dataSeqLen = 0;
+    DDS_Long dataSeqMaxLen = 0;
+    DDS_Boolean dataSeqHasOwnership = DDS_BOOLEAN_FALSE;
+    DDS_Boolean isLoan = DDS_BOOLEAN_TRUE;
+    void **dataPtrArray = NULL;
+    int dataCount = 0;
+    DDS_ReturnCode_t result;
+    TData *dataSeqContiguousBuffer = NULL;
+
+    /* --- get dataSeq information --- */
+    dataSeqLen = received_data.length();
+    dataSeqMaxLen = received_data.maximum();
+    dataSeqHasOwnership = received_data.has_ownership();
+    dataSeqContiguousBuffer = received_data.get_contiguous_bufferI();
+
+    /* --- Read/take data --- */
+    result = DDSDataReader::read_or_take_instance_untypedI(
+	&isLoan, &dataPtrArray, &dataCount,
+	info_seq,
+	dataSeqLen, dataSeqMaxLen, dataSeqHasOwnership,
+	dataSeqContiguousBuffer, sizeof(TData),
+	max_samples, a_handle, sample_states, view_states, instance_states,
+	take);
+
+    if (result == DDS_RETCODE_NO_DATA) {
+	received_data.length(0);
+	goto done;
+    }
+
+    if (result != DDS_RETCODE_OK) {
+        goto done;
+    }
+
+    if (isLoan) {
+	/* loan buffer to sequence */
+	if (!received_data.loan_discontiguous(
+	    (TData **)dataPtrArray, dataCount,
+	    dataCount)) {
+	    /* this should never happend */
+	    result = DDS_RETCODE_ERROR;
+	    /* since we failed to loan data to data seq, but data is already
+	       taken, we will need to return it still.
+	       Note that data will be lost in this case */
+	    DDSDataReader::return_loan_untypedI(
+		dataPtrArray, dataCount,
+		info_seq);
+	}
+    } else {
+	/* data is already copied to dataSeqContiguousBuffer */
+	if (!received_data.length(dataCount)) {
+	    /* this should never happnen */
+	    result = DDS_RETCODE_ERROR;
+	}
+    }
+
+  done:
+
+    return result;
+}
+
+DDS_ReturnCode_t TDataReader::read_or_take_next_instanceI(
+    TDataSeq& received_data,
+    DDS_SampleInfoSeq& info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t& previous_handle,
+    DDS_SampleStateMask sample_states, 
+    DDS_ViewStateMask view_states,
+    DDS_InstanceStateMask instance_states,
+    bool take) {
+
+    DDS_Long dataSeqLen = 0;
+    DDS_Long dataSeqMaxLen = 0;
+    DDS_Boolean dataSeqHasOwnership = DDS_BOOLEAN_FALSE;
+    DDS_Boolean isLoan = DDS_BOOLEAN_TRUE;
+    void **dataPtrArray = NULL;
+    int dataCount = 0;
+    DDS_ReturnCode_t result;
+    TData *dataSeqContiguousBuffer = NULL;
+
+    /* --- get dataSeq information --- */
+    dataSeqLen = received_data.length();
+    dataSeqMaxLen = received_data.maximum();
+    dataSeqHasOwnership = received_data.has_ownership();
+    dataSeqContiguousBuffer = received_data.get_contiguous_bufferI();
+
+    /* --- Read/take data --- */
+    result = DDSDataReader::read_or_take_next_instance_untypedI(
+	&isLoan, &dataPtrArray, &dataCount,
+	info_seq,
+	dataSeqLen, dataSeqMaxLen, dataSeqHasOwnership,
+	dataSeqContiguousBuffer, sizeof(TData),
+	max_samples, previous_handle, sample_states, view_states,
+	instance_states,
+	take);
+
+    if (result == DDS_RETCODE_NO_DATA) {
+	received_data.length(0);
+	goto done;
+    }
+
+    if (result != DDS_RETCODE_OK) {
+        goto done;
+    }
+
+    if (isLoan) {
+	/* loan buffer to sequence */
+	if (!received_data.loan_discontiguous(
+	    (TData **)dataPtrArray, dataCount,
+	    dataCount)) {
+	    /* this should never happend */
+	    result = DDS_RETCODE_ERROR;
+	    /* since we failed to loan data to data seq, but data is already
+	       taken, we will need to return it still.
+	       Note that data will be lost in this case */
+	    DDSDataReader::return_loan_untypedI(
+		dataPtrArray, dataCount,
+		info_seq);
+	}
+    } else {
+	/* data is already copied to dataSeqContiguousBuffer */
+	if (!received_data.length(dataCount)) {
+	    /* this should never happnen */
+	    result = DDS_RETCODE_ERROR;
+	}
+    }
+
+  done:
+
+    return result;
+}
+
+DDS_ReturnCode_t TDataReader::read_or_take_next_instance_w_conditionI(
+    TDataSeq& received_data,
+    DDS_SampleInfoSeq& info_seq,
+    DDS_Long max_samples,
+    const DDS_InstanceHandle_t& previous_handle,
+    DDSReadCondition* condition,
+    bool take) {
+
+    DDS_Long dataSeqLen = 0;
+    DDS_Long dataSeqMaxLen = 0;
+    DDS_Boolean dataSeqHasOwnership = DDS_BOOLEAN_FALSE;
+    DDS_Boolean isLoan = DDS_BOOLEAN_TRUE;
+    void **dataPtrArray = NULL;
+    int dataCount = 0;
+    DDS_ReturnCode_t result;
+    TData *dataSeqContiguousBuffer = NULL;
+
+    /* --- get dataSeq information --- */
+    dataSeqLen = received_data.length();
+    dataSeqMaxLen = received_data.maximum();
+    dataSeqHasOwnership = received_data.has_ownership();
+    dataSeqContiguousBuffer = received_data.get_contiguous_bufferI();
+
+    /* --- Read/take data --- */
+    result = DDSDataReader::read_or_take_next_instance_w_condition_untypedI(
+	&isLoan, &dataPtrArray, &dataCount,
+	info_seq,
+	dataSeqLen, dataSeqMaxLen, dataSeqHasOwnership,
+	dataSeqContiguousBuffer, sizeof(TData),
+	max_samples, previous_handle, condition, take);
+
+    if (result == DDS_RETCODE_NO_DATA) {
+	received_data.length((DDS_Long)0);
+	goto done;
+    }
+
+    if (result != DDS_RETCODE_OK) {
+        goto done;
+    }
+
+    if (isLoan) {
+	/* loan buffer to sequence */
+	if (!received_data.loan_discontiguous(
+	    (TData **)dataPtrArray, dataCount,
+	    dataCount)) {
+	    /* this should never happend */
+	    result = DDS_RETCODE_ERROR;
+	    /* since we failed to loan data to data seq, but data is already
+	       taken, we will need to return it still.
+	       Note that data will be lost in this case */
+	    DDSDataReader::return_loan_untypedI(
+		dataPtrArray, dataCount,
+		info_seq);
+	}
+    } else {
+	/* data is already copied to dataSeqContiguousBuffer */
+	if (!received_data.length(dataCount)) {
+	    /* this should never happnen */
+	    result = DDS_RETCODE_ERROR;
+	}
+    }
+
+  done:
+
+    return result;
+}
+
+#undef DDS_CURRENT_SUBMODULE
+#endif /* defined(TDataReader) && defined(TDataSeq) && defined(TData) */
+
+/* End $Id: TDataReader.cxx,v 1.23 2006/09/24 08:30:12 elaine Exp $ */

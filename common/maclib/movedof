@@ -1,0 +1,5 @@
+if ($#>0) then
+  setfrqCmd('movetof',1,$1):$e
+else
+  setfrqCmd('movetof',1):$e
+endif

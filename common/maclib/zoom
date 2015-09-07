@@ -1,0 +1,6 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+
+"********************"
+"    zoom            "
+"********************"
+wp=$1 sp=-0.5*$1 cr=0

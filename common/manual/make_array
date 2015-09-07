@@ -1,0 +1,2 @@
+Copyright (c) Agilent Technologies  All Rights Reserved.
+make_array is used by the solids dg templates to enter arrays.  It is not normally used on the command line.

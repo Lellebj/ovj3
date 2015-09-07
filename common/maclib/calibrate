@@ -1,0 +1,7 @@
+"@(#)calibrate 17.1 04/01/03 Copyright (c) 1991-1998 Agilent Technologies All Rights Reserved."
+"calibrate - Macro to start a dialog for calibration` selection "
+"***************************************************************"
+
+dousermacro($0)
+macro=''
+vnmrjcmd('popup', 'mode:modeless', 'rebuild:yes', 'file:calibrate.xml', 'location:topMenuBar','help:/vnmr/jhelp/dialog/calibrate.html', 'title:Calibate Probe')

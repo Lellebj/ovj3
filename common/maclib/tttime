@@ -1,0 +1,7 @@
+"tttime - macro to calc exp time"
+
+$sec=(d1+at)*(nt+ss)
+$sec=$sec+pad
+$time=$sec/60
+$time?
+  

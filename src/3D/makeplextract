@@ -1,0 +1,164 @@
+#
+# Plextract make file		Author:  Sandy Farmer  1/29/91
+#
+#
+# make -f makeplextract		-  generic make command
+# make -f makeplextract all	-  make everything
+# make -f makeplextract nmri	-  creates Plextract and its library
+# make -f makeplextract dbx	-  creates dbx version of Plextract and
+#				   its library
+# make -f makeplextract prof	-  creates gprof profiling version of
+#				   Plextract and its library 
+#
+# ----->  dbx or profiling libraries are not a standard release item and 
+#         are not to be given to customers....    1/29/91  Sandy Farmer
+#
+
+MAKEFILE= makeplextract
+
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+VNMRDIR=$(vnmrdir)
+
+
+#------  The real sources for the objects are contained in one directory --
+# for testing it is '../'; normally it would be an absolute path name
+#SRC_DIR=../
+SRC_DIR=$(SRCDIR)/sys3D/
+PROJCAT=
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+CFLAGS= -O
+CPPFLAGS=
+LDFLAGS=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) -fsingle $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+ 
+IN_LINE=/usr/lib/libm.il
+PLEXTR_SRC_DIR= $(SRC_DIR)
+VNMR_SRC_DIR= $(SRC_DIR)
+
+
+#---- Plextract object file -----
+WORKLIB= plextract.o
+
+#--- SCCS Sources ----  
+PLEXTR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)3D/SCCS/s.
+VNMR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmr/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+PLEXTR_LN = ln -s $(PLEXTR_SRC_DIR)$(@)
+VNMR_LN = ln -s $(VNMR_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+PLEXTR_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)3D get
+VNMR_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)vnmr get
+ 
+#----  default source extraction to links -------
+PLEXTR_GET= $(PLEXTR_LN)
+VNMR_GET= $(VNMR_LN)
+
+
+LIBS = -ll -lm
+
+#  COPTIONS are passed to make, or could be an environmental parameter.
+#  use for -DSIS, etc.
+
+#------------------------------------------------------------------------
+#--- Plextract source files
+#------------------------------------------------------------------------
+PLEXTR_SRC= 			\
+		plextract.c
+
+
+PLEXTR_OBJ= $(PLEXTR_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#---  Plextract header files
+#------------------------------------------------------------------------
+PLEXTR_HDR=			\
+		struct3d.h
+
+
+#------------------------------------------------------------------------
+#--- VNMR header files that are needed for Plextract
+#------------------------------------------------------------------------
+VNMR_HDR=			\
+		data.h
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(PLEXTR_SRC) $(PLEXTR_HDR) $(VNMR_HDR)
+
+ 
+#--- make Targets ----------------------------------------------
+
+std:  nmri
+	@echo "NMRI:  Plextract compilation complete --------------------"
+
+
+nmri : $$(MAKEFILE) Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"WORKLIB= plextract.o"   Plextract; )
+	@echo "NMRI:  Plextract compilation complete ---------------------"
+
+dbx : Source
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g -Bstatic -DDBXTOOL	\
+	 -DDEBUG $(COPTIONS)" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"WORKLIB= plextract.o"  Plextract_dbx; )
+	@echo "NMRI:  Plextract_dbx compilation complete -----------------"
+
+prof: Source
+	( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -pg -Bstatic $(COPTIONS)" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"WORKLIB= plextract.o"  Plextract_p; )
+	@echo "NMRI:  Plextract_p compilation complete -------------------"
+
+all: nmri dbx prof
+	@echo NMRI:  all Plextract compilations complete
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE)	\
+             "PLEXTR_SRC_DIR= $(PLEXTR_SCCS_SRC)"	\
+	     "VNMR_SRC_DIR= $(VNMR_SCCS_SRC)"		\
+             "PLEXTR_GET= $(PLEXTR_SGET)" 		\
+	     "VNMR_GET= $(VNMR_SGET)"			\
+               src)
+ 
+#--- Recursive Targets ------------------------------
+
+src : $$(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+Plextract Plextract_dbx Plextract_p : $$(WORKLIB)
+	(umask 2; \
+	$(LINK.c) -o $@ $(WORKLIB) $(LIBS)  )
+
+
+#--- Object Targets ---------------------------
+
+plextract.o		: $(@:.o=.c)	\
+			command.h	\
+			struct3d.h	\
+			data.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) :
+	$(PLEXTR_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(VNMR_HDR): $$(VNMR_SRC_DIR)$$(@)
+	$(VNMR_GET) $@
+
+$(PLEXTR_SRC) $(PLEXTR_HDR): $$(PLEXTR_SRC_DIR)$$(@)
+	$(PLEXTR_GET) $@

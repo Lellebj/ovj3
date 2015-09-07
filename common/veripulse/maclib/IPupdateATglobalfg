@@ -1,0 +1,3 @@
+//write('line3','Reading atglobal module')
+getmodule('atglobal',userdir+'/modules','global')
+flush

@@ -1,0 +1,9 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"******************************************"
+" _lockfreq - updates the nucleus values (sfrq,dfrq, dfrq2)"
+"******************************************"
+$sfrq=sfrq
+setfrq
+if($sfrq<>sfrq) then
+  setfrqCmd('setref_nuc')
+endif

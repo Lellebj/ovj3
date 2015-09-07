@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template element="panel" type="system" name="PlottersDialog" >
+    <label loc="5 5" size="70 24"
+        font=""
+        style="Label1"
+        point=""
+        fg=""
+        value="plotter"
+    />
+    <filemenu loc="90 5" size="120 24"
+     	bg=""
+        vq="plotter"
+        vc="plotter='$VALUE' resetplotter('setup') sysplotter=plotter"
+        set="$VALUE=plotter"
+        file="~/vnmrsys/persistence/plotters"
+     />
+    <label loc="230 5" size="70 24"
+        font=""
+        style="Label1"
+        point=""
+        fg=""
+        value="printer"
+    />
+    <filemenu loc="300 5" size="120 24"
+    	bg=""
+        vq="printer"
+        vc="printer='$VALUE'"
+        set="$VALUE=printer"
+        file="~/vnmrsys/persistence/printers"
+    />
+</template>

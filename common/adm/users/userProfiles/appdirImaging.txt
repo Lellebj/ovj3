@@ -1,0 +1,14 @@
+# 
+# Copyright (c) 1999-2000 Agilent Technologies All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Agilent Technologies and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+# Appdirs for Imaging user
+
+1;USERDIR;Home account
+1;/vnmr/imaging;Agilent imaging
+1;/vnmr;Agilent system
+0;/vnmr/imaging/ATP;Agilent Imaging ATP 
+0;/vnmr/autotest;Agilent Autotest

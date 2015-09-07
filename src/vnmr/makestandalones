@@ -1,0 +1,37 @@
+# 
+# make -f makestandalones p11
+#
+
+VNMRSRC=$(sccsdir)/vnmr
+MAKEFILE=makestandalones
+                                                                               
+CC=cc
+#CFLAGS=-O
+CFLAGS=
+COMPILE.c=$(CC) $(CFLAGS)
+
+ALLSRC= \
+	chchsums.c	\
+	md5c.c		\
+	p11Tools.c	\
+	vnmrMD5.c	\
+	safecp.c	\
+	auditcp.c	\
+	writeAaudit.c	\
+	writeTrash.c	\
+	chVJlist.c	\
+	md5global.h	\
+	md5.h
+
+$(ALLSRC) : $(VNMRSRC)/SCCS/s.$$@
+	sccs -d $(VNMRSRC) get $@
+
+p11: $(ALLSRC)
+	(umask 2; $(COMPILE.c) -o chchsums chchsums.c md5c.c p11Tools.c )
+	(umask 2; $(COMPILE.c) -o vnmrMD5 vnmrMD5.c md5c.c p11Tools.c )
+	(umask 2; $(COMPILE.c) -o safecp safecp.c )
+	(umask 2; $(COMPILE.c) -o auditcp auditcp.c p11Tools.c )
+	(umask 2; $(COMPILE.c) -o writeAaudit writeAaudit.c p11Tools.c )
+	(umask 2; $(COMPILE.c) -o writeTrash writeTrash.c p11Tools.c )
+	(umask 2; $(COMPILE.c) -o chVJlist chVJlist.c p11Tools.c )
+

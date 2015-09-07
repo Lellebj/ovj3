@@ -1,0 +1,5 @@
+if (satmode ='y') then
+  satmode='yy'
+endif
+
+setslgh2('tocsy')

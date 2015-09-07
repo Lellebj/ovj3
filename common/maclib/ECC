@@ -1,0 +1,51 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"********************************************************************
+" Copyright (c) 1999-2003 Agilent Technologies All Rights Reserved.
+"
+" This software contains proprietary and confidential information of
+" Agilent Technologies and its contributors. Use, disclosure and reproduction
+" is prohibited without prior consent.
+"
+" NAME:
+"    ECC
+"
+" DESCRIPTION:
+"    Set up parameters for:
+"       ECC a sequence derived from gems to measure eddy currents
+"               parameter checking
+"
+" MODIFICATION HISTORY:
+"    $Log: Hgems,v $
+"    Revision 1.3  2003/09/29 17:37:11  erickson
+"    Updated file header.
+"
+"********************************************************************
+
+exists(userdir+'/parlib','file'):$e
+if ($e<>0) then
+     exists(userdir+'/parlib/'+$0+'.par','file'):$e 
+endif
+if ($e<>0) then 
+     $rtvfile=userdir+'/parlib/'+$0
+else
+     $rtvfile=systemdir+'/parlib/'+$0
+     exists($rtvfile+'.par','file'):$e 
+     if ($e=0) then
+	  write('error','No parameters for pulse sequence %s',$0)
+	  return
+     endif
+endif
+
+rtp($rtvfile)
+
+exists('trampfixed','parameter','global'):$e "check for prior existance of fixed ramp"
+if ($e = 0) then
+	create('trampfixed','real','global')
+	trampfixed = 0.0					"initialize to off"
+endif
+
+setprotect('trampfixed','on',256,'global')
+
+ldrf
+imprep
+go('check')

@@ -1,0 +1,9 @@
+// run prescans based on expPrescan file.
+// get expPrescan fullpath, then call psMain 
+//
+psCmd('psInfoPath','exp'):$path
+if($path <> '') then
+   psMain($path)
+else
+   write('line3','cannot find expPrescan file.')
+endif

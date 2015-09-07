@@ -1,0 +1,776 @@
+# 
+#
+# makestat  make file
+#
+# make -f makestat, creates library , Acqstat, test4acq test4stat Acqstatmsg
+# make -f makestat dbx , creates dbx version library & Acqstat 
+# make -f makestat prof , creates prof version library & Acqstat 
+#
+#   Mod 7/25/89  test4stat & Acqstatmsg no longer needed.
+#
+# Note: for IBM6000 AIX, for acqinfo_svc AIX must be defined and the
+#	library bsd must be included (e.g.  -lbsd, takes care of vfork()).
+#    Also the system routine scripts arch and mach do not exist on the
+#	the IBM. Therefore we must provide them..
+#
+#   7/17/92      utility.c no longer needed
+#
+# Note: for Solaris I am trying the approach of SOLARIS as a "standalone"
+#       target, not dependent on any other top-level targets, like owdyn,
+#       in contrast to makeacqi.  This does mean that the info services
+#       programs are compiled with OpenWindows / X window stuff.  However
+#       the object libraries are defined separately through the symbols
+#       LIBS and INFOSERVER_LIB
+
+MAKEFILE= makestat
+SHELL=/bin/sh
+
+.PRECIOUS= libAcqstat.a libAcqstat_dbx.a libAcqstat_p.a
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+VNMRDIR=$(vnmrdir)
+
+OPENWINHOME=/usr/openwin
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+SRC_DIR=$(SRCDIR)/sysstat/
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+#-- Normal operational compile flags
+CFLAGS= -O -DSUNVIEW -DACQSTAT
+CPPFLAGS= -DSUN -DBSDACQ
+LDFLAGS= -O
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(LDFLAGS) $(TARGET_ARCH)
+
+VNMR_SRC_DIR= $(SRC_DIR)
+ACQPROC_SRC_DIR= $(SRC_DIR)
+ACQSTAT_SRC_DIR= $(SRC_DIR)
+ACQI_SRC_DIR= $(SRC_DIR)
+XRACQ_SRC_DIR= $(SRC_DIR)
+PSG_SRC_DIR= $(SRC_DIR)
+XVIEW_GUI_SRC_DIR= $(SRC_DIR)ow/
+SVIEW_GUI_SRC_DIR= $(SRC_DIR)sv/
+MOTIF_GUI_SRC_DIR= $(SRC_DIR)motif/
+VWACQ_SRC_DIR= $(SRC_DIR)
+
+#---- Acqstat library being updated. -----
+WORKLIB= libAcqstat.a
+
+#--- SCCS Sources ----  
+ACQSTAT_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)stat/SCCS/s.
+ACQI_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)acqi/SCCS/s.
+ACQPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)acqproc/SCCS/s.
+VNMR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmr/SCCS/s.
+XRACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)xracq/SCCS/s.
+PSG_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)psg/SCCS/s.
+XVIEW_GUI_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)xwin/SCCS/s.
+SVIEW_GUI_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)sunview/SCCS/s.
+MOTIF_GUI_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)xwin/SCCS/s.
+VWACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vwacq/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+ACQSTAT_LN = ln -s $(ACQSTAT_SRC_DIR)$(@)
+ACQI_LN = ln -s $(ACQI_SRC_DIR)$(@)
+ACQPROC_LN = ln -s $(ACQPROC_SRC_DIR)$(@)
+VNMR_LN = ln -s $(VNMR_SRC_DIR)$(@)
+XRACQ_LN = ln -s $(XRACQ_SRC_DIR)$(@)
+PSG_LN = ln -s $(PSG_SRC_DIR)$(@)
+XVIEW_GUI_LN = ln -s $(XVIEW_GUI_SRC_DIR)$(@)
+SVIEW_GUI_LN = ln -s $(SVIEW_GUI_SRC_DIR)$(@)
+MOTIF_GUI_LN = ln -s $(MOTIF_GUI_SRC_DIR)$(@)
+VWACQ_LN = ln -s $(VWACQ_SRC_DIR)$(@)
+ 
+#---  SCCS Extraction Commands for Sources Needed.  -------
+ACQSTAT_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)stat get
+ACQI_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)acqi get
+ACQPROC_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)acqproc get
+VNMR_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)vnmr get
+XRACQ_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)xracq get
+PSG_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)psg get
+SVIEW_GUI_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)sunview/SCCS get
+XVIEW_GUI_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)xwin/SCCS get
+MOTIF_GUI_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)xwin/SCCS get
+VWACQ_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)vwacq get
+ 
+#----  default source extraction to links -------
+ACQSTAT_GET= $(ACQSTAT_LN)
+ACQI_GET= $(ACQI_LN)
+ACQPROC_GET= $(ACQPROC_LN)
+VNMR_GET= $(VNMR_LN)
+XRACQ_GET= $(XRACQ_LN)
+PSG_GET= $(PSG_LN)
+VWACQ_GET= $(VWACQ_LN)
+ 
+GUI_GET= $(SVIEW_GUI_SGET)
+GUI_SRC_DIR= $(SVIEW_GUI_SRC_DIR)
+
+GUI_COM_GET= $(XVIEW_GUI_SGET)
+GUI_COM_SRC_DIR= $(XVIEW_GUI_SRC_DIR)
+
+# This will keep the IBM happy
+WIN_SRC= a1.c
+#WIN_OBJ= a1.o
+WIN_COM_SRC= a2.c
+WIN_COM_OBJ= a2.o
+WIN_LN_SRC= dummy.c
+WIN_LN_COM_SRC= dummy2.c
+
+# -- sunview libraries ---
+LIBS = -lcurses -ltermlib -lsuntool -lsunwindow -lpixrect -ll -lm
+ 
+# -- ibm motif libraries ---
+MLIBS = -lXm -lXt -lX11 -lbsd -ll -lm
+RLIBDIR=-R /usr/openwin/lib:/usr/dt/lib:/vnmr/lib
+MLIBDIR=-L/usr/dt/lib -L$(solobjdir)/proglib/ncomm
+MINCDIR=-I/usr/dt/include -I/usr/openwin/include
+ 
+#------------------------------------------------------------------------
+#--- VNMR Sources that are needed for Acqstat
+#------------------------------------------------------------------------
+VNMR_SRC=			\
+		shims.c
+ 
+VNMR_OBJ= $(VNMR_SRC:.c=.o)
+ 
+#--- VNMR header files that are needed for iadisplay
+VNMR_HDR=                       \
+		group.h		\
+		vnmrsys.h
+ 
+#------------------------------------------------------------------------
+#---  Acqstat Source files
+#------------------------------------------------------------------------
+ACQSTAT_SRC=			\
+		acqstat_win.c   \
+		statusscrn.c    \
+		statdispfuncs.c \
+		statIPCfuncs.c  \
+		statsocket.c
+
+ACQSTAT_OBJ=$(ACQSTAT_SRC:.c=.o) acqinfo_xdr.o
+
+#------------------------------------------------------------------------
+#--- Acqstat header files that are needed for Acqstat
+#------------------------------------------------------------------------
+ACQSTAT_HDR=			\
+		statusextern.h 	\
+		acqstat_item.h  \
+		sockets.h
+
+#------------------------------------------------------------------------
+#---- showstat source files ----
+#------------------------------------------------------------------------
+SHOWSTAT_SRC=			\
+		showstat.c
+
+SHOWSTAT_OBJ=$(SHOWSTAT_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#---- standalone support programs ----
+#------------------------------------------------------------------------
+STANDALONE=			\
+		startacqstat.sh
+
+#------------------------------------------------------------------------
+#---  iadisplay Source files
+#------------------------------------------------------------------------
+#ACQI_SRC=                       \
+#                utility.c
+ 
+#ACQI_OBJ= $(ACQI_SRC:.c=.o)
+ 
+#--- VNMR header files that are needed for iadisplay
+#ACQI_HDR=
+ 
+#------------------------------------------------------------------------
+#-- Acqproc sources files
+#------------------------------------------------------------------------
+ACQPROC_SRC=			\
+		test4acq.c
+
+ACQPROC_OBJ= $(ACQPROC_SRC:.c=.o)
+ 
+#--- Acqproc header files that are needed for iadisplay
+ACQPROC_HDR=                    \
+		ACQPROC_strucs.h
+#------------------------------------------------------------------------
+#-- PSG sources files
+#------------------------------------------------------------------------
+PSG_SRC=
+ 
+PSG_OBJ= $(PSG_SRC:.c=.o)
+ 
+#--- VNMR header files that are needed for Acqstat
+PSG_HDR=
+ 
+#------------------------------------------------------------------------
+#-- Xracq files
+#------------------------------------------------------------------------
+#--- xracq header files that are needed for iadisplay
+XRACQ_HDR=                      \
+		STAT_DEFS.h
+
+
+#------------------------------------------------------------------------
+#
+#---  stat acqinfo RPC server Source files
+#					   Author: Greg Brissey  8/14/89
+#------------------------------------------------------------------------
+INFOSERVER_SRC=			\
+		acqinfo_xdr.c	\
+		acqinfo_proc.c	\
+		acqinfo_svc.c
+
+INFOSERVER_OBJ= $(INFOSERVER_SRC:.c=.o)
+INFOSERVER_LIB=
+
+#------------------------------------------------------------------------
+#---  stat acqinfo RPC server Header files
+#     this file along with SUN supplied rpcgen program generate the 
+#     following required files.
+#	acqinfo.c <-- by "rpcgen acqinfo.x"
+#	acqinfo.h <-- by "rpcgen acqinfo.x"
+#	acqinfo_svc.c <-- by "rpcgen -s tcp acqinfo.x -o acqinfo_svc.c"
+#
+#  this may need to change for SUN OS 4.0.3,  Greg B.
+#
+#  Changes for SUN OS 4.0.3  9-12-89
+#   All files & headers are in SCCS (i.e., not generated via rpcgen )
+#   acqinfo_xdr.c (was acqinfo.c), acqinfo.h, acqinfo_svc.c
+#------------------------------------------------------------------------
+INFOSERVER_HDR=			\
+		acqinfo.x 	\
+		acqinfo.h
+
+# ---- SunView GUI Sources ----
+SV_WIN_HDR=			\
+		acqstat.icon
+
+
+# ---- Motif  GUI source ----
+MOTIF_WIN_HDR=			\
+		acqstat.icon	\
+		acqsetup.icon	\
+		acqmeter.icon	\
+		acqmp.icon
+
+#------------------------------------------------------------------------
+#-- Acqmeter files
+#------------------------------------------------------------------------
+ACQMETER_SRC= 			\
+		acqmeter_win.c
+
+ACQMETER_OBJ=$(ACQMETER_SRC:.c=.o) statIPCfuncs.o acqinfo_xdr.o
+
+#----- vwacq header file -----
+VWACQ_HDR=                      \
+		hostAcqStructs.h
+
+#---- All Sources and headers required for compilation -----
+COMMON_SRC= $(VNMR_SRC) $(VNMR_HDR) $(ACQPROC_SRC) $(ACQPROC_HDR) \
+        $(PSG_SRC) $(PSG_HDR) $(XRACQ_HDR) $(SHOWSTAT_SRC) \
+	$(ACQSTAT_SRC) $(ACQSTAT_HDR) $(STANDALONE) $(INFOSERVER_SRC) \
+	$(INFOSERVER_HDR) $(ACQMETER_SRC) $(VWACQ_HDR)
+ 
+COMMON_OBJ= $(ACQSTAT_OBJ) $(VNMR_OBJ)
+
+ALLSRC= $(COMMON_SRC) $(SV_WIN_SRC) $(SV_WIN_HDR)
+
+ALLSRC_PP= $(ALLSRC:=.pp)
+
+ALL_C_SRC= $(VNMR_SRC) $(ACQPROC_SRC) $(PSG_SRC) $(ACQSTAT_SRC) $(INFOSERVER_SRC) $(SHOWSTAT_SRC)
+
+ALL_H_SRC= $(VNMR_HDR) $(ACQPROC_HDR) $(PSG_HDR) $(XRACQ_HDR) $(ACQSTAT_HDR) \
+	$(INFOSERVER_HDR)
+
+ALL_ICON_SRC= $(SV_WIN_HDR)
+
+#LINTFILES= $(ALLSRC:.c=.ln)
+LIBS= -lsuntool -lsunwindow -lpixrect -ll -lm
+ 
+#--- make Targets --------------------------------------------
+
+sparc : sv ow svc showstat
+
+# No more sun3 host computer programs; no showstat on sun3
+
+sun3 sun3objs : fpc svc
+
+all : test4acq startacqstat
+
+sv : $$(MAKEFILE) SV_src Source
+	rm -f $(MOTIF_WIN_HDR) $(COM_X_WIN_HDR); \
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"CFLAGS= -O -DSUNVIEW -DACQSTAT" \
+	"WIN_SRC= $(SV_WIN_SRC) $(SV_WIN_HDR)" \
+	"GUI_SRC_DIR= $(SVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(SVIEW_GUI_SRC_DIR)$$(@)" \
+	"WORKLIB= libAcqstat.a" \
+	 Acqstat )
+	@echo "NMR_ID Acqstat SunView libraries complete -------------------"
+
+# SunView icon files are used by XView (OpenWindows) i.e. use of SV_src
+
+ow : $$(MAKEFILE) OW_src Source
+	rm -f $(SV_WIN_HDR); \
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"CFLAGS= -O -DBSDACQ -DACQSTAT $(MINCDIR)" \
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF" \
+	"LDFLAGS= -Bstatic $(MLIBDIR)" \
+	"WIN_SRC= $(COM_X_WIN_SRC) $(MOTIF_WIN_HDR)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lXm -lXt -lX11 -ll -lm" \
+	"WORKLIB= libAcqstat.ow.a" \
+	   Acqstat_ow Acqmeter; )
+	@echo "NMR_ID Acqstat XView libraries complete ---------------------"
+
+owdyn : $$(MAKEFILE) OW_src Source
+	rm -f $(SV_WIN_HDR); \
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"CFLAGS= -O -sb -DBSDACQ -DACQSTAT $(MINCDIR)" \
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF" \
+	"LDFLAGS= $(MLIBDIR)" \
+	"WIN_SRC= $(COM_X_WIN_SRC) $(MOTIF_WIN_HDR)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lXm -lXt -lX11 -ll -lm" \
+	"WORKLIB= libAcqstat.ow.a" \
+	   Acqstat_ow ; )
+	@echo "NMR_ID Acqstat XView libraries complete ---------------------"
+
+dbx owdbx : $$(MAKEFILE) SV_src Source
+	rm -f $(SV_WIN_HDR); \
+	(  $(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"CFLAGS= -g -DBSDACQ -DACQSTAT $(MINCDIR)" \
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF" \
+	"LDFLAGS= -Bstatic $(MLIBDIR)" \
+	"WIN_SRC= $(COM_X_WIN_SRC) $(MOTIF_WIN_HDR)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lXm -lXt -lX11 -ll -lm" \
+	"WORKLIB= libAcqstat_dbx.ow.a" \
+	   Acqstat_ow_dbx ; )
+	@echo "NMR_ID Acqstat OpenWindows DBX libraries complete -------------------"
+
+
+#prof: Source                                        
+#	$(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -pg -Bstatic" \
+#	"TARGET_ARCH=-D`arch` -D`mach`" \
+#	"WORKLIB= libAcqstat_p.a" Acqstat_p
+#	@echo "NMR_ID profiling Acqstat complete ----------------------------"
+
+
+# SunView icon files are used by XView (OpenWindows) i.e. use of SV_src
+fpc : $$(MAKEFILE) SV_src Source
+	(export FLOAT_OPTION; FLOAT_OPTION=f68881; \
+	$(MAKE) -e -f $(MAKEFILE)  \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"CFLAGS= -O -f68881 -Dfpc -DFPC -DSUNVIEW -DBSDACQ -DACQSTAT $(COPTIONS)" \
+	"WIN_SRC= $(SV_WIN_SRC) $(SV_WIN_HDR)" \
+	"GUI_SRC_DIR= $(SVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(SVIEW_GUI_SRC_DIR)$$(@)" \
+	  "WORKLIB= libAcqstat.a" \
+	  Acqstat )
+	@echo "NMR_ID Acqstat SunView f68881 libraries complete -------------------"
+
+# SunView icon files are used by XView (OpenWindows) i.e. use of SV_src
+fpcow : 
+	@echo "OpenWindows Version Not supported for SUN3s"
+
+AIX : $$(MAKEFILE) MOTIF_src Source src
+	( $(MAKE) -f $(MAKEFILE) \
+	"CFLAGS= -O -DSUN -DACQSTAT $(COPTIONS)" \
+	"CPPFLAGS= -DX11 -DAIX -DMOTIF -D_BSD -DULONG" \
+	"LDFLAGS= -L$(ibmobjdir)/proglib/vnmr" \
+	"TARGET_ARCH=" \
+	"WIN_LN_SRC= $(MOTIF_WIN_HDR)" \
+	"GUI_SRC_DIR= $(MOTIF_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(MOTIF_GUI_SRC_DIR)" \
+	"LIBS = -lXm -lXt -lX11 -lbsd -ll -lm -lacqcomm" \
+	  "WORKLIB= libAcqstat.ibm.a" \
+	  Acqstat_ibm Acqmeter acqinfo_svc showstat)
+	mv Acqstat_ibm Acqstat
+	@echo "NMR_ID IBM AIX Acqstat libraries complete -----------------------"
+
+IRIX : $$(MAKEFILE) MOTIF_src Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS= -O -cckr -float -woff 1006,1116,1174,1552 -D_BSD_COMPAT -DACQSTAT $(COPTIONS)" \
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF -D_NO_PROTO -DULONG -DIRIX" \
+	"TARGET_ARCH=-DIRIX" \
+	"GUI_COM_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_COM_GET= ln -s $(XVIEW_GUI_SRC_DIR)" \
+	"WIN_LN_SRC= $(MOTIF_WIN_HDR)" \
+	"GUI_SRC_DIR= $(MOTIF_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(MOTIF_GUI_SRC_DIR)" \
+	"LDFLAGS= -rpath /vnmr/lib" \
+	"LIBS = -L $(sgiobjdir)/proglib/vnmr -s -lacqcomm -lmalloc -lXm -lXt -lX11" \
+	"INFOSERVER_LIB= -lrpcsvc -lsun" \
+	  "WORKLIB= libAcqstat.sgi.a" \
+	  Acqstat_sgi Acqmeter acqinfo_svc showstat)
+	mv Acqstat_sgi Acqstat
+	@echo "NMR_ID SGI MOTIF Acqstat libraries complete ------------------"
+
+SOLARIS : $$(MAKEFILE) OW_src Source
+	( SOLARIS="y"; export SOLARIS; $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS= -O -DBSDACQ $(MINCDIR)" \
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF -DSOLARIS -DACQSTAT" \
+	"LDFLAGS= $(MLIBDIR) $(RLIBDIR)" \
+	"TARGET_ARCH=" \
+	"WIN_SRC= $(COM_X_WIN_SRC) $(MOTIF_WIN_HDR)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lXm -lXt -lX11 -ll -lm -lsocket -lnsl -lacqcomm" \
+	"INFOSERVER_LIB= -lsocket -lnsl" \
+	"WORKLIB= libAcqstat.ow.a" \
+	 Acqstat_ow acqinfo_svc showstat Acqmeter)
+	mv Acqstat_ow Acqstat; cp Acqstat Infostat; chmod g+w Infostat
+
+SOLARISdbx : $$(MAKEFILE) OW_src Source
+	( SOLARIS="y"; export SOLARIS; $(MAKE) -e -f $(MAKEFILE) \
+	"CFLAGS= -g -DBSDACQ $(MINCDIR)" \
+	"CPPFLAGS= -DSUN -DX11 -DMOTIF -DSOLARIS -DACQSTAT" \
+	"LDFLAGS= -g $(MLIBDIR) $(RLIBDIR)" \
+	"TARGET_ARCH=" \
+	"WIN_SRC= $(COM_X_WIN_SRC) $(MOTIF_WIN_HDR)" \
+	"GUI_SRC_DIR= $(XVIEW_GUI_SRC_DIR)" \
+	"GUI_GET= ln -s $(XVIEW_GUI_SRC_DIR)$$(@)" \
+	"LIBS = -lXm -lXt -lX11 -ll -lm -lsocket -lnsl -lacqcomm" \
+	"INFOSERVER_LIB= -lsocket -lnsl" \
+	"WORKLIB= libAcqstat.ow.a" \
+	 Acqstat_ow acqinfo_svc showstat Acqmeter)
+	mv Acqstat_ow Acqstat; cp Acqstat Infostat; chmod g+w Infostat
+
+# "CPPFLAGS= -DSUN -DX11 -DMOTIF -DSOLARIS -DINFOSTAT" 
+# "LIBS = -lXm -lXt -lX11 -ll -lm -lsocket -lnsl" \
+# "WORKLIB= libAcqstat.ow.a /vnmr/lib/libacqcomm.a" \
+# "WORKLIB= libAcqstat.ow.a /vobj/sol/lib/libacqcomm.a" \
+
+svc : $$(MAKEFILE) Source rmobj
+	$(MAKE) -e -f $(MAKEFILE) \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"WORKLIB=" \
+	acqinfo_svc
+	@echo "NMR_ID acqinfo_svc complete ----------------------------------"
+
+svcdbx : Source rmobj
+	$(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g -DACQSTAT -Bstatic" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"WORKLIB=" acqinfo_svc_dbx
+	@echo "NMR_ID dbx acqinfo_svc_dbx complete --------------------------"
+
+svcprof: Source rmobj
+	$(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -pg -DACQSTAT -Bstatic" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"WORKLIB=" acqinfo_svc_p
+	@echo "NMR_ID profiling acqinfo_svc complete ------------------------"
+
+fpa:
+	@echo "NMR_ID fpa Acqstat not supported -----------------------------"
+
+depend:	$$(MAKEFILE) depend_src
+	@ echo making dependencies...
+	@ rm -f makedepd
+	-@( for i in $(ALLSRC) ; do \
+	     echo "file: $$i" ;		\
+	     rm -f $${i}.pp	;	\
+	     unifdef -DSUN -DUNIX -UVMS -UOLIT -UMOTIF $$i > $${i}.pp ; \
+	   done; )
+	   grep '^#include' $(ALL_C_SRC:.c=.c.pp) $(ALL_H_SRC:.h=.h.pp) $(ALL_H_SRC:.icon=.icon.pp) \
+		| sed 's/<\([^>]*\)>/"\/usr\/include\/\1"/' \
+		| sed 's/:[^"]*"\([^"]*\)".*/: \1/' \
+		| sed 's/\.p\.pp/.p/' \
+		| sed 's/\.c\.pp/.o/' \
+                | sed 's/\.y\.pp/.o/' \
+                | sed 's/\.l\.pp/.o/' >>makedepd ;
+	@ ls -1 $(ALL_C_SRC) | awk "{ {len = length(\$$0)} {s2 = substr(\$$0, 1, len - 2)} {print s2 \".o: \", \$$0 >> \"makedepd\"} } "
+	@ awk "{ if ( \$$2 !~ /\/usr\// ) { print \$$0; } }" makedepd | sort > makedep
+	@ echo '/^# DO NOT DELETE THIS LINE/+2,$$d' >eddep
+	@ echo '$$r makedep' >>eddep
+	@ echo 'w' >>eddep
+	@ cp $(MAKEFILE) $(MAKEFILE).bak
+	@ ed - $(MAKEFILE) < eddep
+	@ rm eddep makedep makedepd
+	@ echo '# DEPENDENCIES MUST END AT END OF FILE' >> $(MAKEFILE)
+	@ echo '# IF YOU PUT STUFF HERE IT WILL GO AWAY' >> $(MAKEFILE)
+	@ echo '# see make depend above' >> $(MAKEFILE)
+
+depend_src :
+	(  $(MAKE) -e -f $(MAKEFILE)	\
+             "VNMR_SRC_DIR= $(VNMR_SCCS_SRC)"   \
+             "ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)" \
+             "ACQSTAT_SRC_DIR= $(ACQSTAT_SCCS_SRC)" \
+             "ACQI_SRC_DIR= $(ACQI_SCCS_SRC)" \
+             "PSG_SRC_DIR= $(PSG_SCCS_SRC)" \
+             "XRACQ_SRC_DIR= $(XRACQ_SCCS_SRC)" \
+             "VNMR_GET= $(VNMR_SGET)" "ACQPROC_GET= $(ACQPROC_SGET)" \
+             "ACQI_GET= $(ACQI_SGET)"  "PSG_GET= $(PSG_SGET)" \
+             "ACQSTAT_GET= $(ACQSTAT_SGET)" "XRACQ_GET= $(XRACQ_SGET)" \
+               src ;  \
+	     $(MAKE) -e -f $(MAKEFILE)	\
+	     "SVIEW_GUI_SRC_DIR= $(SVIEW_GUI_SCCS_SRC)" \
+	     "SVIEW_GUI_GET= $(SVIEW_GUI_SGET)"	\
+	     "WIN_SRC= $(SV_WIN_SRC) $(SV_WIN_HDR)" \
+	     "GUI_SRC_DIR= $(SVIEW_GUI_SCCS_SRC)" \
+	     "GUI_GET= $(SVIEW_GUI_SGET)" \
+               win_src)
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	( cd $(SRC_DIR); $(MAKE) -ef $(MAKEFILE) \
+             "VNMR_SRC_DIR= $(VNMR_SCCS_SRC)"   \
+             "ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)" \
+             "ACQSTAT_SRC_DIR= $(ACQSTAT_SCCS_SRC)" \
+             "ACQI_SRC_DIR= $(ACQI_SCCS_SRC)" \
+             "PSG_SRC_DIR= $(PSG_SCCS_SRC)" \
+             "XRACQ_SRC_DIR= $(XRACQ_SCCS_SRC)" \
+             "VNMR_GET= $(VNMR_SGET)" "ACQPROC_GET= $(ACQPROC_SGET)" \
+             "ACQI_GET= $(ACQI_SGET)"  "PSG_GET= $(PSG_SGET)" \
+	     "VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)"  \
+	     "VWACQ_GET= $(VWACQ_SGET)"		\
+             "ACQSTAT_GET= $(ACQSTAT_SGET)" "XRACQ_GET= $(XRACQ_SGET)" src)
+ 
+SV_src :
+	( cd $(SRC_DIR)sv; $(MAKE) -e -f ../$(MAKEFILE)	\
+	     "SVIEW_GUI_SRC_DIR= $(SVIEW_GUI_SCCS_SRC)" \
+	     "SVIEW_GUI_GET= $(SVIEW_GUI_SGET)"	\
+	     "WIN_SRC= $(SV_WIN_SRC) $(SV_WIN_HDR)" \
+	     "GUI_SRC_DIR= $(SVIEW_GUI_SCCS_SRC)" \
+	     "GUI_GET= $(SVIEW_GUI_SGET)" \
+               win_src)
+
+OW_src :
+	( cd $(SRC_DIR)ow; $(MAKE) -e -f ../$(MAKEFILE)	\
+	     "XVIEW_GUI_SRC_DIR= $(XVIEW_GUI_SCCS_SRC)" \
+	     "XVIEW_GUI_GET= $(XVIEW_GUI_SGET)"	\
+	     "WIN_SRC= $(MOTIF_WIN_HDR) $(COM_X_WIN_SRC)" \
+	     "GUI_SRC_DIR= $(XVIEW_GUI_SCCS_SRC)" \
+	     "GUI_GET= $(XVIEW_GUI_SGET)" \
+               win_src)
+
+# Since IBM can't stand a null target even if not used, we pass a dummy value to
+#  WIN_OBJ so errors and weird stuff (like trying to compile *.icon files will
+#  not happen.
+MOTIF_src :
+	( cd $(SRC_DIR)motif; $(MAKE) -f ../$(MAKEFILE)	\
+	     "WIN_SRC= $(MOTIF_WIN_SRC) $(MOTIF_WIN_HDR)" \
+	     "GUI_SRC_DIR= $(MOTIF_GUI_SCCS_SRC)" \
+	     "GUI_GET= $(MOTIF_GUI_SGET)" \
+               win_src)
+
+#---- Recursive Targets --------------------------------------
+
+src : $$(MAKEFILE) $(COMMON_SRC)
+	@echo Sources up to date...
+
+win_src : $$(MAKEFILE) $(WIN_SRC)
+	@echo Sources up to date...
+
+libAcqstat.a libAcqstat_dbx.a libAcqstat.ow.a libAcqstat_dbx.ow.a: getobj  $(COMMON_OBJ) $(WIN_OBJ)
+	- (umask 2; rm -f $@ )
+	(umask 2; ar rv $@ `lorder $(COMMON_OBJ) $(WIN_OBJ) | tsort` )
+	@(umask 2; if [ x$$SOLARIS != "xy" ]; then	\
+		 echo ranlib $@; 			\
+		 ranlib $@; 				\
+	 fi)
+	-@ (umask 2; if [ x$$SOLARIS != "xy" ]; then	\
+		echo remove objects;			\
+		rm -f $(COMMON_OBJ)  $(WIN_OBJ);	\
+	 fi)
+
+Acqstat Acqstat_dbx Acqstat_ow Acqstat_ow_dbx Acqstat_ibm Acqstat_sgi:   $$(WORKLIB)
+	(umask 2; \
+	 if [ x$$SOLARIS != "xy" ]; then	\
+		ar xo $(WORKLIB) statusscrn.o;	\
+	 fi;					\
+	$(LINK.c) -o $@ statusscrn.o $(WORKLIB) $(LIBS) )
+
+Acqmeter Acqmeter_ow :   $(ACQMETER_OBJ)
+	(umask 2; \
+	 if [ x$$SOLARIS != "xy" ]; then	\
+		ar xo $(WORKLIB) statIPCfuncs.o acqinfo_xdr.o ;	\
+	 fi;					\
+	$(LINK.c) -o $@ $(ACQMETER_OBJ) $(LIBS) )
+
+# for the IBM we leave all the objects out of the library, since extracting the
+#  objects from the library gives them the extraction date not the lib data
+#  therefore the *.o are allways newer than source & will never be recompiled
+#   again.  Good job IBM on your ar $#%$@!!$@@
+
+libAcqstat.ibm.a : 	\
+	    $(COMMON_OBJ)
+	- (umask 2; rm -f $@ )
+	@echo Remake Library $@ 
+	@(umask 2; ar rv $@ `lorder $(COMMON_OBJ) $(WIN_OBJ) | tsort` )
+	(umask 2; ranlib $@ )
+
+# SGI lib 
+
+
+libAcqstat.sgi.a : $(COMMON_OBJ) $(WIN_OBJ)
+	@echo Remake Library $@
+	- (umask 2; rm -f $@ )
+	@(umask 2; ar -rsv $@  $(COMMON_OBJ) $(WIN_OBJ) )
+#	@echo remove objects
+#	-@ (umask 2; rm -f $(COMMON_OBJ) $(WIN_OBJ) )
+ 
+
+#-- acqinfo RPC server for Acqstat ---
+#acqinfo_svc acqinfo_svc_dbx acqinfo_svc_p: acqinfo.x acqinfo_proc.o acqinfo.o acqinfo_svc.o
+#	( umask 2; $(LINK.c) -o $@ acqinfo.o acqinfo_proc.o acqinfo_svc.o )
+acqinfo_svc acqinfo_svc_dbx acqinfo_svc_p: $(INFOSERVER_OBJ)
+	( umask 2; $(LINK.c) -o $@ $(INFOSERVER_OBJ) $(INFOSERVER_LIB))
+
+showstat: $(SHOWSTAT_OBJ) acqinfo_xdr.o
+	( umask 2; $(LINK.c) -o $@ $(SHOWSTAT_OBJ) acqinfo_xdr.o $(INFOSERVER_LIB))
+
+getobj :                                                       
+	-@(umask 2; if [ x$$SOLARIS != "xy" ]; then		\
+		echo extract $(WORKLIB) objects from library;	\
+		ar xo $(WORKLIB) $(COMMON_OBJ) $(WIN_OBJ);	\
+	 fi)
+
+rmobj :                                                       
+	@echo Remove objects from directory
+	- (umask 2; rm -f *.o )
+
+Acqstatmsg test4acq test4stat : $$@.c
+	(umask 2; $(LINK.c) -o $@ $@.c $(LIBS)  )
+
+fromlibs: $(OBJ) $(OBJS)
+	(umask 2; $(LINK.c) -o $(ProgName) $(OBJ) $(OBJS) \
+          $(LINKLIB1) $(LINKLIB2) $(MISCLIBS) $(LIBS) )
+#       (umask 2;$(LINK.c) -Qoption ld -M -o $(ProgName) $(OBJ) $(OBJS) \
+#           $(LINKLIB1) $(LINKLIB2) $(MISCLIBS) $(LIBS)
+
+#--- Object Targets ---------------------------
+
+$(COMMON_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#$(WIN_OBJ) : $(@:.o=.c)
+#	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#--------  Object Targets  ----------------------------------------------
+
+acqinfo_proc.o : $(@:.o=.c)         \
+		acqinfo.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#acqinfo_xdr.o : $(@:.o=.c)         \
+#		acqinfo.h
+#	(umask 2; $(COMPILE.c) $(@:.o=.c))
+
+#acqinfo.c : acqinfo.x
+#	(umask 2; rpcgen acqinfo.x )
+
+acqinfo_svc.o : $(@:.o=.c)         \
+		acqinfo.h
+	(umask 2; $(COMPILE.c) $(@:.o=.c))
+
+#acqinfo_svc.c :  acqinfo.x
+#	(umask 2; rpcgen -s tcp acqinfo.x -o $@ )
+
+$(ACQMETER_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) :
+	$(ACQSTAT_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(VNMR_SRC) $(VNMR_HDR) : $$(VNMR_SRC_DIR)$$(@)
+	$(VNMR_GET) $@
+
+$(ACQPROC_SRC) $(ACQPROC_HDR) : $$(ACQPROC_SRC_DIR)$$(@)
+	$(ACQPROC_GET) $@
+
+$(ACQSTAT_SRC) $(ACQSTAT_HDR) $(STANDALONE) $(INFOSERVER_SRC) \
+$(INFOSERVER_HDR) $(SHOWSTAT_SRC) $(ACQMETER_SRC): $$(ACQSTAT_SRC_DIR)$$(@)
+	$(ACQSTAT_GET) $@
+
+#$(ACQI_SRC) $(ACQI_HDR) : $$(ACQI_SRC_DIR)$$(@)
+#	$(ACQI_GET) $@
+
+#$(PSG_SRC) $(PSG_HDR) : $$(PSG_SRC_DIR)$$(@)
+#	$(PSG_GET) $@
+
+$(XRACQ_SRC) $(XRACQ_HDR) : $$(XRACQ_SRC_DIR)$$(@)
+	$(XRACQ_GET) $@
+
+$(WIN_SRC) : $$(GUI_SRC_DIR)$$(@)
+	$(GUI_GET) $@
+
+$(WIN_COM_SRC) : $$(GUI_COM_SRC_DIR)$$(@)
+	$(GUI_COM_GET) $@
+
+#---- special link command target is needed for SGI since one can not pass
+#     a MACRO=$$(@) construct, (syntax error)
+#
+$(WIN_LN_SRC) : $$(GUI_SRC_DIR)$$(@)
+	$(GUI_GET)$@ $@
+
+$(WIN_LN_COM_SRC) : $$(GUI_COM_SRC_DIR)$$(@)
+	$(GUI_COM_GET)$@ $@
+
+$(VWACQ_HDR): $$(VWACQ_SRC_DIR)$$(@)
+	$(VWACQ_GET) $@
+
+#-------------------------------------
+# DO NOT DELETE THIS LINE -- make depend uses it
+# DEPENDENCIES MUST END AT END OF FILE
+acqinfo_proc.o:  acqinfo_proc.c
+acqinfo_proc.o: acqinfo.h
+acqinfo_svc.o:  acqinfo_svc.c
+acqinfo_svc.o: acqinfo.h
+acqinfo_xdr.o:  acqinfo_xdr.c
+acqinfo_xdr.o: acqinfo.h
+acqstat_win.o:  acqstat_win.c
+acqstat_win.o: acqstat.icon
+acqstat_win.o: acqstat_item.h
+acqstat_win.o: acqsetup.icon
+acqstat_win.o: acqstat.icon
+acqmeter_win.o: acqmeter.icon
+acqmeter_win.o: acqmp.icon
+acqmeter_win.o: hostAcqStructs.h
+shims.o:  shims.c
+shims.o: group.h
+showstat.o:  showstat.c
+showstat.o: acqinfo.h
+showstat.o: ACQPROC_strucs.h
+showstat.o: STAT_DEFS.h
+statdispfuncs.o:  statdispfuncs.c
+statdispfuncs.o: ACQPROC_strucs.h
+statdispfuncs.o: acqstat_item.h
+statdispfuncs.o: STAT_DEFS.h
+statdispfuncs.o: statusextern.h
+statIPCfuncs.o:  statIPCfuncs.c
+statIPCfuncs.o: acqinfo.h
+statIPCfuncs.o: ACQPROC_strucs.h
+statIPCfuncs.o: statusextern.h
+statsocket.o:  statsocket.c
+statsocket.o: sockets.h
+statusscrn.o:  statusscrn.c
+statusscrn.o: ACQPROC_strucs.h
+statusscrn.o: acqstat_item.h
+statusscrn.o: STAT_DEFS.h
+test4acq.o:  test4acq.c
+# DEPENDENCIES MUST END AT END OF FILE
+# IF YOU PUT STUFF HERE IT WILL GO AWAY
+# see make depend above

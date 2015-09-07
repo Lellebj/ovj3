@@ -1,0 +1,12 @@
+/*-*- MAGICAL -*-*/
+// Copyright (c) Agilent Technologies  All Rights Reserved.
+
+// Remember the last trace/projection scale
+if (plotOptions2D[6] <> '') then
+  {'vs' + plotOptions2D[6]} = vsproj
+endif
+
+// Enable setting next trace/projection scale
+dconi($1)
+plotOptions2D[6] = $1 // Remember which trace/projection we're scaling
+

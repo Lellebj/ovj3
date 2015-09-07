@@ -1,0 +1,2 @@
+# 
+cc -O -fsingle -o Fid3d fid3d.c /usr/lib/libm.il -ll -lm

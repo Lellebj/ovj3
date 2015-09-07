@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<mainmenu>
+<!--	<mchoice label = "Open in SQ"
+	      vc = "locaction(contextmenuarg[1], contextmenuarg[2], 
+		 contextmenuarg[3], contextmenuarg[4],
+		 contextmenuarg[5], contextmenuarg[6])"
+	      style="Menu1"
+        />
+ -->
+	<mchoice label = "Delete"
+	      vc = "vnmrjcmd('LOC trashfile ' + contextmenuarg[4] + ' protocolBrowser')"
+	      style="Menu1"
+        />
+        <mchoice label = "Open Study Card"
+              vc = "vnmrjcmd('LOC protocolBrowserSC ' + contextmenuarg[4] + ' protocol')"
+	      style="Menu1"
+        />
+</mainmenu>

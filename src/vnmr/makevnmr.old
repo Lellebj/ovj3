@@ -1,0 +1,742 @@
+# 
+# make -f makevnmr
+# make -f makevnmr all , Bite the BIG ONE, make everything.
+# make -f makevnmr vnmrpaid,  creates Vnmr 
+# make -f makevnmr lib,  creates unmrlib.a and magiclib.a libraries 
+# make -f makevnmr vnmrdbx,  creates dbxtool version of Vnmr library
+# make -f makevnmr libdbx,  creates dbxtool version of unmr and magic library
+# make -f makevnmr vnmrprof,  creates gprof profiling Vnmr library 
+# make -f makevnmr libprof,  creates gprof profiling unmr and magic library 
+#
+# ----->  dbx or profiling libraries are not a standard release item and 
+#         are not to be given to customers....    9/22/87  Greg Brissey
+#
+#  NOTE: dbx or profiling require their own directory to compile properly
+#        just add the subdirectories dbx and profile to the sys directory
+#
+#
+
+# ----- PAID sccs home ----
+ROOT=/big/sccs
+JAWS=/jaws
+# ----- VIS sccs home ----
+#ROOT=/usr/zaphod/greg/sccs
+#JAWS=/jaws
+
+SCCSDIR=$(JAWS)
+
+TOOL = Vnmr
+FP68881   = -DFPC
+FPXCEL   = -DFPA
+LIBS = -lcurses -ltermlib -lsuntool -lsunwindow -lpixrect -ll -lm
+
+# ----- This is paid's very own special yacc compiler, in /jaws/yacc
+#	(don't ask me.  gmb)
+
+YACC = $(JAWS)/yacc/yacc
+
+SYS  = $(JAWS)/SCCS/s.
+INC  = $(JAWS)/SCCS/s.
+
+# ---- Vnmr libraries
+UNMRLIB= /big/usr2/greg/jaws/sys/unmrlib.a
+MAGICLIB= /big/usr2/greg/jaws/sys/magiclib.a
+
+#-- Normal operational compile flags
+OPTIMIZE= -c -O 
+OPTIMIZES= -S -O 
+OPLINKFLG= -O
+SCCSGET= sccs -d$(SCCSDIR) get $$(@)
+
+#-- Debugging with DBXTOOL compile flags 
+DBXFLAGS= -c -g -DDBXTOOL -DDEBUG
+DBXSFLAGS= -S -g -DDBXTOOL -DDEBUG
+DBXLINKFLG= -g
+LINKGET= ln -s ../$$(@) $$(@)
+
+#-- gprof profiling compile flags 
+PROFFLAGS= -c -pg -O -DPROFILE
+PROFSFLAGS= -S -pg -O -DPROFILE
+PROFLINKFLG= -pg -O
+LINKGET= ln -s ../$$(@) $$(@)
+
+#------------------------------------------------------------------------
+#--- VNMR objects that are needed for unmrlib 
+#------------------------------------------------------------------------
+UNMR_OBJ= 			\
+		acqfuncs.o 	\
+		acqhdl.o 	\
+		addsub.o 	\
+		ai.o 		\
+		bootup.o 	\
+		config.o 	\
+		convert.o 	\
+		data.o 		\
+		dcon.o 		\
+		dconi.o 	\
+		ddf.o 		\
+		dfft.o		\
+		dfid.o		\
+		dg.o 		\
+		dli.o		\
+		dll.o		\
+		dpcon.o 	\
+		dpf.o		\
+		ds.o		\
+		dsn.o		\
+		dsp.o		\
+		dsww.o 		\
+		exec.o 		\
+		foldj.o 	\
+		ft2d.o 		\
+		full.o 		\
+		go.o 		\
+		graphics.o 	\
+		hpa.o 		\
+		init2d.o 	\
+		integ.o 	\
+		jexp.o 		\
+		ll2d.o 		\
+		matrix.o 	\
+		proc2d.o 	\
+		readlk.o 	\
+		sky.o		\
+		wti.o
+
+
+#------------------------------------------------------------------------
+#--- VNMR objects that are needed for magiclib 
+#------------------------------------------------------------------------
+MAGIC_OBJ= 			\
+		allocate.o 	\
+		assign.o 	\
+		bgvars.o 	\
+		builtin.o 	\
+		builtin1.o 	\
+		buttons.o	\
+		debug.o 	\
+		Exec.o		\
+		element.o 	\
+		emouse.o 	\
+		files.o 	\
+		handler.o 	\
+		help.o 		\
+		history.o 	\
+		io.o 		\
+		lexjunk.o 	\
+		lookup.o 	\
+		main.o		\
+		macro.o 	\
+		magic.gram.o 	\
+		magic.lex.o  	\
+		master.o	\
+		node.o 		\
+		ops.o 		\
+		pvars.o		\
+		shellcmds.o	\
+		smagic.o 	\
+		socket.o 	\
+		socket1.o 	\
+		sread.o 	\
+		swrite.o 	\
+		symtab.o 	\
+		table.o 	\
+		tempstuff.o 	\
+		terminal.o 	\
+		text.o 		\
+		tools.o 	\
+		variables1.o 	\
+		wjunk.o
+
+vnmrpaid : $(SYS)makevnmr
+	make -f makevnmr "CFLAGS= $(OPTIMIZE)" "SCFLAGS= $(OPTIMIZES)" \
+        "LINKFLGS= $(OPLINKFLG)" "HINC=-I." "FP=$(FP68881)" "GETSCRS= $(SCCSGET)" Vnmr
+
+vnmrdbx : $(SYS)makevnmr
+	 make -f makevnmr "CFLAGS= $(OPTIMIZE)" "SCFLAGS= $(OPTIMIZES)" \
+        "LINKFLGS= $(OPLINKFLG)" "HINC=-I." "FP=$(FP68881)" "GETSCRS= $(SCCSGET)" Vnmr
+	(cd dbx; make -f ../makevnmr "CFLAGS= $(DBXFLAGS)" "SCFLAGS= $(DBXSFLAGS)" \
+        "LINKFLGS= $(DBXLINKFLG)" "HINC=-I." "FP=$(FP68881)" "GETSCRS=$(LINKGET)" Vnmr )
+
+vnmrprof : $(SYS)makevnmr
+	make -f makevnmr "CFLAGS= $(OPTIMIZE)" "SCFLAGS= $(OPTIMIZES)" \
+        "LINKFLGS= $(OPLINKFLG)" "HINC=-I." "FP=$(FP68881)" "GETSCRS= $(SCCSGET)" Vnmr
+	(cd profile; make -f ../makevnmr "CFLAGS= $(PROFFLAGS)" "SCFLAGS= $(PROFSFLAGS)" \
+        "LINKFLGS= $(PROFLINKFLG)" "HINC=-I." "FP=$(FP68881)" "GETSCRS= $(LINKGET)" Vnmr )
+
+Vnmr : $(UNMR_OBJ) $(MAGIC_OBJ) 
+	( umask 2; cc $(LINKFLGS) -o Vnmr $(UNMR_OBJ) $(MAGIC_OBJ) $(LIBS) )
+ 
+lib: $(SYS)makevnmr
+	make -f makevnmr "CFLAGS= $(OPTIMIZE)" "SCFLAGS= $(OPTIMIZES)" \
+                        "HINC=-I." "FP=$(FP68881)" "GETSCRS= $(SCCSGET)" libpaid
+
+libdbx : $(SYS)makevnmr
+	make -f makevnmr "CFLAGS= $(OPTIMIZE)" "SCFLAGS= $(OPTIMIZES)" \
+                        "HINC=-I." "FP=$(FP68881)" "GETSCRS= $(SCCSGET)" libpaid
+	(cd dbx; make -f makevnmr "CFLAGS= $(DBXFLAGS)" "SCFLAGS= $(DBXSFLAGS)" \
+                        "HINC=-I." "FP=$(FP68881)" "GETSCRS= $(LINKGET)"  libpaid )
+
+libprof : $(SYS)makevnmr
+	make -f makevnmr "CFLAGS= $(OPTIMIZE)" "SCFLAGS= $(OPTIMIZES)" \
+                        "HINC=-I." "FP=$(FP68881)" "GETSCRS= $(SCCSGET)" libpaid
+	cd profile; make -f makevnmr "CFLAGS= $(PROFFLAGS)" "SCFLAGS= $(PROFSFLAGS)" \
+                        "HINC=" "FP=$(FP68881)" "GETSCRS= $(LINKGET)" libpaid )
+
+libpaid : unmrlib.a  magiclib.a
+	@echo PAID vnmr libraries complete
+
+unmrlib.a: $(UNMR_OBJ) 
+	    (umask 2; rm -f unmrlib.a )
+	    (umask 2; ar r unmrlib.a $(UNMR_OBJ) )
+	    (umask 2; ranlib unmrlib.a )
+
+magiclib.a: $(MAGIC_OBJ) 
+	    (umask 2; rm -f magiclib.a )
+	    (umask 2; ar r magiclib.a $(MAGIC_OBJ) )
+	    (umask 2; ranlib magiclib.a )
+
+
+fromlibs: $(OBJ) $(OBJS) $(LEXOBJ) $(GRAMOBJ) 
+	cc -o $(Vnmr) $(OBJ) $(OBJS) $(MAGICLIB) $(JawsLib) $(MAGICLIB) -lcurses -ltermlib -lsuntool -lsunwindow -lpixrect -ll -lm
+ 
+#fromlibs: $(OBJ) $(OBJS) $(LEXOBJ) $(GRAMOBJ)
+#	    cc -o Vnmr $(HINC) $(OBJ) $(OBJS) $(UNMRLIB) $(MAGICLIB) $(LIBS)
+
+all : vnmrpaid lib vnmrprof libprof vnmrdbx libdbx 
+
+# clean		:
+# 	rm -f $(OBJ) magic.gram.c magic.gram.h magic.lex.c
+
+
+makevnmr :
+	sccs -d$(SCCSDIR) get $$(@)
+
+Exec.c		: $(SYS)Exec.c
+	$(GETSCRS)
+
+Exec.o		: Exec.c vnmrsys.h graphics.h group.h node.h params.h symtab.h variables.h magic.gram.c
+	cc $(CFLAGS) -I$(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+acqfuncs.c	: $(SYS)acqfuncs.c
+	$(GETSCRS)
+
+acqfuncs.o	: acqfuncs.c vnmrsys.h variables.h group.h tools.h params.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+errorcodes.h	: $(INC)errorcodes.h
+	$(GETSCRS)
+
+lc_strucs.h	: $(INC)lc_strucs.h
+	$(GETSCRS)
+
+acqhdl.c	: $(SYS)acqhdl.c
+	$(GETSCRS)
+
+acqhdl.o	: acqhdl.c data.h group.h errorcodes.h tools.h lc_strucs.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+addsub.c	: $(SYS)addsub.c
+	$(GETSCRS)
+
+addsub.o	: addsub.c data.h group.h init2d.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+ai.c		: $(SYS)ai.c
+	$(GETSCRS)
+
+ai.o		: ai.c data.h group.h init2d.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+allocate.c	: $(SYS)allocate.c
+	$(GETSCRS)
+
+allocate.h	: $(INC)allocate.h
+	$(GETSCRS)
+
+allocate.o	: allocate.c allocate.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+assign.c	: $(SYS)assign.c
+	$(GETSCRS)
+
+assign.o	: assign.c group.h params.h variables.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+bgvars.c	: $(SYS)bgvars.c
+	$(GETSCRS)
+
+bgvars.o	: bgvars.c group.h symtab.h variables.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+bootup.c	: $(SYS)bootup.c
+	$(GETSCRS)
+
+bootup.o	: bootup.c data.h group.h init2d.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+builtin.c	: $(SYS)builtin.c
+	$(GETSCRS)
+
+builtin.h	: $(INC)builtin.h
+	$(GETSCRS)
+
+builtin.o	: builtin.c node.h symtab.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+builtin1.c	: $(SYS)builtin1.c
+	$(GETSCRS)
+
+builtin1.o	: builtin1.c group.h params.h symtab.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+buttons.c	: $(SYS)buttons.c
+	$(GETSCRS)
+
+buttons.o	: buttons.c vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+config.c	: $(SYS)config.c
+	$(GETSCRS)
+
+config.o	: config.c group.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+commands.h	: $(INC)commands.h
+	$(GETSCRS)
+
+convert.c	: $(SYS)convert.c
+	$(GETSCRS)
+
+convert.o	: convert.c data.h group.h params.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+data.c		: $(SYS)data.c
+	$(GETSCRS)
+
+data.h		: $(INC)data.h
+	$(GETSCRS)
+
+data.o		: data.c data.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+dcon.c		: $(SYS)dcon.c
+	$(GETSCRS)
+
+dcon.o		: dcon.c data.h graphics.h group.h init2d.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+dconi.c		: $(SYS)dconi.c
+	$(GETSCRS)
+
+dconi.o		: dconi.c data.h graphics.h group.h init2d.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+ddf.c		: $(SYS)ddf.c
+	$(GETSCRS)
+
+ddf.o		: ddf.c data.h group.h tools.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+debug.c		: $(SYS)debug.c
+	$(GETSCRS)
+
+debug.o		: debug.c builtin.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c -I$(HINC) $(@:.o=.c)
+
+dfft.s		: $(SYS)dfft.s
+	$(GETSCRS)
+
+dfft.o		: dfft.s
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.s)
+
+dfid.c		: $(SYS)dfid.c
+	$(GETSCRS)
+
+dfid.o		: dfid.c data.h graphics.h group.h init2d.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+dg.c		: $(SYS)dg.c
+	$(GETSCRS)
+
+dg.o		: dg.c graphics.h group.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+dli.c		: $(SYS)dli.c
+	$(GETSCRS)
+
+dli.o		: dli.c data.h graphics.h group.h init2d.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+dll.c		: $(SYS)dll.c
+	$(GETSCRS)
+
+dll.o		: dll.c data.h graphics.h group.h init2d.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+dpcon.c		: $(SYS)dpcon.c
+	$(GETSCRS)
+
+dpcon.o		: dpcon.c data.h graphics.h group.h init2d.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+dpf.c		: $(SYS)dpf.c
+	$(GETSCRS)
+
+dpf.o		: dpf.c graphics.h group.h init2d.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+ds.c		: $(SYS)ds.c
+	$(GETSCRS)
+
+ds.o		: ds.c data.h graphics.h group.h init2d.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+dsn.c		: $(SYS)dsn.c
+	$(GETSCRS)
+
+dsn.o		: dsn.c data.h graphics.h group.h init2d.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+dsp.c		: $(SYS)dsp.c
+	$(GETSCRS)
+
+dsp.o		: dsp.c data.h group.h init2d.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+dsww.c		: $(SYS)dsww.c
+	$(GETSCRS)
+
+dsww.o		: dsww.c data.h graphics.h group.h init2d.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+element.c	: $(SYS)element.c
+	$(GETSCRS)
+
+element.h	: $(INC)element.h
+	$(GETSCRS)
+
+element.o	: element.c element.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+emouse.c	: $(SYS)emouse.c
+	$(GETSCRS)
+
+emouse.o	: emouse.c vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+exec.c		: $(SYS)exec.c
+	$(GETSCRS)
+
+exec.o		: exec.c
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c -I$(HINC) $(@:.o=.c)
+
+files.c		: $(SYS)files.c
+	$(GETSCRS)
+
+files.o		: files.c element.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+foldj.c		: $(SYS)foldj.c
+	$(GETSCRS)
+
+foldj.o		: foldj.c data.h group.h init2d.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+ft2d.c		: $(SYS)ft2d.c
+	$(GETSCRS)
+
+ft2d.o		: ft2d.c data.h group.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c -I$(HINC) $(@:.o=.c)
+
+full.c		: $(SYS)full.c
+	$(GETSCRS)
+
+full.o		: full.c group.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+go.c		: $(SYS)go.c
+	$(GETSCRS)
+
+go.o		: go.c data.h group.h symtab.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+graphics.c	: $(SYS)graphics.c
+	$(GETSCRS)
+
+graphics.h	: $(INC)graphics.h
+	$(GETSCRS)
+
+graphics.o	: graphics.c graphics.h group.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+group.h		: $(INC)group.h
+	$(GETSCRS)
+
+handler.c	: $(SYS)handler.c
+	$(GETSCRS)
+
+handler.o	: handler.c
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+help.c		: $(SYS)help.c
+	$(GETSCRS)
+
+help.o		: help.c builtin.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+history.c	: $(SYS)history.c
+	$(GETSCRS)
+
+history.o	: history.c
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+hpa.c		: $(SYS)hpa.c
+	$(GETSCRS)
+
+hpa.o		: hpa.c data.h graphics.h group.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+init.h		: $(INC)init.h
+	$(GETSCRS)
+
+init2d.c	: $(SYS)init2d.c
+	$(GETSCRS)
+
+init2d.h	: $(INC)init2d.h
+	$(GETSCRS)
+
+init2d.o	: init2d.c data.h graphics.h group.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+integ.c		: $(SYS)integ.c
+	$(GETSCRS)
+
+integ.o		: integ.c data.h init2d.h group.h tools.h variables.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+io.c		: $(SYS)io.c
+	$(GETSCRS)
+
+io.o		: io.c node.h magic.gram.c vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+jexp.c		: $(SYS)jexp.c
+	$(GETSCRS)
+
+jexp.o		: jexp.c data.h group.h init2d.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+lexjunk.c	: $(SYS)lexjunk.c
+	$(GETSCRS)
+
+lexjunk.o	: lexjunk.c node.h magic.gram.c
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+ll2d.c		: $(SYS)ll2d.c
+	$(GETSCRS)
+
+ll2d.o		: ll2d.c data.h graphics.h group.h init2d.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+lookup.c	: $(SYS)lookup.c
+	$(GETSCRS)
+
+lookup.o	: lookup.c tools.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+macro.c		: $(SYS)macro.c
+	$(GETSCRS)
+
+macro.o		: macro.c node.h symtab.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+magic.parser 	: $(SYS)magic.parser
+	$(GETSCRS)
+
+magic.gram.y	: $(SYS)magic.gram.y
+	$(GETSCRS)
+
+magic.gram.c	: magic.gram.y magic.parser
+	$(YACC) -fd magic.parser $(@:.c=.y)
+	mv y.tab.c $@
+	mv y.tab.h $(@:.c=.h)
+
+magic.gram.o	: magic.gram.c node.h stack.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+magic.lex.l	: $(SYS)magic.lex.l
+	$(GETSCRS)
+
+magic.lex.c	: magic.lex.l
+	lex $(@:.c=.l)
+	mv lex.yy.c $@
+
+magic.lex.o	: magic.lex.c magic.gram.c node.h stack.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+main.c		: $(SYS)main.c
+	$(GETSCRS)
+
+main.o		: main.c vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+master.c	: $(SYS)master.c
+	$(GETSCRS)
+
+master.o	: master.c
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+matrix.c	: $(SYS)matrix.c
+	$(GETSCRS)
+
+matrix.o	: matrix.c
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c -I$(HINC) $(@:.o=.c)
+
+node.c		: $(SYS)node.c
+	$(GETSCRS)
+
+node.h		: $(INC)node.h
+	$(GETSCRS)
+
+node.o		: node.c magic.gram.c node.h stack.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+ops.c		: $(SYS)ops.c
+	$(GETSCRS)
+
+ops.o		: ops.c variables.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+params.h	: $(INC)params.h
+	$(GETSCRS)
+
+proc2d.c	: $(SYS)proc2d.c
+	$(GETSCRS)
+
+proc2d.o	: proc2d.c data.h graphics.h group.h init2d.h tools.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+pvars.c		: $(SYS)pvars.c
+	$(GETSCRS)
+
+pvars.o		: pvars.c group.h symtab.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+readlk.c	: $(SYS)readlk.c
+	$(GETSCRS)
+
+readlk.o	: readlk.c tools.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+shellcmds.c	: $(SYS)shellcmds.c
+	$(GETSCRS)
+
+shellcmds.o	: shellcmds.c vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+sky.c		: $(SYS)sky.c
+	$(GETSCRS)
+
+sky.o		: sky.c vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+smagic.c	: $(SYS)smagic.c
+	$(GETSCRS)
+
+smagic.o	: smagic.c /jaws/include/icon/vnmr.icon node.h magic.gram.c vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+socket.c	: $(SYS)socket.c
+	$(GETSCRS)
+
+socket.o	: socket.c tools.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+socket1.c	: $(SYS)socket1.c
+	$(GETSCRS)
+
+socket1.o	: socket1.c
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+sread.c		: $(SYS)sread.c
+	$(GETSCRS)
+
+sread.o		: sread.c data.h group.h params.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+stack.h		: $(INC)stack.h
+	$(GETSCRS)
+
+swrite.c	: $(SYS)swrite.c
+	$(GETSCRS)
+
+swrite.o	: swrite.c data.h group.h init2d.h symtab.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+symtab.c	: $(SYS)symtab.c
+	$(GETSCRS)
+
+symtab.h	: $(INC)symtab.h
+	$(GETSCRS)
+
+symtab.o	: symtab.c symtab.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+table.c		: $(SYS)table.c
+	$(GETSCRS)
+
+table.o		: table.c builtin.h commands.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+tempstuff.c	: $(SYS)tempstuff.c
+	$(GETSCRS)
+
+tempstuff.o	: tempstuff.c
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+terminal.c	: $(SYS)terminal.c
+	$(GETSCRS)
+
+terminal.o	: terminal.c
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+text.c		: $(SYS)text.c
+	$(GETSCRS)
+
+text.o		: text.c group.h graphics.h tools.h variables.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+tools.c		: $(SYS)tools.c
+	$(GETSCRS)
+
+tools.h		: $(INC)tools.h
+	$(GETSCRS)
+
+tools.o		: tools.c vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+variables.h	: $(INC)variables.h
+	$(GETSCRS)
+
+variables1.c	: $(SYS)variables1.c
+	$(GETSCRS)
+
+variables1.o	: variables1.c graphics.h group.h init.h symtab.h variables.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+vnmrsys.h	: $(INC)vnmrsys.h
+	$(GETSCRS)
+
+wjunk.c		: $(SYS)wjunk.c
+	$(GETSCRS)
+
+wjunk.o		: wjunk.c graphics.h node.h stack.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+
+wti.c		: $(SYS)wti.c
+	$(GETSCRS)
+
+wti.o		: wti.c data.h init2d.h graphics.h group.h vnmrsys.h
+	cc $(CFLAGS) $(HINC) $(FP) -fsingle -c $(@:.o=.c)
+

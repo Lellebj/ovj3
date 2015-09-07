@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ !
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<TitleBar>
+	<label style="Label1" loc="5 0" size="70 18" label="Exp:   " vq="titletext4" />
+	<label style="Label1" loc="80 0" size="145 18" vq="titletext3" />
+	<label style="Label1" loc="230 0" size="90 18" vq="titletext5" />
+	<label style="Label1" loc="330 0" size="60 18" vq="titletext8" />
+	<label style="Label1" loc="390 0" size="60 18" vq="titletext2" />
+</TitleBar>

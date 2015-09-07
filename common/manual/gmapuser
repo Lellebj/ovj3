@@ -1,0 +1,10 @@
+" Copyright (c) Agilent Technologies  All Rights Reserved. "
+*******************************************************************************
+* gmapuser       -                 Gradient Shimming                          *
+*******************************************************************************
+
+gmapuser - enter automated shimming menu
+
+Related macros:
+  gmapshim - start gradient autoshimming 
+  gmapsys - enter gradient shimming system menu

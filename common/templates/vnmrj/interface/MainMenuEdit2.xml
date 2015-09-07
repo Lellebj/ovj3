@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='us-ascii'?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<mainmenu>
+	<mchoice label = "Parameter Pages..."
+	      vc = "vnmrjcmd('edit','template','help:/vnmr/jhelp/dialog/template.html')"
+              vq="operator"
+              show="rights('enableeditors',-1):$SHOW"
+	      style="Menu1"
+	/>
+</mainmenu>

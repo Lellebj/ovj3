@@ -1,0 +1,7 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+" If temp is set to 'n', then if temp was an array it is made into a single value"
+on('temp'):$active
+if ($active < 0.5) then
+  temp=temp[1]
+  temp='n'
+endif

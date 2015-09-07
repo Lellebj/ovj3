@@ -1,0 +1,7 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"**************************************"
+" _dfrq2 - disables dn2 when dfrq2 is changed"
+"**************************************"
+dn2='none'
+dof2=0
+setfrq(3)

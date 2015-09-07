@@ -1,0 +1,5 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"ecc_savepars - a macro to save the g2pul_ecc parameter set"
+
+svp(userdir+'/parlib/'+seqfil)
+

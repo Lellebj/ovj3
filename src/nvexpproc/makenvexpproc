@@ -1,0 +1,738 @@
+# 
+# makenvexpproc  make file
+#
+# make -f makenvexpproc creates Expproc
+# make -f makenvexpproc dbx, creates Expproc	DBX ver.
+#
+# ----->  dbx or profiling libraries are not a standard release item and are not to
+#         be given to customers....    1/29/88  Greg Brissey
+#
+#
+#
+# Notes on collect profiling data cia Sun Studio's collect and analyze    2/6/07  GMB
+#
+# collect -F on -s on -o expproc.1.er Expproc
+# -F on , follow fork & exec decendents
+# -p on (10ms) -p high(1ms) -p low(100ms)
+#
+# collect -p high -F on -s on -o expproc.1.er Expproc
+#
+# analyzer expproc.1.er/_f1_x1.er
+# to analyze Recvproc, expproc forks & exec Recvproc 1st thus _f1_x1.er
+# Solaris:  thread 1 main, 2 - processing thread, 3 - NDDS alarm thread, 4 - NDDS Unicast receive, 
+#                  5 - NDDS database(?), 6 - NDDS Multicast Recv, 7 - recvFid
+#
+
+MAKEFILE= makenvexpproc
+
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+VNMRDIR=$(vnmrdir)
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+# SRC_DIR=$(SRCDIR)/sysnvexpproc/
+SRC_DIR=./
+
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+# NDDSHOME = /sw/NDDS/ndds.3.0m
+# NDDSHOME = /sw/NDDS/ndds.3.1a
+# NDDSHOME = /sw/NDDS/ndds.3.1b.rev3
+# NDDSHOME = /sw/NDDS/build_ndds_ver
+NDDSHOME = $(nddsdir)
+NDDSHOME_GEN = $(nddsgendir)
+# NDDSLIBPATH = lib/sparcSol2.9cc5.4
+NDDSLIBPATH = lib/SolLibs
+
+PROFLIBs =  -mt  -ldl
+STDLIBS = -lnsl -lgenIO -lsocket -lgen -lposix4 -lpthread -lm -lc
+
+NDDSLIBS = -L$(NDDSHOME)/$(NDDSLIBPATH) \
+	-lnddsdiag -lnddsz -lnddsutilsz -lnddscdrz -lutilsipz -lutilsxxz -lperftimez -lwavesurf \
+	$(STDLIBS)
+
+NDDSLIBS_SFU = -L$(nddsdir)/$(NDDSLIBPATH) \
+	$(nddsdir)/$(NDDSLIBPATH)/libnddsdiagz.a \
+        $(nddsdir)/$(NDDSLIBPATH)/libnddsz.a  \
+	$(nddsdir)/$(NDDSLIBPATH)/libnddsutilsz.a \
+	$(nddsdir)/$(NDDSLIBPATH)/libnddscdrz.a \
+	$(nddsdir)/$(NDDSLIBPATH)/libutilsxxz.a \
+	$(nddsdir)/$(NDDSLIBPATH)/libutilsipz.a \
+	$(nddsdir)/$(NDDSLIBPATH)/libperftimez.a \
+         -static-libgcc -ldl -lm -lpthread -lsocket -lport -lbind
+
+
+# NDDSLIBS = $(STDLIBS) testing define
+
+RLIBDIR = -R /vnmr/lib:$(NDDSHOME)/$(NDDSLIBPATH)
+ 
+INCLUDES = -I$(NDDSHOME)/include/unix \
+	-I$(NDDSHOME)/include/share
+
+# where the NDDS include and libraries are
+# NDDS_HOME = /sw/NDDS/ndds.3.0m
+# NDDS_HOME = /sw/NDDS/ndds.3.1a
+# NDDS_HOME = /sw/NDDS/ndds.3.1b.rev3
+# NDDS_HOME = /sw/NDDS/build_ndds_ver
+NDDS_HOME = $(nddsdir)
+ 
+# NDDSGEN = $(NDDS_HOME)/bin/sparcSol2.8cc5.2/nddsgen
+# NDDSGEN = $(NDDS_HOME)/bin/sparcSol2.9cc5.3/nddsgen
+NDDSGEN = $(NDDS_HOME)/bin/SolBin/nddsgen
+ 
+# set defines acording to system Type
+# set defines acording to system Type
+CC = cc -Xa -DSOLARIS
+LIBS = $(RLIBDIR) $(NDDSLIBS)
+NCOMMDIR = /vobj/sol/proglib/ncomm
+OBJDIR = sol
+OPTIMIZE = -xO2
+DEBUGOPT = -g -xF -xsb
+PROFOPT= -g -xF -xsb -xhwcprof -xO1  -xpg
+CFLAGS= -O
+CPPFLAGS=
+LDFLAGS=
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CCC) $(LDFLAGS) $(TARGET_ARCH)
+
+RECVPROC_SRC_DIR= $(SRC_DIR)
+NVRECVPROC_SRC_DIR= $(SRC_DIR)
+PROCPROC_SRC_DIR= $(SRC_DIR)
+NVSENDPROC_SRC_DIR= $(SRC_DIR)
+SENDPROC_SRC_DIR= $(SRC_DIR)
+NVEXPPROC_SRC_DIR= $(SRC_DIR)
+EXPPROC_SRC_DIR= $(SRC_DIR)
+NCOMM_SRC_DIR= $(SRC_DIR)
+ROBOPROC_SRC_DIR= $(SRC_DIR)
+NVACQ_SRC_DIR= $(SRC_DIR)
+VWACQ_SRC_DIR= $(SRC_DIR)
+VNMR_SRC_DIR= $(SRC_DIR)
+ACQPROC_SRC_DIR= $(SRC_DIR)
+PSG_SRC_DIR= $(SRC_DIR)
+NVPSG_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----
+RECVPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)recvproc/SCCS/s.
+NVRECVPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvrecvproc/SCCS/s.
+PROCPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)procproc/SCCS/s.
+NVSENDPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvsendproc/SCCS/s.
+SENDPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)sendproc/SCCS/s.
+NVEXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvexpproc/SCCS/s.
+EXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)expproc/SCCS/s.
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+ROBOPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)roboproc/SCCS/s.
+VWACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vwacq/SCCS/s.
+NVACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvacq/SCCS/s.
+VNMR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmr/SCCS/s.
+ACQPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)acqproc/SCCS/s.
+PSG_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)psg/SCCS/s.
+NVPSG_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvpsg/SCCS/s.
+
+RECVPROC_SRC_DIR= $(RECVPROC_SCCS_SRC)
+NVRECVPROC_SRC_DIR= $(NVRECVPROC_SCCS_SRC)
+PROCPROC_SRC_DIR= $(PROCPROC_SCCS_SRC)
+NVSENDPROC_SRC_DIR= $(NVSENDPROC_SCCS_SRC)
+SENDPROC_SRC_DIR= $(SENDPROC_SCCS_SRC)
+NVEXPPROC_SRC_DIR= $(NVEXPPROC_SCCS_SRC)
+EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)
+NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)
+ROBOPROC_SRC_DIR= $(ROBOPROC_SCCS_SRC)
+VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)
+NVACQ_SRC_DIR= $(NVACQ_SCCS_SRC)
+VNMR_SRC_DIR= $(VNMR_SCCS_SRC)
+ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)
+PSG_SRC_DIR= $(PSG_SCCS_SRC)
+NVPSG_SRC_DIR= $(NVPSG_SCCS_SRC)
+
+#--- Link Commands for Sources Needed. -------
+RECVPROC_LN = ln -s $(RECVPROC_SRC_DIR)$(@)
+NVRECVPROC_LN = ln -s $(NVRECVPROC_SRC_DIR)$(@)
+PROCPROC_LN = ln -s $(PROCPROC_SRC_DIR)$(@)
+NVSENDPROC_LN = ln -s $(NVSENDPROC_SRC_DIR)$(@)
+SENDPROC_LN = ln -s $(SENDPROC_SRC_DIR)$(@)
+EXPPROC_LN = ln -s $(EXPPROC_SRC_DIR)$(@)
+ROBOPROC_LN = ln -s $(ROBOPROC_SRC_DIR)$(@)
+NCOMM_LN = ln -s $(NCOMM_SRC_DIR)$(@)
+VWACQ_LN = ln -s $(VWACQ_SRC_DIR)$(@)
+VNMR_LN = ln -s $(VNMR_SRC_DIR)$(@)
+ACQPROC_LN = ln -s $(ACQPROC_SRC_DIR)$(@)
+PSG_LN = ln -s $(PSG_SRC_DIR)$(@)
+ 
+#---  SCCS Extraction Commands for Sources Needed.  -------
+RECVPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)recvproc/SCCS get
+NVRECVPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvrecvproc/SCCS get
+PROCPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)procproc/SCCS get
+NVSENDPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvsendproc/SCCS get
+SENDPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)sendproc/SCCS get
+ROBOPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)roboproc/SCCS get
+NCOMM_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ncomm/SCCS get
+NVEXPPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvexpproc/SCCS get
+EXPPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)expproc/SCCS get
+VWACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vwacq/SCCS get
+NVACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvacq/SCCS get
+VNMR_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vnmr/SCCS get
+ACQPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)acqproc/SCCS get
+PSG_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)psg/SCCS get
+NVPSG_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvpsg/SCCS get
+ 
+#----  default source extraction to links -------
+RECVPROC_GET= $(RECVPROC_SGET)
+NVRECVPROC_GET= $(NVRECVPROC_SGET)
+PROCPROC_GET= $(PROCPROC_SGET)
+NVSENDPROC_GET= $(NVSENDPROC_SGET)
+SENDPROC_GET= $(SENDPROC_SGET)
+ROBOPROC_GET= $(ROBOPROC_SGET)
+NCOMM_GET= $(NCOMM_SGET)
+NVEXPPROC_GET= $(NVEXPPROC_SGET)
+EXPPROC_GET= $(EXPPROC_SGET)
+VWACQ_GET= $(VWACQ_SGET)
+NVACQ_GET= $(NVACQ_SGET)
+VNMR_GET= $(VNMR_SGET)
+ACQPROC_GET= $(ACQPROC_SGET)
+PSG_GET= $(PSG_SGET)
+NVPSG_GET= $(NVPSG_SGET)
+
+#------------------------------------------------------------------------
+#--- NCOMM Sources that are needed 
+#------------------------------------------------------------------------
+# Communications libraries
+NCOMM_HDR_LIB=			\
+		errLogLib.h	\
+                eventHandler.h  \
+                eventQueue.h    \
+                eventQueueP.h   \
+		hhashLib.h	\
+		ipcKeyDbm.h	\
+		ipcMsgQLib.h	\
+                listObj.h       \
+		mfileObj.h	\
+		msgQLib.h	\
+		semLib.h	\
+		shrMLib.h
+
+#		sendAsync.h	\
+
+NCOMM_SRC_LIB=			\
+		errLogLib.c	\
+		hhashLib.c	\
+		ipcKeyDbm.c	\
+		ipcMsgQLib.c	\
+                listObj.c       \
+		mfileObj.c	\
+		semLib.c	\
+		msgQLib.c	\
+		shrMLib.c
+
+#		sendAsync.c	\
+
+NCOMM_OBJ_LIB= $(NCOMM_SRC_LIB:.c=.o)
+
+
+#------------------------------------------------------------------------
+#--- Channel Sources that are needed for Recvproc
+#------------------------------------------------------------------------
+CHANOBJ_HDR=			\
+		sockets.h
+
+#		chanLib.h	\
+#		chanLibP.h	\
+
+CHANOBJ_SRC=			\
+		sockets.c	\
+		fdmask.c
+
+#		signals.c	\
+
+#		chanLib.c	\
+
+CHANOBJ_OBJ=$(CHANOBJ_SRC:.c=.o)
+
+
+#---- All Sources and headers required for compilation -----
+
+
+#------------------------------------------------------------------------
+ROBOPROC_HDR=
+ROBOPROC_SRC=
+ROBOPROC_OBJ= $(ROBOPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+SENDPROC_HDR=
+SENDPROC_SRC=
+SENDPROC_OBJ= $(SENDPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+RECVPROC_HDR=
+RECVPROC_SRC=
+RECVPROC_OBJ= $(RECVPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+NVRECVPROC_HDR=		\
+		rngBlkLib.h
+
+NVRECVPROC_SRC=		\
+		rngBlkLib.c
+
+NVRECVPROC_OBJ= $(NVRECVPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#-- Sendproc Source & Header files
+#------------------------------------------------------------------------
+NVSENDPROC_HDR=                 \
+		nddsbufmngr.h
+
+NVSENDPROC_SRC=                 \
+		nddsbufmngr.c
+
+NVSENDPROC_OBJ= $(NVSENDPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#-- Procproc Source & Header files
+#------------------------------------------------------------------------
+PROCPROC_HDR=                   \
+                procQfuncs.h
+ 
+PROCPROC_SRC=                   \
+                procQfuncs.c
+ 
+PROCPROC_OBJ= $(PROCPROC_SRC:.c=.o)
+ 
+ 
+
+#------------------------------------------------------------------------
+ACQPROC_HDR=			\
+		config.h	\
+		sram.h
+
+
+#------------------------------------------------------------------------
+VWACQ_HDR=			\
+		rngLLib.h       \
+		acqcmds.h	\
+		hostAcqStructs.h
+
+VWACQ_SRC=			\
+		rngLLib.c
+
+VWACQ_OBJ= $(VWACQ_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+VNMR_HDR=                       \
+		errorcodes.h	\
+		acqerrmsges.h
+VNMR_SRC=
+VNMR_OBJ= $(VNMR_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+PSG_HDR=                       \
+		REV_NUMS.h
+
+PSG_SRC=
+PSG_OBJ= $(PSG_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+NVPSG_HDR=
+
+NVPSG_SRC=
+NVPSG_OBJ= $(PSG_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#-- NDDS Types Source  files 
+#------------------------------------------------------------------------
+
+NDDS_TYPES = Monitor_Cmd.x Console_Stat.x App_HB.x
+
+NDDS_C_SRC= $(NDDS_TYPES:.x=.c)
+NDDS_C_HDR= $(NDDS_TYPES:.x=.h)
+NDDS_OBJ= $(NDDS_TYPES:.x=.o)
+
+#------------------------------------------------------------------------
+#-- NDDS comm Source  files 
+#------------------------------------------------------------------------
+
+NVACQ_HDR=			\
+		sysUtils.h      \
+		crc32.h		\
+		NDDS_Obj.h	\
+		NDDS_PubFuncs.h	\
+		NDDS_SubFuncs.h	
+
+NVACQ_SRC=			\
+		crc32.c         \
+		sysUtils.c      \
+		NDDS_Obj.c      \
+		NDDS_PubFuncs.c \
+		NDDS_SubFuncs.c	
+
+NVACQ_OBJ= $(NVACQ_SRC:.c=.o)
+
+#
+#------------------------------------------------------------------------
+#-- nvexpproc Source  files 
+#------------------------------------------------------------------------
+NVEXPPROC_HDR =			\
+		HBListener.h
+
+NVEXPPROC_SRC =			\
+		bill.c		\
+		expproc.c	\
+                expsocket.c	\
+		msgehandler.c	\
+		conhandler.c	\
+		nddscomfuncs.c	\
+		HBthread.c	\
+		HBListener.c	\
+		exceptHandler.c	\
+		prochandler.c
+
+#		asyncIO.c	
+
+NVEXPPROC_OBJ= $(NVEXPPROC_SRC:.c=.o)
+#------------------------------------------------------------------------
+#-- expproc Source  files 
+#------------------------------------------------------------------------
+EXPPROC_HDR=			\
+		commfuncs.h	\
+                hostMsgChannels.h \
+		expentrystructs.h \
+		expDoneCodes.h	\
+		expQfuncs.h	\
+		parser.h	\
+		prochandler.h	\
+		shrexpinfo.h    \
+		shrstatinfo.h
+
+#		sendIpcMsg.h	\
+# 		expcmds.h
+
+EXPPROC_SRC=			\
+		expcmds.c	\
+		expfuncs.c	\
+		parser.c	\
+		expQfuncs.c	\
+		statfuncs.c	\
+		daemon.c
+
+#		socketfuncs.c	\
+#		sendIpcMsg.c	\
+
+EXPPROC_OBJ= $(EXPPROC_SRC:.c=.o)
+
+
+SERVICES_SRC=			\
+		mkdummycmds.sh	\
+		services.c
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= 				\
+	$(CHANOBJ_SRC) $(CHANOBJ_HDR) 	\
+	$(NVEXPPROC_SRC) $(NVEXPPROC_HDR)	\
+	$(NVSENDPROC_SRC) $(NVSENDPROC_HDR)	\
+	$(EXPPROC_SRC) $(EXPPROC_HDR)	\
+	$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) \
+	$(PROCPROC_SRC) $(PROCPROC_HDR)  \
+	$(RECVPROC_SRC) $(RECVPROC_HDR)  \
+	$(NVRECVPROC_SRC) $(NVRECVPROC_HDR)  \
+	$(ROBOPROC_SRC) $(ROBOPROC_HDR)  \
+	$(SENDPROC_SRC) $(SENDPROC_HDR)  \
+	$(VNMR_SRC) $(VNMR_HDR)		\
+	$(PSG_SRC) $(PSG_HDR)		\
+	$(VWACQ_SRC) $(VWACQ_HDR)	\
+	$(NVACQ_SRC) $(NVACQ_HDR)	\
+	$(ACQPROC_HDR)			\
+	$(SERVICES_SRC)
+ 
+ALL_C_SRC = $(NVEXPPROC_SRC) $(EXPPROC_SRC) $(VWACQ_SRC) \
+	    $(NVRECVPROC_SRC)  $(NVSENDPROC_SRC) \
+	    $(NVACQ_SRC)  $(NDDS_SRC)  \
+	    $(PROCPROC_SRC)  $(NCOMM_SRC_LIB)  $(CHANOBJ_SRC)
+	    
+
+all: std dbx 
+	@echo "NMR_ID all Expproc(s) complete"
+
+ 
+# link to ncomm library libncomm.a 
+# assume sun4, SunOS
+
+#std : $$(MAKEFILE) Source
+#	@( if [ ! -d $(OBJDIR)obj ]; then	\
+#	   mkdir $(OBJDIR)obj; 			\
+#	fi)
+#	( cd $(OBJDIR)obj;			\
+#	$(MAKE) -e -f ../$(MAKEFILE) \
+#	"CFLAGS = $(OPTIMIZE) -DDEBUG -DNODUMMY"		\
+#	"LDFLAGS = -L/vnmr/lib" \
+#	"OBJDIR=$(sun4objdir)"		\
+#	Expproc)
+#	@echo "NMR_ID Expproc complete -------------------------------------"
+
+std : 
+	@( if [ ! -d $(OBJDIR)obj ]; then	\
+	   mkdir $(OBJDIR)obj; 			\
+	fi)
+	( cd $(OBJDIR)obj;			\
+	$(MAKE) -e -f ../$(MAKEFILE) \
+	"CFLAGS = $(OPTIMIZE) -DDEBUG -DNODUMMY -DRTI_UNIX -DNIRVANA -DNOASYNC $(INCLUDES)"	\
+	Expproc )
+	@echo "NMR_ID Expproc complete ----------------------------------"
+
+# for debug link all  objects into recvproc
+dbx : 
+	@( if [ ! -d $(OBJDIR)dbx ]; then	\
+	   mkdir $(OBJDIR)dbx; 			\
+	fi)
+	( cd $(OBJDIR)dbx;			\
+	$(MAKE) -e -f ../$(MAKEFILE) \
+	"CFLAGS = $(DEBUGOPT) -DDEBUG -DNODUMMY -DRTI_UNIX -DNIRVANA -DNOASYNC $(INCLUDES)"	\
+	Expproc_dbx )
+	@echo "NMR_ID Expproc_dbx complete ----------------------------------"
+
+dbxprof :
+	@( if [ ! -d $(OBJDIR)dbxprof ]; then   \
+	   mkdir $(OBJDIR)dbxprof;                      \
+	fi)
+	( cd $(OBJDIR)dbxprof;                  \
+	$(MAKE) -e -f ../$(MAKEFILE) \
+	"NDDSGEN = $(NDDSHOME)/bin/SolBin/nddsgen"  \
+	"CFLAGS = $(PROFOPT) -DPROFILING -DDEBUG -DNODUMMY -DRTI_UNIX -DNIRVANA -DNOASYNC $(INCLUDES)"	\
+	"LIBS = $(RLIBDIR) $(NDDSLIBS) $(PROFLIBS) $(STDLIBS)"                          \
+	Expproc_prof )
+	@echo "NMR_ID Expproc_prof profiling complete ----------------------------------"
+
+
+WINDOWS : 
+	@( if [ ! -d win_sfu ]; then	\
+	   mkdir win_sfu; 			\
+	fi)
+	( cd win_sfu;			\
+	$(MAKE) -e -f ../$(MAKEFILE) \
+	"CC = gcc" 			\
+	"CCC = g++" 			\
+	"DEBUGOPT = -g"			\
+	"NDDSLIBPATH = lib/WinSFULibs" 	\
+	"NDDSGEN = $(NDDSHOME)/bin/WinBin/nddsgen.exe"	\
+	"STDLIBS = -lsocket -lm -lpthread" \
+	"RLIBDIR = -rpath /vnmr/lib:$(NDDSHOME)/lib/WinLibs" \
+	"CFLAGS = -g -DDEBUG -DNODUMMY -D_ALL_SOURCE -D_USE_LIBPORT -D_REENTRANT -DLINUX -DRTI_UNIX -DNIRVANA -DNOASYNC -DUSE_HTONS -DNO_MULTICAST $(INCLUDES)" \
+	Expproc_win )
+	@echo "Windows Expproc complete ----------------------------------"
+
+
+
+services : expcmds.o dummycmds.o services.o
+	(umask 2; $(LINK.c) -o $@ expcmds.o dummycmds.o services.o)
+
+dummycmds.c: mkdummycmds.sh expcmds.o
+	(umask 2; sh mkdummycmds.sh expcmds.o)
+
+
+
+#SOLARIS: $$(MAKEFILE) Source
+#	( SOLARIS="y"; export SOLARIS; $(MAKE) -e -f $(MAKEFILE) \
+#	 "CPPFLAGS= -DSOLARIS"			\
+#	 "LIBS= -lm -lsocket -lnsl"		\
+#	 "WORKLIB= libAutoproc.a" Autoproc )
+#	@echo "NMR_ID Autoproc for Solaris complete -------------------------"
+
+
+# ---- Be sure True Source that we link to are upto date.
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+             "EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)"	\
+             "EXPPROC_GET= $(EXPPROC_SGET)" 		\
+             "NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)" 	\
+	     "NCOMM_GET= $(NCOMM_SGET)" 		\
+             "PROCPROC_SRC_DIR= $(PROCPROC_SCCS_SRC)"   \
+             "PROCPROC_GET= $(PROCPROC_SGET)" 		\
+             "RECVPROC_SRC_DIR= $(RECVPROC_SCCS_SRC)"   \
+             "RECVPROC_GET= $(RECVPROC_SGET)" 		\
+             "NVRECVPROC_SRC_DIR= $(NVRECVPROC_SCCS_SRC)"   \
+             "NVRECVPROC_GET= $(NVRECVPROC_SGET)" 		\
+             "NVSENDPROC_SRC_DIR= $(NVSENDPROC_SCCS_SRC)"   \
+             "NVSENDPROC_GET= $(NVSENDPROC_SGET)" 		\
+             "ROBOPROC_SRC_DIR= $(ROBOPROC_SCCS_SRC)"	\
+             "ROBOPROC_GET= $(ROBOPROC_SGET)" 		\
+             "SENDPROC_SRC_DIR= $(SENDPROC_SCCS_SRC)"   \
+             "SENDPROC_GET= $(SENDPROC_SGET)" 		\
+             "VNMR_SRC_DIR= $(VNMR_SCCS_SRC)" 		\
+	     "VNMR_GET= $(VNMR_SGET)" 			\
+             "ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)"	\
+             "ACQPROC_GET= $(ACQPROC_SGET)" 		\
+             "PSG_SRC_DIR= $(PSG_SCCS_SRC)"	\
+             "PSG_GET= $(PSG_SGET)" 		\
+             "VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)" 	\
+	     "VWACQ_GET= $(VWACQ_SGET)" src )
+
+src : $$(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+Expproc : $(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ) $(NVACQ_OBJ) $(NDDS_OBJ) $(EXPPROC_OBJ) $(NVEXPPROC_OBJ) $(PROCPROC_OBJ) $(NVRECVPROC_OBJ) $(VWACQ_OBJ) $(NVSENDPROC_OBJ)
+	(umask 2; $(LINK.c) -o $@  $(EXPPROC_OBJ) $(NVACQ_OBJ) $(NDDS_OBJ) $(PROCPROC_OBJ) $(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ)  $(NVEXPPROC_OBJ) $(NVRECVPROC_OBJ)  $(VWACQ_OBJ) $(NVSENDPROC_OBJ) $(LIBS))
+	( umask 2; cp $@ ..)
+	@echo Expproc is complete
+
+
+Expproc_dbx : $(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ) $(NVACQ_OBJ) $(NDDS_OBJ) $(EXPPROC_OBJ) $(NVEXPPROC_OBJ) $(PROCPROC_OBJ) $(NVRECVPROC_OBJ) $(VWACQ_OBJ) $(NVSENDPROC_OBJ)
+	(umask 2; $(LINK.c) -o $@  $(EXPPROC_OBJ) $(NVACQ_OBJ) $(NDDS_OBJ) $(PROCPROC_OBJ) $(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ)  $(NVEXPPROC_OBJ) $(NVRECVPROC_OBJ) $(VWACQ_OBJ) $(NVSENDPROC_OBJ) $(LIBS))
+	( umask 2; cp $@ ..)
+	@echo Expproc_dbx is complete
+
+Expproc_prof : $(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ) $(NVACQ_OBJ) $(NDDS_OBJ) $(EXPPROC_OBJ) $(NVEXPPROC_OBJ) $(PROCPROC_OBJ) $(NVRECVPROC_OBJ) $(VWACQ_OBJ) $(NVSENDPROC_OBJ)
+	(umask 2; $(LINK.c) -xpg -o $@  $(EXPPROC_OBJ) $(NVACQ_OBJ) $(NDDS_OBJ) $(PROCPROC_OBJ) $(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ)  $(NVEXPPROC_OBJ) $(NVRECVPROC_OBJ) $(VWACQ_OBJ) $(NVSENDPROC_OBJ) $(LIBS))
+	( umask 2; cp $@ ..)
+	@echo Expproc_prof is complete
+
+
+Expproc_win : $(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ) $(NVACQ_OBJ) $(NDDS_OBJ) $(EXPPROC_OBJ) $(NVEXPPROC_OBJ) $(PROCPROC_OBJ) $(NVRECVPROC_OBJ) $(VWACQ_OBJ) $(NVSENDPROC_OBJ)
+	(umask 2; $(LINK.c) -o Expproc  $(EXPPROC_OBJ) $(NVACQ_OBJ) $(NDDS_OBJ) $(PROCPROC_OBJ) $(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ)  $(NVEXPPROC_OBJ) $(NVRECVPROC_OBJ) $(VWACQ_OBJ) $(NVSENDPROC_OBJ) $(NDDSLIBS_SFU) )
+	( umask 2; cp Expproc ..)
+
+
+depend: src
+	makedepend -f $(MAKEFILE) $(DEBUGOPT) -DDEBUG -DNODUMMY -DRTI_UNIX -DNIRVANA -Y -I./ $(ALL_C_SRC) 2>/dev/null
+
+#	makedepend -f $(MAKEFILE) $(DEBUGOPT) -DDEBUG -DNODUMMY -DRTI_UNIX -DNIRVANA $(INCLUDES) $(ALL_C_SRC) 2>/dev/null
+
+
+#--- Object Targets ----------------------------------------------
+
+#Monitor_Cmd.c Monitor_Cmd.h : Monitor_Cmd.x
+#	-(umask 2; nddsgen -replace Monitor_Cmd.x )
+
+#Console_Stat.c Console_Stat.h : Console_Stat.x
+#	-(umask 2; nddsgen -replace Console_Stat.x )
+
+$(NDDS_C_SRC) : $(NDDS_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDSHOME_GEN); $(NDDSGEN) -replace  $(@:.c=.x) )
+
+$(NDDS_C_HDR) : $(NDDS_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDSHOME_GEN); $(NDDSGEN) -replace  $(@:.h=.x) )
+
+$(ALLOBJS) : $(@:.o=.c)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(SENDPROC_MAN_LIB) : $(@:.nr=.c)
+	-(umask 2; mangen $(@:.nr=.c) ; nroff -man $@ > $(@:.nr=.man) )
+
+$(SENDPROC_INSTALLMAN_LIB) : $(@:.2=.c)
+	-(umask 2; mangen $(@:.2=.c) ; mv $(@:.2=.nr) $@ )
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(EXPPROC_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(NVEXPPROC_SRC) $(NVEXPPROC_HDR) : $$(NVEXPPROC_SRC_DIR)$$(@)
+	$(NVEXPPROC_SGET) $@
+
+$(EXPPROC_SRC) $(EXPPROC_HDR) $(SERVICES_SRC) : $$(EXPPROC_SRC_DIR)$$(@)
+	$(EXPPROC_GET) $@
+
+$(PROCPROC_SRC) $(PROCPROC_HDR) : $$(PROCPROC_SRC_DIR)$$(@)
+	$(PROCPROC_GET) $@
+ 
+$(RECVPROC_SRC) $(RECVPROC_HDR) : $$(RECVPROC_SRC_DIR)$$(@)
+	$(RECVPROC_GET) $@
+
+$(NVRECVPROC_SRC) $(NVRECVPROC_HDR) : $$(NVRECVPROC_SRC_DIR)$$(@)
+	$(NVRECVPROC_GET) $@
+
+$(NVSENDPROC_SRC) $(NVSENDPROC_HDR) : $$(NVSENDPROC_SRC_DIR)$$(@)
+	$(NVSENDPROC_GET) $@
+
+$(SENDPROC_SRC) $(SENDPROC_HDR) : $$(SENDPROC_SRC_DIR)$$(@)
+	$(SENDPROC_GET) $@
+
+$(ROBOPROC_SRC) $(ROBOPROC_HDR) : $$(ROBOPROC_SRC_DIR)$$(@)
+	$(ROBOPROC_GET) $@
+
+$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) $(CHANOBJ_SRC) $(CHANOBJ_HDR) : $$(NCOMM_SRC_DIR)$$(@)
+	$(NCOMM_GET) $@
+
+$(VNMR_SRC) $(VNMR_HDR) : $$(VNMR_SRC_DIR)$$(@)
+	$(VNMR_GET) $@
+
+$(ACQPROC_HDR) : $$(ACQPROC_SRC_DIR)$$(@)
+	- $(ACQPROC_GET) $@
+
+$(PSG_HDR) : $$(PSG_SRC_DIR)$$(@)
+	$(PSG_GET) $@
+
+$(NVPSG_HDR) : $$(NVPSG_SRC_DIR)$$(@)
+	$(NVPSG_GET) $@
+
+$(VWACQ_SRC) $(VWACQ_HDR) : $$(VWACQ_SRC_DIR)$$(@)
+	$(VWACQ_GET) $@
+
+$(NVACQ_SRC) $(NVACQ_HDR) $(NDDS_TYPES): $$(NVACQ_SRC_DIR)$$(@)
+	$(NVACQ_SGET) $@
+
+# ---------  Manual dependences ------------- 
+expproc.nr:  expproc.c
+
+expfuncs.o: shrexpinfo.h
+
+nddsbufmngr.h: rngLLib.h
+
+semLib.o: semLib.h
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+
+bill.o: shrexpinfo.h
+expproc.o: hostMsgChannels.h msgQLib.h ipcMsgQLib.h shrMLib.h mfileObj.h
+expproc.o: errLogLib.h commfuncs.h procQfuncs.h REV_NUMS.h sysUtils.h
+expsocket.o: sockets.h errLogLib.h rngBlkLib.h
+msgehandler.o: errLogLib.h hostAcqStructs.h commfuncs.h msgQLib.h
+msgehandler.o: ipcMsgQLib.h shrMLib.h mfileObj.h shrexpinfo.h shrstatinfo.h
+msgehandler.o: expDoneCodes.h expQfuncs.h procQfuncs.h expentrystructs.h
+msgehandler.o: prochandler.h eventHandler.h config.h sram.h
+conhandler.o: errLogLib.h msgQLib.h ipcMsgQLib.h shrMLib.h mfileObj.h
+conhandler.o: hostAcqStructs.h commfuncs.h expentrystructs.h expQfuncs.h
+conhandler.o: shrexpinfo.h expDoneCodes.h errorcodes.h acqerrmsges.h config.h
+conhandler.o: sram.h prochandler.h shrstatinfo.h acqcmds.h
+nddscomfuncs.o: errLogLib.h HBListener.h NDDS_Obj.h NDDS_PubFuncs.h
+nddscomfuncs.o: NDDS_SubFuncs.h sockets.h msgQLib.h ipcMsgQLib.h shrMLib.h
+nddscomfuncs.o: mfileObj.h nddsbufmngr.h rngLLib.h rngBlkLib.h
+HBthread.o: NDDS_Obj.h NDDS_PubFuncs.h errLogLib.h
+HBListener.o: errLogLib.h NDDS_Obj.h HBListener.h sockets.h msgQLib.h
+HBListener.o: ipcMsgQLib.h shrMLib.h mfileObj.h
+exceptHandler.o: errLogLib.h
+prochandler.o: errLogLib.h prochandler.h
+expcmds.o: parser.h
+expfuncs.o: errLogLib.h msgQLib.h ipcMsgQLib.h shrMLib.h mfileObj.h
+expfuncs.o: shrexpinfo.h hostMsgChannels.h expentrystructs.h expQfuncs.h
+parser.o: errLogLib.h hhashLib.h parser.h
+expQfuncs.o: errLogLib.h mfileObj.h shrMLib.h shrexpinfo.h expQfuncs.h
+statfuncs.o: errLogLib.h hostAcqStructs.h mfileObj.h shrMLib.h shrstatinfo.h
+rngLLib.o: rngLLib.h
+rngBlkLib.o: rngBlkLib.h
+nddsbufmngr.o: rngBlkLib.h rngLLib.h nddsbufmngr.h
+crc32.o: crc32.h
+sysUtils.o: errLogLib.h
+NDDS_Obj.o: errLogLib.h NDDS_Obj.h
+NDDS_PubFuncs.o: errLogLib.h NDDS_Obj.h
+NDDS_SubFuncs.o: errLogLib.h NDDS_Obj.h
+procQfuncs.o: errLogLib.h mfileObj.h shrMLib.h shrexpinfo.h procQfuncs.h
+hhashLib.o: errLogLib.h hhashLib.h
+ipcKeyDbm.o: errLogLib.h shrMLib.h mfileObj.h ipcKeyDbm.h
+ipcMsgQLib.o: errLogLib.h ipcMsgQLib.h
+listObj.o: listObj.h
+mfileObj.o: errLogLib.h mfileObj.h
+msgQLib.o: errLogLib.h hostMsgChannels.h mfileObj.h msgQLib.h ipcMsgQLib.h
+msgQLib.o: shrMLib.h
+shrMLib.o: errLogLib.h shrMLib.h mfileObj.h
+sockets.o: errLogLib.h sockets.h

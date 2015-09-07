@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<template type="system" name="FileInfoPanel" >
+  <group loc="8 12" size="608 40" font="" >
+    <entry loc="450 4" size="140 25" point=""
+      fg=""
+      key="title"
+      />
+    <entry loc="5 6" size="100 23" font=""
+      point=""
+      fg=""
+      key="type"
+      />
+    <menu loc="110 6" size="100 23" key="element"
+      keyval="panels" bg=""
+      >
+      <mlabel value="template" chval="panels"/>
+      <mlabel value="component" chval="composites"/>
+    </menu>
+    <label loc="220 4" size="40 25" fg=""
+      value="Name"
+      />
+    <entry loc="270 4" size="120 25" point=""
+      fg=""
+      key="name"
+      />
+    <label loc="400 4" size="40 25" fg=""
+      value="Title "
+      />
+  </group>
+</template>

@@ -1,0 +1,4 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"Start NMS GUI from vnmr"
+
+shell('$vnmrsystem/tcl/bin/nms "' +vnmraddr +'" '):$dum

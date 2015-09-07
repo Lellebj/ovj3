@@ -1,0 +1,10 @@
+Copyright (c) Agilent Technologies  All Rights Reserved.
+enterdialog:	Macro to start a dialog - used by enter (M)
+
+	
+        Description:    Starts a dialog window using enterexp file
+        		in /dialoglib directory
+        		[Automation ONLY]
+        		
+        Related:        doautodialog
+

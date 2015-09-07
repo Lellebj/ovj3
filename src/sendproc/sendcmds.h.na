@@ -1,0 +1,61 @@
+/* sendcmds.h.na - Table of commands & function calls Header */
+#ifndef LINT
+/* "sendcmds.h.na Copyright (c) 1994-1996 Varian Assoc.,Inc. All Rights Reserved" */
+#endif
+/* 
+ * Varian Assoc.,Inc. All Rights Reserved.
+ * This software contains proprietary and confidential
+ * information of Varian Assoc., Inc. and its contributors.
+ * Use, disclosure and reproduction is prohibited without
+ * prior consent.
+ */
+
+
+
+#ifndef INCsendcmdsh
+#define INCsendcmdsh
+
+/* ------------- Make C header file C++ compliant ------------------- */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+/*-------------------------------------------------------------------------
+|       sendcmds.h
+|
+|       This include file contains the names, addresses, and other
+|       information about all commands.
++-------------------------------------------------------------------------*/
+#include <stdio.h>
+
+struct _cmd { char   *n;
+              int   (*f)();
+	      char   *d;
+            };
+typedef struct _cmd cmd;
+
+/* commands MUST be alphabetized */
+extern int abortCodes();
+extern int debugLevel();
+extern int listCmds();
+extern int mapIn();
+extern int mapOut();
+extern int sendCodes();
+extern int terminate();
+ 
+cmd table[] = { 
+    {"send"	, sendCodes, 	"Download acodes" },
+    {"term"	, terminate, 	"Terminate Sendproc" },
+    {"debug"	, debugLevel, 	"Changed Debug Level" },
+    {"mapin"	, mapIn, 	"Map in a Shared Memory Segment" },
+    {"mapout"	, mapOut, 	"Map out a Shared Memory Segment" },
+    {"?"	, listCmds, 	"List Known Commands" },
+    {NULL	,  NULL, 	NULL    }
+              };
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* INCsendcmdsh */

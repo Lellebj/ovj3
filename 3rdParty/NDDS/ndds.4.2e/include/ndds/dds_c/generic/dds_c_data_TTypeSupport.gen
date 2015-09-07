@@ -1,0 +1,383 @@
+/* $Id: TTypeSupport.c,v 1.15 2007/03/03 02:28:40 elaine Exp $
+ (c) Copyright, Real-Time Innovations, $Date: 2007/03/03 02:28:40 $. 
+ All rights reserved.
+ No duplications, whole or partial, manual or electronic, may be made
+ without express written permission.  Any such copies, or
+ revisions thereof, must display this notice unaltered.
+ This code contains trade secrets of Real-Time Innovations, Inc.
+
+modification history
+--------------------
+1.0h,16feb07,eys Added TTypeSupport_finalize() to fix memory in use problem
+1.0h,16dec05,fcs Added expanded and not expanded versions for the functions
+                 initialize, finalize, create and delete
+1.0f,21jun05,fcs Replaced RTIBool with DDS_Boolean.
+1.0f,26may05,fcs Added the following functions:
+                 TTypeSupport ## _initialize
+                 TTypeSupport ## _finalize
+                 TTypeSupport ## _create
+                 TTypeSupport ## _destroy (replaces TTypeSupport ## _deleteX)
+                 These functions replace the old ones (deprecated) ended in X 
+                 and they receive an additional parameter to allocate/delete 
+                 the pointers of the type
+1.0f,06may05,jml Bug #9333 Foo::type_name() renamed as Foo::get_type_name() 
+1.0e,11feb05,rw  Renamed TypeSupport::destroyX() -> delete_data()
+1.0e,22nov04,eys Fixed compiler warnings
+1.0e,18nov04,rw  Removed obsolete and useless comments
+1.0d,05nov04,eys Type plugin refactoring
+1.0d,30sep04,eys PRESTypePluginProperty is no longer in InternalDefaults
+1.0d,10jun04,eys change TDataType to TTypeSupport
+1.0d,25may04,eys To ensure that internalDefaults is property initialized,
+                 we need to call DDS_DomainParticipantFactory_get_instance()
+		 before accessing internalDefaults. See bug #8272.
+1.0d,27apr04,eys Added struct keyword
+1.0d,05apr04,eys Copied from dds_cpp.1.0
+===================================================================== */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#ifndef dds_c_domain_h
+#include "dds_c/dds_c_domain.h"
+#endif
+
+#ifndef dds_c_topic_impl_h
+#include "dds_c/dds_c_topic_impl.h"
+#endif
+
+#ifndef dds_c_log_impl_h
+#include "dds_c/dds_c_log_impl.h"
+#endif
+
+
+/* ================================================================== */
+/*i
+   <<IMPLEMENTATION>> 
+
+   Requires:  TTYPENAME
+
+   Defines:   TTypeSupport
+*/
+#if defined(TTypeSupport) && defined(TTYPENAME) && defined(TData) && defined(TPlugin_new)
+
+/* ----------------------------------------------------------------- */
+/* Defines submodule for logging purposes
+ */
+#define DDS_CURRENT_SUBMODULE  DDS_SUBMODULE_MASK_DATA
+
+#define concatenate(A, B)  A ## B
+
+#define TTypeSupport_register_type_c(TTypeSupport) concatenate(TTypeSupport, _register_type)
+#define TTypeSupport_register_type TTypeSupport_register_type_c(TTypeSupport)
+
+#define TTypeSupport_create_data_c(TTypeSupport) concatenate(TTypeSupport, _create_data)
+#define TTypeSupport_create_data TTypeSupport_create_data_c(TTypeSupport)
+
+#define TTypeSupport_create_data_ex_c(TTypeSupport) concatenate(TTypeSupport, _create_data_ex)
+#define TTypeSupport_create_data_ex TTypeSupport_create_data_ex_c(TTypeSupport)
+
+#define TTypeSupport_delete_data_c(TTypeSupport) concatenate(TTypeSupport, _delete_data)
+#define TTypeSupport_delete_data TTypeSupport_delete_data_c(TTypeSupport)
+
+#define TTypeSupport_delete_data_ex_c(TTypeSupport) concatenate(TTypeSupport, _delete_data_ex)
+#define TTypeSupport_delete_data_ex TTypeSupport_delete_data_ex_c(TTypeSupport)
+
+#define TTypeSupport_initialize_data_c(TTypeSupport) concatenate(TTypeSupport, _initialize_data)
+#define TTypeSupport_initialize_data TTypeSupport_initialize_data_c(TTypeSupport)
+
+#define TTypeSupport_initialize_data_ex_c(TTypeSupport) concatenate(TTypeSupport, _initialize_data_ex)
+#define TTypeSupport_initialize_data_ex TTypeSupport_initialize_data_ex_c(TTypeSupport)
+
+#define TTypeSupport_finalize_data_c(TTypeSupport) concatenate(TTypeSupport, _finalize_data)
+#define TTypeSupport_finalize_data TTypeSupport_finalize_data_c(TTypeSupport)
+
+#define TTypeSupport_finalize_data_ex_c(TTypeSupport) concatenate(TTypeSupport, _finalize_data_ex)
+#define TTypeSupport_finalize_data_ex TTypeSupport_finalize_data_ex_c(TTypeSupport)
+
+#define TTypeSupport_copy_data_c(TTypeSupport) concatenate(TTypeSupport, _copy_data)
+#define TTypeSupport_copy_data TTypeSupport_copy_data_c(TTypeSupport)
+
+#define TTypeSupport_print_data_c(TTypeSupport) concatenate(TTypeSupport, _print_data)
+#define TTypeSupport_print_data TTypeSupport_print_data_c(TTypeSupport)
+
+#define TTypeSupport_get_type_name_c(TTypeSupport) concatenate(TTypeSupport, _get_type_name)
+#define TTypeSupport_get_type_name TTypeSupport_get_type_name_c(TTypeSupport)
+
+#define TTypeSupport_get_or_delete_instanceI_c(TTypeSupport) concatenate(TTypeSupport, _get_or_delete_instanceI)
+#define TTypeSupport_get_or_delete_instanceI TTypeSupport_get_or_delete_instanceI_c(TTypeSupport)
+/*i
+  \st_singleton
+
+  Requires: TPlugin_new
+ */
+DDS_DataTypeUtility* TTypeSupport_get_or_delete_instanceI(DDS_Boolean deleteInstance) {
+    /* <<singleton>> */
+
+    const char *const METHOD_NAME
+        = "TTypeSupport_get_or_delete_instance()";
+
+    /* Declare static to ensure that the DDS object gets initialized
+     * exactly once.
+     */
+    static DDS_DataTypeUtility* ddsDataType = NULL;
+    struct PRESTypePlugin* presTypePlugin = NULL;
+
+    if ((ddsDataType == NULL) && (deleteInstance == DDS_BOOLEAN_FALSE)) {
+
+      /* --- Get Presentation type plugin --- */
+	presTypePlugin = TPlugin_new();
+	if (presTypePlugin == NULL) {
+	    DDSLog_exception(METHOD_NAME, &RTI_LOG_ASSERT_FAILURE_s,
+			     "PRESTypePlugin must be non-NULL");
+	    goto done;
+	}
+
+	/* create untypeds data type uitlity C method */
+	ddsDataType =
+	    DDS_DataTypeUtility_createI(
+		presTypePlugin, TTYPENAME);
+
+    } else if ((ddsDataType != NULL) && (deleteInstance == DDS_BOOLEAN_TRUE)) {
+
+#if defined(TPlugin_delete)
+
+      presTypePlugin =
+	DDS_DataTypeUtility_get_type_pluginI(ddsDataType);
+      DDS_DataTypeUtility_deleteI(ddsDataType);
+      ddsDataType = NULL;
+      TPlugin_delete(presTypePlugin);
+
+#endif /* if defined(TPlugin_delete) */
+
+    }
+    
+  done:
+
+    return ddsDataType;
+}
+
+/* ----------------------------------------------------------------- */
+
+#if defined(TPlugin_delete)
+
+#define TTypeSupport_finalize_c(TTypeSupport) concatenate(TTypeSupport, _finalize)
+#define TTypeSupport_finalize TTypeSupport_finalize_c(TTypeSupport)
+
+void TTypeSupport_finalize() {
+
+    TTypeSupport_get_or_delete_instanceI(DDS_BOOLEAN_TRUE);
+}
+
+#undef TTypeSupport_finalize_c
+#undef TTypeSupport_finalize
+
+#endif /* defined(TPlugin_delete) */
+
+/* ----------------------------------------------------------------- */
+
+/*i
+   TTypeSupport_register_type()
+
+   @pre participant is non-NULL
+*/
+DDS_ReturnCode_t TTypeSupport_register_type(
+    DDS_DomainParticipant* participant,
+    const char* type_name) {
+
+    DDS_DataTypeUtility* ddsDataType = NULL;
+
+    if (participant == NULL) {
+	return DDS_RETCODE_ERROR;
+    }
+
+    /* get the type_utility <<singleton>> */
+    ddsDataType = TTypeSupport_get_or_delete_instanceI(DDS_BOOLEAN_FALSE);
+
+    return DDS_DataTypeUtility_register_typeI(
+	ddsDataType,
+	participant,
+	type_name);
+}
+
+/* !! IMPORTANT
+ * 
+ * TTypeSupport_create_data,TTypeSupport_initialize_data
+ * TTypeSupport_finalize_data and TTypeSupport_destroy_data
+ * 
+ * are not implemented calling the corresponding expanded functions because
+ * we are not initializing the expanded function pointers in the
+ * internal type plugins. This is something that is done only for user types
+ * generated with NDDSGEN.
+ * 
+ */
+
+/* ----------------------------------------------------------------- */
+struct TData* TTypeSupport_create_data() {
+    /* get the type_utility <<singleton>> */
+    DDS_DataTypeUtility* ddsDataType = TTypeSupport_get_or_delete_instanceI(DDS_BOOLEAN_FALSE);
+
+    /* create instance */
+    return (struct TData *)DDS_DataTypeUtility_create_dataI(
+      ddsDataType);
+}
+
+/* ----------------------------------------------------------------- */
+struct TData* TTypeSupport_create_data_ex(DDS_Boolean allocatePointers) {
+
+    /* get the type_utility <<singleton>> */
+    DDS_DataTypeUtility* ddsDataType = TTypeSupport_get_or_delete_instanceI(DDS_BOOLEAN_FALSE);
+
+    /* create instance */
+    return (struct TData *)DDS_DataTypeUtility_create_data_exI(
+      ddsDataType,(RTIBool)allocatePointers);
+}
+
+/* ----------------------------------------------------------------- */
+DDS_ReturnCode_t TTypeSupport_delete_data(
+        struct TData* a_data) {
+    /* get the type_utility <<singleton>> */
+    DDS_DataTypeUtility* ddsDataType = TTypeSupport_get_or_delete_instanceI(DDS_BOOLEAN_FALSE);
+
+    /* destroy instance */
+    return DDS_DataTypeUtility_destroy_dataI(ddsDataType,a_data);
+}
+
+/* ----------------------------------------------------------------- */
+DDS_ReturnCode_t TTypeSupport_delete_data_ex(
+	struct TData* a_data, DDS_Boolean deletePointers) {
+
+    /* get the type_utility <<singleton>> */
+    DDS_DataTypeUtility* ddsDataType = TTypeSupport_get_or_delete_instanceI(DDS_BOOLEAN_FALSE);
+
+    /* destroy instance */
+    return DDS_DataTypeUtility_destroy_data_exI(
+     ddsDataType,
+     a_data, (RTIBool)deletePointers);
+}
+
+/* ----------------------------------------------------------------- */
+DDS_ReturnCode_t TTypeSupport_copy_data(
+    struct TData* dst, const struct TData* src) {
+
+    /* get the type_utility <<singleton>> */
+    DDS_DataTypeUtility* ddsDataType = TTypeSupport_get_or_delete_instanceI(DDS_BOOLEAN_FALSE);
+
+    /* copy instance */
+    return DDS_DataTypeUtility_copy_dataI(
+	ddsDataType, dst, src);
+}
+
+/* ----------------------------------------------------------------- */
+DDS_ReturnCode_t TTypeSupport_initialize_data(
+    struct TData* a_data) {
+
+    /* get the type_utility <<singleton>> */
+    DDS_DataTypeUtility* ddsDataType = TTypeSupport_get_or_delete_instanceI(DDS_BOOLEAN_FALSE);
+
+    /* initialize instance */
+    return DDS_DataTypeUtility_initialize_dataI(
+      ddsDataType, a_data);
+}
+
+/* ----------------------------------------------------------------- */
+DDS_ReturnCode_t TTypeSupport_initialize_data_ex(
+    struct TData* a_data,DDS_Boolean allocatePointers) {
+
+    /* get the type_utility <<singleton>> */
+    DDS_DataTypeUtility* ddsDataType = TTypeSupport_get_or_delete_instanceI(DDS_BOOLEAN_FALSE);
+
+    /* initialize instance */
+    return DDS_DataTypeUtility_initialize_data_exI(
+      ddsDataType, a_data,(RTIBool)allocatePointers);
+}
+
+/* ----------------------------------------------------------------- */
+DDS_ReturnCode_t TTypeSupport_finalize_data(
+    struct TData* a_data) {
+
+    /* get the type_utility <<singleton>> */
+    DDS_DataTypeUtility* ddsDataType = TTypeSupport_get_or_delete_instanceI(DDS_BOOLEAN_FALSE);
+
+    /* initialize instance */
+    return DDS_DataTypeUtility_finalize_dataI(
+           ddsDataType, a_data);
+}
+
+/* ----------------------------------------------------------------- */
+DDS_ReturnCode_t TTypeSupport_finalize_data_ex(
+    struct TData* a_data,DDS_Boolean deletePointers) {
+
+    /* get the type_utility <<singleton>> */
+    DDS_DataTypeUtility* ddsDataType = TTypeSupport_get_or_delete_instanceI(DDS_BOOLEAN_FALSE);
+
+    /* initialize instance */
+    return DDS_DataTypeUtility_finalize_data_exI(
+           ddsDataType, a_data,(RTIBool)deletePointers);
+}
+
+/* ----------------------------------------------------------------- */
+void TTypeSupport_print_data(const struct TData *a_data) {
+
+    /* get the type_utility <<singleton>> */
+    DDS_DataTypeUtility* ddsDataType = TTypeSupport_get_or_delete_instanceI(DDS_BOOLEAN_FALSE);
+
+    /* print value */
+    DDS_DataTypeUtility_print_dataI(ddsDataType,
+				    a_data);
+}               
+
+/* ----------------------------------------------------------------- */
+/*i
+   Requires TTYPENAME
+*/
+const char* TTypeSupport_get_type_name() {
+    return TTYPENAME;
+}
+
+/* ----------------------------------------------------------------- */
+
+#undef concatenate
+
+#undef TTypeSupport_register_type_c
+#undef TTypeSupport_register_type
+
+#undef TTypeSupport_create_data_c
+#undef TTypeSupport_create_data
+
+#undef TTypeSupport_create_data_ex_c
+#undef TTypeSupport_create_data_ex
+
+#undef TTypeSupport_delete_data_c
+#undef TTypeSupport_delete_data
+
+#undef TTypeSupport_delete_data_ex_c
+#undef TTypeSupport_delete_data_ex
+
+#undef TTypeSupport_copy_data_c
+#undef TTypeSupport_copy_data
+
+#undef TTypeSupport_initialize_data_c
+#undef TTypeSupport_initialize_data
+
+#undef TTypeSupport_initialize_data_ex_c
+#undef TTypeSupport_initialize_data_ex
+
+#undef TTypeSupport_finalize_data_c
+#undef TTypeSupport_finalize_data
+
+#undef TTypeSupport_finalize_data_ex_c
+#undef TTypeSupport_finalize_data_ex
+
+#undef TTypeSupport_print_data_c
+#undef TTypeSupport_print_data
+
+#undef TTypeSupport_get_type_name_c
+#undef TTypeSupport_get_type_name
+
+#undef TTypeSupport_get_or_delete_instanceI_c
+#undef TTypeSupport_get_or_delete_instanceI
+
+#undef DDS_CURRENT_SUBMODULE
+#endif /* defined(TTypeSupport) && defined(TTYPENAME) && defined(TData) && defined(TPlugin_new) */
+
+/* End $Id: TTypeSupport.c,v 1.15 2007/03/03 02:28:40 elaine Exp $ */

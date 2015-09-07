@@ -1,0 +1,11 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+
+"*************************************************************************"
+" explog  -  display the experiment acquisition log                       "
+"*************************************************************************"
+exists(curexp+'/acqfil/log','file'):$e
+if ($e<>0) then
+  cat(curexp+'/acqfil/log')
+else 
+  write('line3','no acquisition log is present')
+  endif

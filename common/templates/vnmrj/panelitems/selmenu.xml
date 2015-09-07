@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template type="basic" element="elements">
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+      <selmenu size="56 24" fg="PlainText" font="PlainText"
+        style="PlainText" point="PlainText"
+        value="Make a selection" vq=""
+        vc=""
+        set=""
+        >
+      <mlabel value="sec" chval="sec"/>
+      <mlabel value="ms" chval="ms"/>
+      <mlabel value="us" chval="us"/>
+    </selmenu>
+</template>

@@ -1,0 +1,14 @@
+*.a
+*.o
+*.os
+*.so
+.sconsign.dblite
+
+Infostat
+showstat
+
+shims.c
+
+ACQPROC_strucs.h
+STAT_DEFS.h
+

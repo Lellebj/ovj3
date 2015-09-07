@@ -1,0 +1,148 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <signal.h>
+
+
+#include <errno.h>
+
+#include "hostMsgChannels.h"
+#include "ipcKeyDbm.h"
+#include "msgQLib.h"
+#include "chanLib.h"
+#include "errLogLib.h"
+#include "eventHandler.h"
+
+static MSG_Q_ID msgId;
+IPC_KEY_DBM_ID keyId;
+static IPC_KEY_DBM_DATA procEntry;
+
+/**************************************************************
+*
+*  setupMsgQ - Initialize the Message Q & DataBase for the give key.
+*
+* This routine initializes an Async. message Q and DataBase
+* on the give key.
+*  
+* RETURNS:
+* MSG_Q_ID , or NULL on error. 
+*
+*       Author Greg Brissey 8/4/94
+*/
+MSG_Q_ID setupMsgQ(int keyindex,int msgSize)
+{
+   static void setupMsgSig();
+
+   /* Create/Open  MSG Q Database */
+   keyId = ipcKeyDbmCreate(MSG_Q_DBM_PATH, MSG_Q_DBM_SIZE);
+   if (keyId == NULL)
+     errLogQuit(LOGOPT,debugInfo,"setupMsgQ: ipcKeyDbmCreate() failed.\n");
+
+   /* Update present Process Key,pid,etc. in database   */
+   ipcKeySet(keyId, "Roboproc", getpid(), keyindex, NULL);
+
+   ipcKeyGet(keyId, "Roboproc",&procEntry);  
+
+   /* create message queue with returned key_t key */
+   msgId = msgQCreate(procEntry.ipcKey, msgSize);
+   if (msgId == NULL)
+     errLogQuit(ErrLogOp,debugInfo,"setupMsgQ: msgQCreate() failed.\n");
+
+   /* 
+      Setup the SIGUSR1 signal handler that is used to signal
+      that there is a message in the Message Q.
+   */
+   setupMsgSig();
+
+#ifdef DEBUG
+   ipcKeyDbmShow(keyId);     /* display entries    */
+   msgQShow(msgId);
+#endif
+
+   return(msgId);
+}
+
+/* SIGUSR1, to signal  Message Queue I/O*/
+/**************************************************************
+*
+*  setupMsgSig - Setup Signal to to be Used for Async. Message Q 
+*
+* This routine initializes the  Async. Message Q Signal
+*  
+* RETURNS:
+* void 
+*
+*       Author Greg Brissey 8/4/94
+*/
+static void
+setupMsgSig()
+{
+    struct sigaction    intserv;
+    sigset_t            qmask;
+    static void         msgQitrp();
+    extern void processMsge();
+
+    /* --- set up signal handler --- */
+
+    sigemptyset( &qmask );
+    /* Block all these signal after SIGUSR1 recieved */
+    sigaddset( &qmask, SIGALRM );
+    sigaddset( &qmask, SIGCHLD );
+    sigaddset( &qmask, SIGIO );
+    sigaddset( &qmask, SIGUSR1 );
+    sigaddset( &qmask, SIGUSR2 );
+    intserv.sa_handler = msgQitrp;
+    intserv.sa_mask = qmask;
+    intserv.sa_flags = 0;
+ 
+    /* here we register both the signal handler to be called
+       and the non-interrupt function to handle the I/O */
+    registerAsyncHandlers(
+			  SIGUSR1,	/* message Q Signal */
+			  msgQitrp,	/* this puts the event on the eventQ */
+			  processMsge
+			 );
+    return;
+}
+
+/**************************************************************
+*
+*  msgQitrp - Routine envoked on receiving the Message Q Signal
+*
+*  This catches the Message Q Signal add place the 'event' on the
+*  event Q. Then in non-interrupt mode the register function will
+*  be called to handle the actual I/O.
+*  
+* RETURNS:
+* void 
+*
+*       Author Greg Brissey 9/6/94
+*/
+static void
+msgQitrp(int signal)
+{
+    /* Place the SIGUSR1 interrupt & msgID onto the eventQ, the non-
+       interrupt function (processMsge) will be called with msgId as an argument */
+    processNonInterrupt( SIGUSR1, (void*) msgId );
+    return;
+}
+
+/**************************************************************
+*
+*  shutdownComm - Close the Message Q , DataBase & Channel 
+*
+* This routine closes the message Q , DataBase and Channel
+*  
+* RETURNS:
+* MSG_Q_ID , or NULL on error. 
+*
+*       Author Greg Brissey 8/4/94
+*/
+int shutdownComm(void)
+{
+     msgQDelete(msgId);
+     ipcKeyDbmClose(keyId);
+}
+
+

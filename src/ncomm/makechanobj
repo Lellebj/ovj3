@@ -1,0 +1,72 @@
+# 
+# sccsdir & sourcedir are environment variables
+# sccsdir -> SCCS directory (/vsccs/sccs)
+# sourcedir -> source directory (/common)
+
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+
+MAKEFILE=makechanobj
+
+SRC_DIR=$(SRCDIR)/sysncomm/
+
+NCOMM_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+NCOMM_LN = ln -s $(NCOMM_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+NCOMM_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)ncomm get
+
+#----  default source extraction to links -------
+NCOMM_GET= $(NCOMM_LN)
+
+CHANOBJ_HDR=			\
+		chanLib.h	\
+		chanLibP.h	\
+		sockets.h
+
+CHANOBJ_SRC=			\
+		chanLib.c	\
+		sockets.c	\
+		signals.c	\
+		fdmask.c
+
+CHANOBJ_OBJ=$(CHANOBJ_SRC:.c=.o)
+
+#---- All Sources and headers required for compilation -----
+
+ALLSRC= $(CHANOBJ_HDR) $(CHANOBJ_SRC) 
+
+ALL_C_SRC= $(ALLSRC)
+
+ALLOBJS= $(CHANOBJ_OBJ)
+
+chanObj : $(CHANOBJ_OBJ)
+
+
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+	     "NCOMM_GET= $(NCOMM_SGET)"			\
+	     "NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)" 	\
+	     src)
+
+src : $$(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(CHANOBJ_SRC) $(CHANOBJ_HDR) : $$(NCOMM_SRC_DIR)$$(@)
+	$(NCOMM_GET) $@
+
+chanLib.o: chanLib.c
+chanLib.o: chanLibP.h
+chanLib.o: chanLib.h
+chanLib.o: sockets.h
+sockets.o: sockets.c
+sockets.o: sockets.h
+signals.o: signals.c
+fdmask.o: fdmask.c

@@ -1,0 +1,552 @@
+
+#include <stdio.h>
+
+#ifdef XVIEW
+#include <xview/xview.h>
+#include <xview/panel.h>
+#include <xview/notify.h>
+#include <xview/font.h>
+static unsigned short icon_image[] = {
+#include "acqstat.icon"
+};
+Xv_Font  font;
+#endif XVIEW
+
+#ifdef SUNVIEW
+#include <suntool/sunview.h>
+#include <suntool/canvas.h>
+#include <suntool/text.h>
+#include <suntool/panel.h>
+#include <sunwindow/notify.h>
+static unsigned short icon_image[] = {
+#include "acqstat.icon"
+};
+#define  xv_set		panel_set
+#define  xv_create	window_create
+#define  XV_SHOW	PANEL_SHOW_ITEM
+DEFINE_ICON_FROM_IMAGE(display_icon,icon_image);
+#endif SUNVIEW
+
+#ifdef MOTIF
+#include <X11/Intrinsic.h>
+#include <X11/IntrinsicP.h>
+#include <X11/StringDefs.h>
+#include <X11/Shell.h>
+#include <Xm/Xm.h>
+#include <Xm/Separator.h>
+#include <Xm/RowColumn.h>
+#include "acqstat.icon"
+#define Frame        Widget
+#define Canvas       Widget
+#define Panel        Widget
+#define Panel_item   Widget
+#endif MOTIF
+
+#include "acqstat_item.h"
+
+#define FRAME_WIDTH  45
+#define DISCONNECTSIZ 14
+#define MARGIN	2
+
+extern  char RemoteHost[]; 
+extern  long IntervalTime;
+
+Frame   frame;
+Panel   commandpanel;
+Panel   statusPanel;
+
+Panel_item quitbutton;
+Panel_item pan_items[ITEM_NUM];
+
+int     charWidth, charHeight;
+int     margin_y;
+
+
+#if defined(XVIEW) || defined(SUNVIEW)
+
+show_item(item, on)
+int   item, on;
+{
+	if (on)
+	   xv_set(pan_items[item], XV_SHOW, TRUE, 0);
+	else
+	   xv_set(pan_items[item], XV_SHOW, FALSE, 0);
+}
+
+
+set_item_string(item, str)
+int   item;
+char  *str;
+{
+        xv_set( pan_items[item], PANEL_LABEL_STRING,  str,0);
+}
+
+
+create_item(item_no, col, row, label)
+int 	item_no, col, row;
+char   *label;
+{
+#ifdef XVIEW
+	pan_items[item_no] = xv_create(statusPanel,PANEL_MESSAGE,
+                                PANEL_ITEM_X, xv_col(statusPanel, col),
+                                PANEL_ITEM_Y, row * (charHeight + margin_y),
+                                PANEL_LABEL_STRING, label,
+                                0);
+#else
+	pan_items[item_no] = panel_create_item(statusPanel,PANEL_MESSAGE,
+                                PANEL_ITEM_X, ATTR_COL(col),
+                                PANEL_ITEM_Y, ATTR_ROW(row),
+                                PANEL_LABEL_STRING, label,
+                                0);
+#endif
+}
+
+
+/*------------------------------------------------------------------
+|
+|       create_Bframe()
+|       create the base frame and command panel of buttons for
+|       the acquisition status display
++------------------------------------------------------------------*/
+#ifdef XVIEW
+create_Bframe(argc, argv)
+int     argc;
+char   **argv;
+{
+    void exitproc();
+    Server_image   icon_pixmap;
+    Icon           stat_icon;
+    char           framelabel[80];
+
+    margin_y = 1;
+    init_display(argc, argv);
+    sprintf(framelabel,"%-13s ACQUISITION STATUS",RemoteHost);
+
+    /* create the base frame */
+    frame = xv_create(0,FRAME,
+                                FRAME_LABEL,    "Acq. Status",
+                                WIN_COLUMNS,    FRAME_WIDTH,
+                                WIN_Y,          0,
+                                FRAME_LABEL,    framelabel,
+                                0);
+
+    icon_pixmap = (Server_image) xv_create(NULL, SERVER_IMAGE,
+                                XV_WIDTH,       64,
+                                XV_HEIGHT,      64,
+                                SERVER_IMAGE_BITS, icon_image,
+                                NULL);
+    stat_icon = (Icon) xv_create(frame, ICON,
+                        ICON_IMAGE,     icon_pixmap,
+                        0);
+    xv_set (frame, FRAME_ICON, stat_icon, NULL);
+
+    /* --- create the command panel and it's button items --- */
+
+    commandpanel = xv_create(frame,PANEL,
+                                XV_X,           0,
+                                XV_Y,           0,
+                                WIN_ROWS,       1,
+                                0);
+
+    quitbutton = xv_create(commandpanel, PANEL_BUTTON,
+                PANEL_LABEL_STRING, "EXIT",
+                PANEL_NOTIFY_PROC,  exitproc,
+                0);
+}
+
+#else
+ 
+/*  sunview version  */
+create_Bframe(argc, argv)
+int     argc;
+char   **argv;
+{
+    extern void exitproc();
+    int    frameWidth, x;
+    Rect   *rect;
+    char   framelabel[80];
+
+    sprintf(framelabel,"%-13s ACQUISITION STATUS", RemoteHost);
+
+    /* create the base frame */
+    frame = window_create(0,FRAME,
+                                FRAME_LABEL,    "Acq. Status",
+                                FRAME_ICON,     &display_icon,
+                                WIN_COLUMNS,    FRAME_WIDTH,
+                                WIN_ROWS,       DISCONNECTSIZ,
+                                WIN_Y,          0,
+                                FRAME_LABEL,    framelabel,
+                                0);
+
+        rect = (Rect *) window_get(frame,WIN_RECT);
+        rect->r_height = rect->r_height + 5;
+        window_set(frame,WIN_RECT,rect,0);
+
+    rect = (Rect *) window_get(frame, WIN_SCREEN_RECT);
+    frameWidth = (int) window_get(frame, WIN_WIDTH);
+    x = rect->r_width - frameWidth;
+    window_set(frame, WIN_X, x, 0);
+
+    /* --- create the command panel and it's button items --- */
+
+    commandpanel = window_create(frame,PANEL,WIN_ROWS,1,0);
+
+    quitbutton = panel_create_item(commandpanel, PANEL_BUTTON,
+                PANEL_LABEL_IMAGE,
+                panel_button_image(commandpanel,"EXIT",4,0),
+                PANEL_NOTIFY_PROC,      exitproc,
+                0);
+
+    panel_set(quitbutton, PANEL_SHOW_ITEM,TRUE,0);
+}
+
+#endif
+
+
+create_disp_panel()
+{
+    statusPanel = xv_create(frame,PANEL,
+                                WIN_ROWS,       9,
+/*
+                                WIN_COLUMNS,    FRAME_WIDTH,
+*/
+                                0);
+#ifdef XVIEW
+    font = (Xv_Font) xv_get(statusPanel, XV_FONT);
+    charWidth = (int) xv_get(font, FONT_DEFAULT_CHAR_WIDTH);
+    charHeight = (int) xv_get(font, FONT_DEFAULT_CHAR_HEIGHT);
+#endif
+
+}
+
+
+fit_win_height()
+{
+#ifdef XVIEW
+        window_fit_height(statusPanel);
+#endif
+}
+
+
+/*-------------------------------------------------------------
+|  inittimer/0  set event timer for count down
+|       pass function pointer to be activated with alarm
+|
++------------------------------------------------------------*/
+inittimer(timsec,intvl,funccall)
+double timsec;
+double intvl;
+Notify_value (*funccall) ();
+{
+    long sec,frac;
+    struct itimerval timeval;
+    int   me;
+
+    sec = (long) timsec;
+    frac = (long) ( (timsec - (double)sec) * 1.0e6 ); /* usecs */
+    timeval.it_value.tv_sec = sec;
+    timeval.it_value.tv_usec = frac;
+    sec = IntervalTime = (long) intvl;
+    frac = (long) ( (intvl - (double)sec) * 1.0e6 ); /* usecs */
+    timeval.it_interval.tv_sec = sec;
+    timeval.it_interval.tv_usec = frac;
+    (void) notify_set_itimer_func(&me,funccall,ITIMER_REAL,&timeval,0L);
+}
+
+
+#ifdef XVIEW
+init_display(argc, argv)
+int     argc;
+char    *argv[];
+{
+        int     i, fontOption, geo, argc2;
+        char    *default_font, *argv2[20];
+	char    *default_geo;
+        char    *dispName;
+        char    *dname = "unix:0.0";
+        char    *option = "-fn";
+        char    *loc = "-geometry";
+        char    *loc_xy = "-0+0";
+        Display *dpy;
+
+        fontOption = 0;
+        geo = 0;
+        argv2[0] = (char *)argv[0];
+        argc2 = 1;
+        dispName = NULL;
+        for(i = 1; i < argc; i++)
+        {
+                if (argc2 < 19)
+                    argv2[argc2++] = argv[i];
+                if (!strcmp("-fn", argv[i]))
+                      fontOption = 1;
+                else if (!strcmp("-geometry", argv[i]))
+                      geo = 1;
+                else if (!strcmp("-display", argv[i]))
+                      dispName = (char *)argv[i];
+        }
+        if (dispName == NULL)
+        {
+                dispName = (char *)getenv("DISPLAY");
+                if (dispName == NULL)
+                     dispName = dname;
+        }
+        dpy = (Display *) XOpenDisplay(dispName);
+        if(!fontOption)
+        {
+                if (dpy)
+                   default_font = XGetDefault(dpy, "Acqstat", "fontList");
+                if (default_font && argc2 < 17)
+                {
+                     argv2[argc2++] = option;
+                     argv2[argc2++] = default_font;
+                }
+        }
+        if (!geo)
+        {
+                default_geo = NULL;
+                argv2[argc2++] = loc;
+                if (dpy)
+                     default_geo = XGetDefault(dpy, "Acqstat", "geometry");
+                if (default_geo == NULL && argc2 < 17)
+                     argv2[argc2++] = loc_xy;
+                else
+                     argv2[argc2++] = default_geo;
+        }
+	argv2[argc2] = NULL;
+
+        xv_init(XV_INIT_ARGS, argc2, argv2, NULL);
+	if (dpy)
+	{
+               i = DisplayHeight(dpy, DefaultScreen(dpy));
+	       if (i > 800)
+		    margin_y = 3;
+	}
+}
+#endif  XVIEW
+
+acqstat_window_loop()
+{
+#ifdef XVIEW
+	window_fit(frame);
+        xv_main_loop(frame);
+#else
+	window_main_loop(frame);
+#endif
+}
+
+#endif XVIEW_SUNVIEW
+
+#ifdef MOTIF
+
+#define shadowWidth 2
+Font    xfont;
+int     n, screen;
+int     screenWidth, screenHeight;
+Arg     args[10];
+char    fontname[120];
+Widget  statusShell;
+Display        *dpy;
+XmString        xmstr;
+XFontStruct    *xstruct;
+XmFontList      fontList;
+
+show_item(item, on)
+int   item, on;
+{
+	if (on)
+	    XtMapWidget(pan_items[item]);
+	else
+	    XtUnmapWidget(pan_items[item]);
+}
+
+
+set_item_string(item, str)
+int    item;
+char  *str;
+{
+        xmstr = XmStringLtoRCreate(str, XmSTRING_DEFAULT_CHARSET);
+        XtSetArg (args[0], XmNlabelString, xmstr);
+        XtSetValues(pan_items[item], args, 1);
+}
+
+
+create_item(item_no, col, row, label)
+int 	item_no, col, row;
+char   *label;
+{
+        Widget   newWidget;
+
+        n =0;
+        xmstr = XmStringLtoRCreate(label, XmSTRING_DEFAULT_CHARSET);
+        XtSetArg (args[n], XmNlabelString, xmstr);  n++;
+        XtSetArg (args[n], XmNx, charWidth * col);  n++;
+        XtSetArg (args[n], XmNy, (charHeight + margin_y) * row);  n++;
+        XtSetArg (args[n], XmNmappedWhenManaged, False); n++;
+        if (fontList)
+            XtSetArg(args[n], XmNfontList,  fontList); n++;
+        newWidget = XmCreateLabel(statusPanel, "label", args, n);
+        XtSetArg (args[n], XmNshadowThickness, 0);  n++;
+        XtManageChild (newWidget);
+        XtFree(xmstr);
+	pan_items[item_no] = newWidget;
+}
+
+typedef  struct{
+                Pixel   fg, bg;
+                XFontStruct *fontinfo;
+                } ApplicationData, *dataptr;
+static   XtResource  statusFont[] = {
+        { XmNfontList, XmCFontList, XtRFontStruct, sizeof(XFontStruct *),
+          XtOffset(dataptr, fontinfo), XtRString, "fixed"},
+        };
+ApplicationData   Data;
+
+/*------------------------------------------------------------------
+|
+|       create_Bframe()
+|       create the base frame and command panel of buttons for
+|       the acquisition status display
++------------------------------------------------------------------*/
+create_Bframe(argc, argv)
+int     argc;
+char   **argv;
+{
+        char   framelabel[80];
+        extern void exitproc();
+
+        XtToolkitInitialize();
+	fontname[0] = '\0';
+	for (n = 1; n < argc; n++)
+	{
+                if (!strcmp("-fn", argv[n]))
+		{
+		    if (argv[n+1] != NULL)
+			sprintf(fontname, "%s", argv[n+1]);
+		}
+	}
+        dpy = XtOpenDisplay (NULL, NULL, argv[0], "Acqstat", NULL, 0,
+                                &argc, argv);
+        n = 0;
+        sprintf(framelabel,"%-13s ACQUISITION STATUS",RemoteHost);
+        XtSetArg (args[n], XmNtitle, framelabel);  n++;
+        statusShell = XtAppCreateShell (NULL, "Acqstat",
+                             applicationShellWidgetClass, dpy, args, n);
+        screen = DefaultScreen(dpy);
+        screenHeight = DisplayHeight (dpy, screen);
+        screenWidth = DisplayWidth (dpy, screen);
+	if (screenHeight > 800)
+	    margin_y = 3;
+	else
+	    margin_y = 1;
+        n = 0;
+        XtSetArg(args[n], XtNiconPixmap, XCreateBitmapFromData (dpy,
+                                    XtScreen(statusShell)->root, acq_icon_bits,
+                                    acq_icon_width, acq_icon_height));
+        n++;
+/*
+        XtSetArg (args[n], XmNiconX,  screenWidth);  n++;
+        XtSetArg (args[n], XmNiconY, 100);  n++;
+*/
+        XtSetArg (args[n], XmNiconName, "VNMR");  n++;
+        XtSetValues (statusShell, args, n);
+
+        n = 0;
+        XtSetArg (args[n], XmNorientation, XmVERTICAL);  n++;
+        frame = XmCreateRowColumn (statusShell, "Acq", args, n);
+        XtManageChild (frame);
+        if (fontname[0] != '\0')
+        {
+                if ((xstruct =  XLoadQueryFont(dpy, fontname)) == NULL)
+                    fprintf (stderr,"couldn't open font %s\n", fontname);
+                else
+                    fontList = XmFontListCreate (xstruct, " ");
+        }
+        if (!fontList)
+        {
+                XtGetApplicationResources(frame, &Data, statusFont,
+                              XtNumber(statusFont), NULL, 0);
+                xstruct = Data.fontinfo;
+                if(xstruct)
+                    fontList = XmFontListCreate (xstruct, " ");
+        }
+        if (xstruct != NULL)
+        {
+            charWidth = xstruct->max_bounds.width;
+            charHeight = xstruct->max_bounds.ascent
+                      + xstruct->max_bounds.descent;
+        }
+        else
+        {
+            charWidth = 12;
+            charHeight = 15;
+        }
+        n = 0;
+        XtSetArg (args[n], XmNwidth, charWidth * FRAME_WIDTH);  n++;
+        XtSetArg (args[n], XmNresizeWidth, False);  n++;
+        XtSetValues(frame, args, n);
+
+        n =0;
+        XtSetArg (args[n], XmNorientation, XmHORIZONTAL);  n++;
+        XtSetArg (args[n], XmNresizeHeight, True);  n++;
+        XtSetArg (args[n], XmNpacking, XmPACK_TIGHT);  n++;
+        XtSetArg (args[n], XmNentryAlignment, XmALIGNMENT_CENTER);  n++;
+        if (fontList)
+            XtSetArg(args[n], XmNfontList,  fontList); n++;
+        commandpanel = XmCreateRowColumn(frame, "button", args, n);
+
+        n =0;
+        xmstr = XmStringLtoRCreate("EXIT", XmSTRING_DEFAULT_CHARSET);
+        XtSetArg (args[n], XmNlabelString, xmstr);  n++;
+        if (fontList)
+            XtSetArg(args[n], XmNfontList,  fontList); n++;
+        quitbutton = XmCreatePushButton(commandpanel, "buttons", args, n);
+        XtManageChild (quitbutton);
+        XtAddCallback(quitbutton, XmNactivateCallback, exitproc, NULL);
+        XtFree(xmstr);
+        XtManageChild (commandpanel);
+
+        XtCreateManagedWidget("separator", xmSeparatorWidgetClass,
+                frame, NULL, 0);
+}
+
+
+create_disp_panel()
+{
+        n =0;
+        XtSetArg (args[n], XmNpacking, XmPACK_NONE);  n++;
+        statusPanel = XmCreateRowColumn (frame, "panel", args, n);
+        XtManageChild (statusPanel);
+}
+
+
+fit_win_height()
+{
+	XtRealizeWidget (statusShell);
+}
+
+
+/*-------------------------------------------------------------
+|  inittimer/0  set event timer for count down
+|       pass function pointer to be activated with alarm
+|
++------------------------------------------------------------*/
+inittimer(timsec,intvl,funccall)
+double timsec;
+double intvl;
+int (*funccall) ();
+{
+    unsigned long  msec;
+
+    IntervalTime = (long) intvl;
+    msec = timsec * 1000;  /* milliseconds */
+    XtAddTimeOut(msec, funccall, NULL);
+}
+
+
+acqstat_window_loop()
+{
+    XtMainLoop();
+}
+
+#endif MOTIF

@@ -1,0 +1,3 @@
+
+"write('line3','g3daxis=%s',g3daxis)"
+vnmrjcmd('g3daxis',g3daxis)"

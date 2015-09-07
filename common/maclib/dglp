@@ -1,0 +1,5 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+" **************** "
+" ** macro dglp ** "
+" **************** "
+dg('dglp')

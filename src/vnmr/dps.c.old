@@ -1,0 +1,4324 @@
+
+#include "vnmrsys.h"
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include "graphics.h"
+
+#ifdef UNIX
+#include <sys/types.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+#endif
+
+#include "asm.h"
+#include "data.h"
+#include "group.h"
+#include "symtab.h"
+#include "tools.h"
+#include "variables.h"
+#include "REV_NUMS.h"
+
+extern int raster;
+extern int psg_pid;
+extern int graf_width, graf_height;
+FILE  *fin;
+
+
+/* --- child process variables */
+static int child;
+static int pipe1[2];
+static int pipe2[2];
+
+static int   suflag = 0;   /* setup flag,0=GO,1-6=different alias's of GO */
+
+#define    MAXLEVEL    1
+#define    MAXPULSE    80
+#define    paramLen    32
+#define	   TODEV       1
+#define    DODEV       2
+#define    DO2DEV      3
+#define    DO3DEV      4
+#define    SCOLOR      32   /* white */
+#define    MCOLOR      10   /* orange */
+#define    UCOLOR      4    /* blue */
+#define    RFCHAN_NUM  4
+#define    PRESENT     1
+#define    NON_PRESENT 0
+
+int     testdpsfile();
+char    psgfile[MAXPATHL];
+char    dpsfile[MAXPATHL];
+
+struct psgdata{
+                char  name[paramLen];
+                char  grad[4];
+                float  wide;
+                float  value;
+		int    flag;
+                struct psgdata *next;
+              };
+struct psgdata   *psgstart;
+struct psgdata   *curnode;
+struct psgdata   *link_Node();
+struct psgdata   *acq_in_loop();
+int    draw_psg();
+
+static struct psgdata *alloc_node();
+
+int     pf_x, pf_y;
+int     dps_xpnts, dps_ypnts;
+int     delay_no;
+int     xs, ys;                /*  for status line  */
+int     pulseHeight;
+int     pixels;
+int     x_margin;
+int     powerI[RFCHAN_NUM+1];
+int     power_ch[RFCHAN_NUM+1];
+int     chx[RFCHAN_NUM+1];
+int     chy[RFCHAN_NUM+1];
+int     chyc[RFCHAN_NUM+1];
+int     decpulse[RFCHAN_NUM+1];
+int     CHANNEL[RFCHAN_NUM+1] = {0x0, 0x1, 0x2, 0x4, 0x8};
+int     CHANON[RFCHAN_NUM+1] = {0x0, 0x10, 0x20, 0x40, 0x80};
+int     CHANOFF[RFCHAN_NUM+1] = {0x0, 0xEF, 0xDF, 0xBF, 0x7F};
+int	VGRAD[3];
+int     predvx[RFCHAN_NUM+1][5], predsx[RFCHAN_NUM+1][5];
+int	p_wide;
+int     p_p, pulse_base;
+int	shaped_base, curve_base;
+int   	sh_wide, image;
+int     pulse_no;
+int     dps_plot;
+int     ignore_loop;
+int	loop_width;
+int     loop_interval;
+int     gradient, gradX, gradY, gradZ;
+int     acquire;
+int     fidwidth;
+int     spinwidth;
+int     pul_v_r, pul_s_r;
+int     dec_v_r, dec_s_r;
+int     del_v_r;
+int     colorwindow;
+int     grad_x, grad_y, grad_z;
+int     grad_xx, grad_xy;
+int     grad_yx, grad_yy;
+int     grad_zx, grad_zy;
+int     textLen;
+int	xmtron;
+int     decon[RFCHAN_NUM+1];
+int     dstat[RFCHAN_NUM+1];
+int     dec_vdraw[RFCHAN_NUM+1];
+char    dmmstr[RFCHAN_NUM+1][paramLen];
+char    statstr[6];
+char    gradtype[8];
+char    para[paramLen];
+float   totalwide, ratio;
+float   bias;
+static  int  dot_gap = 3;
+static  int  mark_pts = 6;
+static  int  mouse_x, mouse_y;
+static  int  unityPlus;
+static  int CHFLAG[RFCHAN_NUM+1] = {1, 0, 0, 0, 0}; /* chanels show up in psg */
+static  int rfchan[RFCHAN_NUM+1] = {1, 0, 0, 0, 0}; /* chanels exist in system */
+
+
+static mouse_move(x, y)
+int x, y;
+{
+	Wgmode();
+	xormode();
+	color(RED);
+	if (x > 0 && x < dps_xpnts)
+	{
+            if (mouse_x > 0 && mouse_x < dps_xpnts)
+	    {
+                 amove(mouse_x, -10);
+                 adraw(mouse_x, mouse_y);
+	    }
+	    amove(x, -10);
+	    adraw(x, mouse_y);
+	    mouse_x = x;
+	}
+	normalmode();
+}
+
+
+
+static mouse_but(but, flag, x, y)
+int but, x, y, flag;
+{
+	Wgmode();
+	xormode();
+	color(RED);
+	if (x > 0 && x < dps_xpnts)
+	{
+            if (mouse_x > 0 && mouse_x < dps_xpnts)
+	    {
+                 amove(mouse_x, -10);
+                 adraw(mouse_x, mouse_y);
+	    }
+	    amove(x, -10);
+	    adraw(x, mouse_y);
+	    mouse_x = x;
+	}
+	normalmode();
+}
+
+
+static turnoff_dps()
+{
+
+    Wgmode();
+    Wturnoff_mouse();
+}
+
+
+dps(argc,argv,retc,retv)		int argc,retc;  char *argv[],*retv[];
+{
+    char    goid[MAXPATHL];/* unique ID of this GO (username.######) */
+    /* --- child and pipe variables --- */
+    char pipe1_0[3];
+    char pipe1_1[3];
+    char pipe2_0[3];
+    char pipe2_1[3];
+    int   ret;
+    int   ready;
+
+
+/*    Wturnoff_buttons();		/* deactive any interactive programs */
+    if (!testdpsfile(argc, argv))
+        ABORT;
+    dps_plot = (argv[0][0] == 'p');
+    sprintf(argv[0], "dps");  /*  initacqparams only check dps and pps  */
+    /*------------------------------------------------------------*/
+    /* --- Fork & Exec DPS, then pipe parameter over to DPS 
+    /* --- sends over parameters through the pipe to
+    /* --- the child and returns to vnmr without waiting. 
+    /*------------------------------------------------------------*/
+    P_creatvar(CURRENT, "goid", ST_STRING);
+    P_setgroup(CURRENT, "goid", G_ACQUISITION);
+    /* make unique goid, initacqqueue() in go.c,   2/20/90  GMB */
+    if (initacqqueue(argc,argv,goid,"/vnmr/acqqueue/dpsfid"))
+    {
+        disp_acq("");
+        ABORT;
+    }
+    if (setparm("goid","string",CURRENT,goid,1))
+    {
+        disp_acq("");
+        ABORT;
+    }
+
+    P_creatvar(CURRENT, "com$string", ST_STRING);
+    P_setgroup(CURRENT, "com$string", G_ACQUISITION);
+
+    ret = pipe(pipe1); /* make first pipe */
+    /*
+     *  The first pipe is used to send parameters to DPS 
+     */
+    if(ret == -1)
+    {   Werrprintf("DPS: could not create system pipes!");
+        ABORT;
+    }
+    ret = pipe(pipe2); /* make second pipe */
+    /*
+     *  The second pipe is used to cause go to wait for DPS to
+     *  complete.  This is only used in automation mode.
+     */
+    if(ret == -1)
+    {   Werrprintf("DPS: could not create system pipes!");
+        ABORT;
+    }
+    if (dps_plot)
+    {
+	Wturnoff_mouse();
+        if(setplotter())
+		return;
+    }
+    else
+    {
+        setdisplay();
+    }
+
+    child = fork();  /* fork a child */
+    psg_pid = child;  /* set global psg pid value */
+    if (child)		/* if parent set signal handler to reap process */
+        set_wait_child(child);
+
+    if (child == 0)
+    {	char suflagstr[10];
+	char Rev_Num[10];
+
+	sprintf(pipe1_0,"%d",pipe1[0]);
+     	sprintf(pipe1_1,"%d",pipe1[1]);
+	sprintf(pipe2_0,"%d",pipe2[0]);
+     	sprintf(pipe2_1,"%d",pipe2[1]);
+	sprintf(suflagstr,"%d",suflag);
+	sprintf(Rev_Num,"%d",GO_PSG_REV);
+
+	ret = execl(psgfile,"dps",Rev_Num,pipe1_0,pipe1_1,pipe2_0,pipe2_1,suflagstr,NULL);
+	Werrprintf("DPS could not be executed");
+        RETURN;
+    }
+
+    close(pipe1[0]);  /* parent closes its read end of first pipe */
+    close(pipe2[1]);  /* parent closes its write end of second pipe */
+    P_sendGPVars(SYSTEMGLOBAL,G_ACQUISITION,pipe1[1]);
+    P_sendGPVars(GLOBAL,G_ACQUISITION,pipe1[1]);/* send global tree to DPS */ 
+    P_sendVPVars(GLOBAL,"curexp",pipe1[1]);
+		/* send current experiment directory to DPS */ 
+    P_sendVPVars(GLOBAL,"userdir",pipe1[1]);
+		/* send user directory to DPS */ 
+    P_sendVPVars(GLOBAL,"systemdir",pipe1[1]);
+		/* send system directory to DPS */
+    P_sendGPVars(CURRENT,G_ACQUISITION,pipe1[1]);/* send current tree to DPS */ 
+    P_endPipe(pipe1[1]);   /* send end character */
+    close(pipe1[1]);  /* parent closes its write end of first pipe */
+
+    read(pipe2[0],&ready,sizeof(int));  /* wait for PSG to finish */
+    close(pipe2[0]);  /* parent closes its read end of first pipe */
+    sprintf(dpsfile, "%s/dpsdata", curexpdir);
+    if (dispPSG())
+    {
+        if (!dps_plot)
+        {
+   	   Wshow_graphics();
+   	   Wsetgraphicsdisplay("dps");
+    	   graf_clear();
+           Wgmode(); /* goto tek graphics and set screen 2 active */
+	   set_turnoff_routine(turnoff_dps);
+        }
+        drawPSG();
+        if (!dps_plot)
+	{
+	   xormode();
+	   color(RED);
+	   mouse_x = dps_xpnts - 10;
+	   amove(mouse_x, -10);
+	   adraw(mouse_x, mouse_y);
+	   normalmode();
+           Wactivate_mouse(mouse_move, mouse_but, NULL);
+	}
+#ifdef SUN
+        if(dps_plot)
+           disp_name(psgfile);
+#endif
+    }
+    unlink(dpsfile);
+    releaseWithId("dpsdata");
+    RETURN;
+}
+
+
+int 
+add_grad_count(grad)
+char  grad;
+{
+	int  ret;
+
+	ret = 0;
+ 	switch(grad)  {
+   	   case 'x':
+		     if (gradtype[0] != 'n')
+		     {
+		     	gradX++;
+		     	ret = 1;
+		     }
+		     break;
+	   case 'y': 
+		     if (gradtype[1] != 'n')
+		     {
+		     	gradY++;
+		     	ret = 1;
+		     }
+		     break;
+	   case 'z': 
+		     if (gradtype[2] != 'n')
+		     {
+		     	gradZ++;
+		     	ret = 1;
+		     }
+		     break;
+	}
+	return(ret);
+}
+
+
+int  dispPSG()
+{
+	struct   stat   f_stat;
+	int      r_width, loop_f;
+	char     rftype[4];
+
+        pf_x = xcharpixels;
+	if (raster == 3 || raster == 4) /* postscript */
+           pf_y = ycharpixels * 0.6;
+	else
+           pf_y = ycharpixels;
+	dot_gap = xcharpixels / 3;
+	mark_pts = pf_y / 2;
+        x_margin = 5 * pf_x;
+	dps_ypnts = mnumypnts;
+	unityPlus = 0;
+	if (getparm("rftype", "STRING", SYSTEMGLOBAL, &rftype[0], 2))
+             rftype[0] = '\0';
+        if (rftype[0] == 'd'  || rftype[0] == 'D')
+             unityPlus = 1;
+	if (dps_plot)
+	     dps_xpnts = mnumxpnts;
+	else 
+        {
+#ifdef SUN
+             if (Wissun())
+                dps_xpnts = graf_width; 
+	     else
+#endif SUN
+                if (Wisgraphon())
+	           dps_xpnts = 1000;
+                else
+	           dps_xpnts = mnumxpnts;
+        }
+	for(loop_f = TODEV; loop_f <= RFCHAN_NUM; loop_f++)
+	{
+		rfchan[loop_f] = 0;
+		CHFLAG[loop_f] = 0;
+	} 
+	if (P_getstring(CURRENT, "tn", para, 1, 9) >= 0)
+	{     if(strlen(para) > 0)
+	      {
+		 rfchan[TODEV] = 1;
+		 CHFLAG[TODEV] = 1;
+	      }
+	}
+	if (P_getstring(CURRENT, "dn", para, 1, 9) >= 0)
+	{     if(strlen(para) > 0)
+		 rfchan[DODEV] = 1;
+	}
+	if (P_getstring(CURRENT, "dn2", para, 1, 9) >= 0)
+	{     if(strlen(para) > 0)
+		rfchan[DO2DEV] = 1;
+	}
+	if (P_getstring(CURRENT, "dn3", para, 1, 9) >= 0)
+	{     if(strlen(para) > 0)
+		rfchan[DO3DEV] = 1;
+	}
+	if(!rfchan[TODEV] && !rfchan[DODEV] && !rfchan[DO2DEV] && !rfchan[DO3DEV])
+	{
+	      Werrprintf("none of chanel is active, check tn, dn... ");
+	      return(0);
+	}
+	      
+	if (P_getstring(SYSTEMGLOBAL, "gradtype", gradtype, 1, 6) < 0)
+	      sprintf(gradtype, "nnnnnn");
+	sync();
+        if (stat(dpsfile, &f_stat) == -1)
+	{
+	     Werrprintf("dps failure");
+	     return(0);
+	}
+	if (f_stat.st_size <= 0)
+	{
+	     Werrprintf("dps failure");
+	     return(0);
+	}
+	mouse_x = 0;
+	mouse_y = dps_ypnts - 2;
+        bias = 20.0;   /* the basic width for delay  */
+	p_wide = 30;   /*  the maximum width for pulse  */
+	pulse_base = 7;  /*  the basic width for pulse  */
+	sh_wide = 35;   /*  the maximum width for image shape  */
+	curve_base = 8;  /*  the minimum width for image negative shape  */
+	shaped_base = 12;  /* the basic width for image shape  */
+	fidwidth = 60;
+	spinwidth = pf_x * 6;
+	p_p = 0;      /*  the flag of continuous pulses  */
+	image = 0;    /* the flag of image pulse  */
+	loop_f = 0;
+	ignore_loop = 0;
+	loop_width = 60;
+	loop_interval = 20;
+	for(;;)
+	{
+	     loop_f++;	
+             if (buildPSG() < 0)
+                   return(0);
+	     if ((delay_no <= 0) && (pulse_no <= 0))
+	     {
+	           Werrprintf("dps failure: pulse sequency is empty");
+		   return(0);
+	     }
+             if ((image || p_p || pulse_no < 3) && (loop_f == 1))
+	     {
+	 	   if (acquire || !rfchan[TODEV])
+                        r_width= dps_xpnts - x_margin * 2 - delay_no * 60;
+		   else
+                        r_width= dps_xpnts - 100 - x_margin * 2 - delay_no * 60;
+		   if (pulse_no < 2)
+                        pulse_base = r_width;
+                   else
+                        pulse_base = r_width / pulse_no;
+                   if (pulse_base > 60)
+		   {
+	                pulse_base = 60;
+			loop_width += 30;
+			loop_interval += 5;
+		   }
+ 
+	           if (pulse_base < 4)  
+	                pulse_base = 4;
+		   if (image)
+		   {
+			shaped_base = pulse_base;
+			if (shaped_base < 12)
+				shaped_base = 12;
+			else if (shaped_base > 20)
+			{
+				if (shaped_base > 30)
+				     curve_base = 16;
+				else
+				     curve_base = 12;
+				shaped_base = 20;
+			}
+		   }
+                   p_wide = pulse_base + 25;
+	           continue;
+	     }
+             if (acquire || !rfchan[TODEV])
+	         ratio = (dps_xpnts - x_margin * 2 - pixels) / totalwide;
+	     else
+	         ratio = (dps_xpnts - 100 - x_margin * 2 - pixels) / totalwide;
+             if ((ratio * bias) >= 50.0)
+                 break;
+	     if (loop_f > 10)
+	     {
+  		if (ratio * bias > 3)
+      		    return(1);
+ 		else
+		{
+	    	    Werrprintf("Sorry, too many pulses to display");
+		    return(0);
+		}
+	     }
+             if ((ratio * bias) < pf_x * 4)
+	     {
+		 curve_base = 8;
+		 if (shaped_base > 13)
+			shaped_base = shaped_base - 2;
+		 if (loop_width > 30)
+			loop_width -= 10;
+		 if (p_wide >= pulse_base + 5)
+    		 {
+			p_wide -= 5;
+			continue;
+		 }
+		 if (fidwidth > 30)
+			fidwidth -= 10;
+		 if (spinwidth > pf_x * 3)
+			spinwidth -= 5;
+		 if(loop_interval > 10)
+			loop_interval -= 4;
+	     }
+             bias = bias + 10.0;
+	}
+	return(1);
+}
+
+
+
+/**************************************************************************
+*     calaulate the parameters' value for scaling                         *
+**************************************************************************/
+int buildPSG()
+{
+	int   n;
+
+     	if((fin = fopen(dpsfile, "r")) == NULL)
+	     return(-1);
+	pulse_no = 0;
+        delay_no = 0;
+	acquire = 0;
+	gradient = 0;
+	gradX = gradY = gradZ = 0;
+        totalwide = 0.0;
+        pixels = 0;
+	xmtron = 0;
+	if (psgstart != NULL)
+	     releaseWithId("dpsdata");
+        psgstart = NULL;
+	for (n = 0; n <= RFCHAN_NUM; n++)
+	{
+	    power_ch[n] = powerI[n] = 1;
+	    dec_vdraw[n] = 0;
+	    decon[n] = 0;
+	    dstat[n] = 0;
+	}
+	psgstart = link_Node(&totalwide, &pixels, &pulse_no, 0, 0, 0);
+        fclose(fin);
+	if (psgstart == NULL)
+	{
+	    Werrprintf("dps failure");
+	    return(-1);
+	}
+        if (pulse_no <= 50)
+       	    return(0);
+	if (ignore_loop)
+	{
+            if (pulse_no > MAXPULSE)
+	    {
+	         Werrprintf("Sorry, too many pulses to display");
+	         return(-2);
+	    }
+	}
+
+/*  if too many pulses, try it again with ignoring loops */
+     	if((fin = fopen(dpsfile, "r")) == NULL)
+	     return(-1);
+	pulse_no = 0;
+        delay_no = 0;
+        totalwide = 0.0;
+        pixels = 0;
+	acquire = 0;
+	ignore_loop = 1;
+        CHFLAG[DODEV] = 0;
+        CHFLAG[DO2DEV] = 0;
+        CHFLAG[DO3DEV] = 0;
+	if (psgstart != NULL)
+	     releaseWithId("dpsdata");
+        psgstart = NULL;
+	psgstart = link_Node(&totalwide, &pixels, &pulse_no, 0, 0, 0);
+        fclose(fin);
+	if (psgstart == NULL)
+	{
+	    Werrprintf("dps failure");
+	    return(-1);
+	}
+        if (pulse_no > MAXPULSE)
+	{
+	    Werrprintf("Sorry, too many pulses to display");
+	    return(-2);
+	}
+        return(0);
+}
+
+	
+
+
+struct psgdata *link_Node(length3, pixel3, pulse_no, level, level_u, level_d)
+   	float  *length3;
+	int    *pixel3, *pulse_no, level_u, level_d, level;
+{
+	struct  psgdata  *node1, *node2, *node3, *node4, *tmp_node;
+	struct  psgdata  *datanode;
+	float   total, length, length1, length2, simlen;
+	int     pixels, pixel1, pixel2, pulses, pulse1, pulse2;
+	int     puls_puls;  /* two or more pulses connected  */
+        int     dec2node;
+        int     chnum;
+        int     chstat;
+        int     ch_flag;
+	int     count;
+	int     chanel;
+	char    para[paramLen];
+	char    datastr[paramLen];
+
+        pixel1 = 0;
+	pixel2 = 0;
+	pixels = 0;
+	pulses = 0;
+	pulse1 = 0;
+	pulse2 = 0;
+	total = 0.0;
+	length = 0.0;
+  	puls_puls = 0;
+	length1 = length2 = 0.0;
+	node1 = node2 = NULL;
+	ch_flag = 0xF0;
+	if (level == 0)
+	{
+		level_u = 0;
+		level_d = 0;
+	}
+
+	while (fscanf(fin, "%s", para) >= 0)
+        {  
+            if (strcmp(para, "dummy") == 0)
+	    {
+               fscanf(fin, "%s", datastr);
+	       continue;
+	    }
+ 	    if (para[0] == 'Q')   /*  initial power value  */
+	    {
+		 fscanf(fin, "%s", datastr);
+		 switch(para[1]) {
+			case 'T':
+				  chanel = TODEV;
+				  break;
+			case 'D':
+				  chanel = DODEV;
+				  break;
+			case '3':
+				  chanel = DO2DEV;
+				  break;
+			case '4':
+				  chanel = DO3DEV;
+				  break;
+			default:
+				  chanel = 0;
+				  break;
+			
+		 }
+                 powerI[chanel] = (int)atof(datastr);
+		 if (powerI[chanel] < 0)
+		 	powerI[chanel] = 0;
+		 set_chan_power(chanel, powerI[chanel]);
+		 if (para[2] != '\0')
+		 {
+		      if (para[2] == '0')
+		          rfchan[chanel] = NON_PRESENT;
+		 }
+		 continue;
+	    }
+	    if (para[0] == 'X')  /*  endloop, endhardloop, endif */
+	    {
+                 if((datanode = (struct psgdata *)alloc_node()) == NULL)
+                        return(datanode);
+                 strcpy(datanode->name, para);
+		 if (node1 == NULL)
+			node1 = datanode;
+		 else
+			node2->next = datanode;
+		 *pulse_no = pulses;
+		 *length3 = total;
+		 *pixel3 = pixels;
+		 node1->flag = ch_flag;
+		 return(node1);
+	    }
+	    if (para[0] == 'V')  /*  power */
+	    {
+                 if((datanode = (struct psgdata *)alloc_node()) == NULL)
+                       return(datanode);
+		 fscanf(fin, "%s", datastr);
+	         if (0 <= datastr[0] && datastr[0] <= '9')
+		     datanode->wide = atof(datastr);
+		 else
+		     datanode->wide = 1;
+		 fscanf(fin, "%s", datastr);
+	         if (0 <= datastr[0] && datastr[0] <= '9')
+		     datanode->value = atof(datastr);
+	         else
+		     datanode->value = 1;
+		 if (para[1] == 'f')  /* fine power */
+		 {
+	 	     if (unityPlus)
+		        datanode->wide = 60 - 60 * (log(datanode->wide) / 
+				log(4095));
+		     else
+		        datanode->wide = 6 - 6 * (log(datanode->wide) / 
+				log(4095));
+		     datanode->wide = power_ch[(int)datanode->value] - datanode->wide;
+		 }
+		 set_chan_power((int)datanode->value,(int)datanode->wide);
+		 CHFLAG[(int)datanode->value] = 1;
+                 strcpy(datanode->name, para);
+		 if (node1 == NULL)
+			node1 = datanode;
+		 else
+			node2->next = datanode;
+		 node2 = datanode;
+		 continue;
+	    }
+
+	    if (para[0] == 'L')  /*  loop, starthardloop */
+	    {
+		node3 = link_Node(&length1, &pixel1, &pulse1, level, level_u,
+				 level_d); 
+		if (node3 == NULL)
+		{
+		    fprintf(stderr, "ERROR:  syntax error near endloop\n");
+		    return(node3);
+		}
+		if (node3->name[0] != 'X')  /*  if loop is not empty  */
+		{
+                    if((datanode = (struct psgdata *)alloc_node()) == NULL)
+                        return(datanode);
+                    datanode->wide = length1;
+                    datanode->value = pixel1;
+		    ch_flag = ch_flag | node3->flag;
+		    datanode->flag = node3->flag;
+                    strcpy(datanode->name, para);
+		    if (ignore_loop)
+		    {
+		        node3 = acq_in_loop(node3);
+		        datanode->value = node3->value; 
+			datanode->wide = node3->wide;
+			datanode->flag = node3->flag;
+		    }
+                    datanode->next = node3;
+		    if (node1 == NULL)
+		    {
+			node1 = datanode;
+			node2 = datanode;
+		    }
+		    else
+			node2->next = datanode;
+		    while (node2->next != NULL)
+			node2 = node2->next;
+		    if (ignore_loop)
+		    {
+			if (datanode->value > 0)
+			{
+			    if (datanode->wide == 1)
+				  count = datanode->value - 1;
+			    else if (datanode->wide == 3)
+				  count = datanode->value + 1;
+			    else
+				  count = datanode->value;
+				  
+		    	    pixels = pixels + loop_interval * count +
+				   6 + datanode->value * fidwidth;
+			}
+			else
+		    	    pixels = pixels + loop_width + 6;
+		    }
+		    else
+		    {
+		        total = total + length1;
+		    	pixels = pixels + pixel1 + 4;
+		    	pulses = pulses + pulse1;
+		    }
+		}
+		continue;
+            }
+	    if (para[0] == 'I')  /*  ifzero  */
+	    {
+		if (level == 0 )  /*  upward  */
+		{
+		        node3 = link_Node(&length1, &pixel1, &pulse1, 1, level_u, level_d); 
+		}
+		else
+		{
+			if (level > level_u)
+				level_u = level;
+		        node3 = link_Node(&length1, &pixel1, &pulse1, level + 1, level_u, level_d); 
+		}
+		if (node3 == NULL)
+		{
+		    fprintf(stderr, "ERROR:  syntax error near ifzero\n");
+		    return(node3);
+		}
+		if (strncmp(node3->name,"XED",3) == 0) /* the ifzero is empty */
+                    continue;
+		ch_flag = ch_flag | node3->flag;
+		if (strncmp(node3->name, "XEN", 3) == 0)  /* elsenz */
+		{
+		    if (level == 0)
+		    {
+		        node4 = link_Node(&length1, &pixel1, &pulse1, 1, level_d, level_u); 
+		    }
+		    else
+		    {
+			if (level > level_u)
+				level_u = level;
+		        node4 = link_Node(&length1, &pixel1, &pulse1, level + 1, level_u, level_d); 
+		    }
+		    if (node4 == NULL)
+		    {
+		        fprintf(stderr, "ERROR:  syntax error near elsenz\n");
+		        return(node4);
+		    }
+		    if (strncmp(node4->name, "XED", 3) == 0)  /*  empty  */
+                        continue;
+		    ch_flag = ch_flag | node4->flag;
+		    if (level > MAXLEVEL)
+			continue;
+		    node3->next = node4;
+		    if (level == 0)
+		    {
+		        node3->wide = level;
+			node3->value = level_d;
+		    }
+                    if((datanode = (struct psgdata *)alloc_node()) == NULL)
+                        return(datanode);
+                    datanode->wide = level;
+                    datanode->value = level_u;
+                    datanode->next = node3;
+                    strcpy(datanode->name, para);
+		    if (node1 == NULL)
+		    {
+			node1 = datanode;
+			node2 = datanode;
+		    }
+		    else
+			node2->next = datanode;
+		    while (node2->next != NULL)
+			node2 = node2->next;
+		    if (level == MAXLEVEL)
+		    {
+			sprintf(datanode->name, "UN");
+			datanode->next = NULL;
+			pixels = pixels + pf_x * 2;
+			node2 = datanode;
+			continue;
+		    }
+		    total = total + length1;
+		    pixels = pixels + pixel1 + 4;
+		    pulses = pulses + pulse1;
+		    continue;
+		}  /*  elsenz  */
+		/*  must have somthing after ifzero  */
+                if((datanode = (struct psgdata *)alloc_node()) == NULL)
+                    return(datanode);
+                datanode->wide = level;
+                datanode->value = level_u;
+                datanode->next = node3;
+                strcpy(datanode->name, para);
+		if (node1 == NULL)
+		{
+		    node1 = datanode;
+		    node2 = datanode;
+		    node1->flag = 0;
+		}
+		else
+		    node2->next = datanode;
+  		node4 = node2;
+		while (node2->next != NULL)
+	            node2 = node2->next;
+		if (strncmp(node2->name, "XEN", 3) == 0)  /*  elsenz  */
+		{
+		    if (level == 0)
+		    {
+		        node3 = link_Node(&length2, &pixel2, &pulse2, 1, level_d, level_u); 
+		    }
+		    else
+		    {
+			if (level > level_u)
+				level_u = level;
+		        node3 = link_Node(&length2, &pixel2, &pulse2, level +1, level_u, level_d); 
+		    }
+		    if (node3 == NULL)
+		    {
+		        fprintf(stderr, "ERROR:  syntax error near elsenz\n");
+		        return(node3);
+		    }
+		    if (node3->name[0] != 'X')  /*  elsenz is not empty */
+		    {
+			ch_flag = ch_flag | node3->flag;
+			if (length2 > length1)
+				length1 = length2;
+			if (pixel2 > pixel1)
+				pixel1 = pixel2;
+			if (pulse2 > pulse1)
+				pulse1 = pulse2;
+                        node2->wide = level;
+                        if (level == 0)
+                                node2->value = level_d;
+		        else
+                                node2->value = level_u;
+			node2->next = node3;
+		    	while (node2->next != NULL)
+				node2 = node2->next;
+		    }
+		    else
+		    {
+			sprintf(node2->name, "XED");
+		    }
+		}
+		if (level > MAXLEVEL)
+		{
+		    node2 = node4;
+		    continue;
+		}
+		if (level == MAXLEVEL)
+		{
+		    sprintf(datanode->name, "UN");
+		    datanode->next = NULL;
+		    pixels = pixels + pf_x * 2;
+		    node4->next = datanode;
+		    node2 = datanode;
+		    continue;
+		}
+		total = total + length1;
+		pixels = pixels + pixel1 + 4;
+		pulses = pulses + pulse1;
+		continue;
+            }   /*  ifzero  */
+
+            if((datanode = (struct psgdata *) alloc_node()) == NULL) 
+                  return(datanode);
+	    if (node1 == NULL)
+	       node1 = datanode;
+	    else
+	       node2->next = datanode;
+	    node2 = datanode;
+            if (strcmp (para, "status") == 0)
+            {
+               fscanf(fin, "%s", para);
+               fscanf(fin, "%s", datastr);
+	       sprintf(node2->name, "st%s", para);
+               continue;
+            } 
+            if (para[0] == 'H')  /*  transmitter's or decoupler's on or off  */
+            {
+               fscanf(fin, "%s", datastr);
+	       sprintf(node2->name, "%s", para);
+	       node2->value = atof(datastr);
+	       node2->wide = atof(datastr);
+	       switch(para[1]) {
+		 case  'x':
+			    ch_flag = ch_flag | CHANNEL[TODEV];
+			    break;
+		 case  '1':
+			    ch_flag = ch_flag | CHANNEL[DODEV];
+			    CHFLAG[DODEV] = 1;
+			    break;
+		 case  '2':
+			    ch_flag = ch_flag | CHANNEL[DO2DEV];
+			    CHFLAG[DO2DEV] = 1;
+			    break;
+		 case  '3':
+			    ch_flag = ch_flag | CHANNEL[DO3DEV];
+			    CHFLAG[DO3DEV] = 1;
+			    break;
+		}
+               continue;
+            } 
+            if (strcmp (para, "GV_") == 0)  /* vgradient */
+            {
+               fscanf(fin, "%s", para);
+	       sprintf(node2->name, "GV%s", para);
+               sprintf(node2->grad, "%s", para);
+               fscanf(fin, "%s", datastr);
+	       length = atof(datastr);
+               node2->wide = length;
+               node2->value = length;
+	       if(!add_grad_count(para[0]))
+                    continue;
+               gradient = 1;
+               continue;
+            } 
+            if (strcmp (para, "gradient") == 0)
+            {
+               fscanf(fin, "%s", para);
+	       sprintf(node2->name, "GR%s", para);
+               sprintf(node2->grad, "%s", para);
+               fscanf(fin, "%s", datastr);
+	       length = atof(datastr);
+               node2->wide = length;
+               node2->value = length;
+	       if(!add_grad_count(para[0]))
+                    continue;
+               gradient = 1;
+               continue;
+            } 
+            if ((para[0] == 'G') && (para[1] == 'Z'))   /*  zgradpulse  */
+            {
+               strcpy(node2->name, para);
+               strcpy(node2->grad, "z");
+               fscanf(fin, "%s", datastr);
+	       node2->wide = atof(datastr);
+               fscanf(fin, "%s", datastr);
+	       node2->value = atof(datastr);
+	       gradZ++;
+	       if (gradtype[2] != 'n')
+	       {
+                  if (node2->wide > 0.0)
+                       length = node2->wide * 10.0 + bias;
+                  else
+                       length = bias;
+	          total = total + length;
+                  delay_no++;
+                  gradient = 1;
+	       }
+               continue;
+            } 
+            if ((para[0] == 'A') && (para[1] == 'C'))   /*  acquire  */
+            {
+               strcpy(node2->name, para);
+               fscanf(fin, "%s", para);
+               fscanf(fin, "%s", datastr);
+               fscanf(fin, "%s", datastr);
+	       node2->value = atof(para);
+	       node2->wide = atof(datastr);
+	       if (!rfchan[TODEV])
+		    continue;
+	       CHFLAG[TODEV] = 1;
+	       node2->value = (node2->value * node2->wide / 2) * 1.0e+6;
+	       pixels = pixels + fidwidth;
+	       acquire++;
+	       ch_flag = ch_flag | CHANNEL[TODEV];
+               continue;
+	    }
+            if ((para[0] == 'G') && (para[1] == 'S'))   /* shapedgradient */
+            {
+               fscanf(fin, "%s", para);
+               sprintf(node2->name, "GS%s", para);
+               fscanf(fin, "%s", para);
+               sprintf(node2->grad, "%s", para);
+               fscanf(fin, "%s", datastr);
+	       length = atof(datastr);
+	       node2->wide = length;
+               fscanf(fin, "%s", datastr);
+	       node2->value = atof(datastr);
+               fscanf(fin, "%s", datastr);
+	       node2->flag = atof(datastr);
+	       if(!add_grad_count(para[0]))
+                    continue;
+	       if (!dps_plot)
+                    pixels = pixels + 6;
+	       total = total + bias;
+	       puls_puls = 0;
+               delay_no++;
+               gradient = 1;
+	       image++;
+               continue;
+	    }
+            if (para[0] == 'B')   /*  spinlock  */
+            {
+               strcpy(node2->name, para);
+               fscanf(fin, "%s", datastr);
+	       node2->wide = atof(datastr) * 1.0e+6;
+               fscanf(fin, "%s", datastr);
+	       node2->value = (float)atoi(datastr);
+	       switch (para[1]) {
+		case '1':
+			chanel = TODEV;
+			break;
+		case '2':
+			chanel = DODEV;
+			break;
+		case '3':
+			chanel = DO2DEV;
+			break;
+		case '4':
+			chanel = DO3DEV;
+			break;
+		default:
+			continue;
+		}	
+	       if (!rfchan[chanel])
+		    continue;
+	       CHFLAG[chanel] = 1;
+	       pixels = pixels + spinwidth;
+	       ch_flag = ch_flag | CHANNEL[chanel];
+               continue;
+	    }
+            if (para[0] == 'K')   /*  xgates  */
+            {
+               strcpy(node2->name, para);
+               fscanf(fin, "%s", datastr);
+	       node2->wide = atof(datastr);
+	       node2->value = node2->wide;
+	       pixels = pixels + pf_x;
+               continue;
+	    }
+
+	    /*  the following are all chanel's commands */
+            strcpy(node2->name, para);
+            fscanf(fin, "%s", datastr);
+	    if (0 <= datastr[0] && datastr[0] <= '9')
+		length = atof(datastr);
+	    else
+		length = -1.0;
+            if (para[0] != 'D')
+                  length = length * 1.0e+6;
+            node2->wide = length;
+            node2->value = length;
+            if ((para[0] == 'D') && (para[1] == '_'))  /* delay */
+            {
+                 if (length > 0.0)
+                       length = length * 10.0 + bias;
+                 else
+                       length = bias;
+                 delay_no++;
+		 puls_puls = 0;	
+		 total = total + length;
+	         ch_flag = ch_flag | CHANNEL[TODEV];
+            }
+            else  /* pulse or decpulse or simpulse or shapedpulse */ 
+            {
+	         pulses++;
+		 if (para[0] == 'S')  /*  simpulse, simshaped_pulse */
+		 {
+		      if (para[1] == '4' || (para[2] == '4' && para[1] == 'M'))
+		      {     /* sim4pulse.. */
+			    chnum = 4;
+		      }
+		      else if (para[1] == '3' || (para[2] == '3' && para[1] == 'M'))
+		      {     /* sim3pulse.. */
+			    chnum = 3;
+                      }
+                      else  /* simpulse.. */
+			    chnum = 2;
+                      tmp_node = node2;
+		      chstat = rfchan[TODEV];
+		      ch_flag = CHANNEL[TODEV];
+		      while(chnum > 1)
+		      {
+			    CHFLAG[chnum] = 1;
+			    ch_flag = ch_flag | CHANNEL[chnum];
+			    chstat = chstat | rfchan[chnum];
+		            fscanf(fin, "%s", para);
+	              	    fscanf(fin, "%s", datastr);
+                            if((datanode = (struct psgdata *)alloc_node()) == NULL)
+                                  return(datanode);
+		            datanode->wide = length;
+           	      	    datanode->next = NULL;
+	                    sprintf(datanode->name,"%s", para);
+	                    if (0 <= datastr[0] && datastr[0] <= '9')
+	                          simlen = (atof(datastr) * 1.0e+6);
+	                    else
+	                     	  simlen = -1.0;
+		      	    datanode->value = simlen;
+		      	    if (simlen > length)
+		                  length = simlen;
+			    chnum--;
+           	            tmp_node->next = datanode;
+			    tmp_node = datanode;
+		      }
+		      while(1)
+		      {
+			    node2->wide = length;
+			    if(node2->next != NULL)
+				node2 = node2->next;
+			    else
+				break;
+		      }
+		      if(!chstat)
+		             continue;
+		      p_p = 1;
+                 }  /*  simpulse, simshaped_pulse */
+		 if (para[0] == 'P')
+		 {
+		      if (!rfchan[TODEV])
+			   continue;
+		      ch_flag = ch_flag | CHANNEL[TODEV];
+		 }
+		 else if (para[0] == 'W')
+		 {
+                      if (para[1] == '2' || (para[2] == '2' && para[1] == 'M'))
+		      {
+			    if (!rfchan[DO2DEV])
+				continue;
+			    CHFLAG[DO2DEV] = 1;
+			    ch_flag = ch_flag | CHANNEL[DO2DEV];
+		      }
+                      else if (para[1] == '3' || (para[2] == '3' && para[1] == 'M'))
+		      {
+			    if (!rfchan[DO3DEV])
+				continue;
+			    CHFLAG[DO3DEV] = 1;
+			    ch_flag = ch_flag | CHANNEL[DO3DEV];
+		      }
+		      else
+		      {
+			    if (!rfchan[DODEV])
+				continue;
+			    CHFLAG[DODEV] = 1;
+			    ch_flag = ch_flag | CHANNEL[DODEV];
+		      }
+		 }
+                 if (length <= 0.0)
+                 {
+                      if (puls_puls)
+                            p_p = 1;
+		      if (para[1] == 'M')  /*  shapedpulse  */
+                     	    pixels = pixels + shaped_base;
+		      else
+                       	    pixels = pixels + pulse_base;
+                 }
+                 else
+                 {     
+                       if (puls_puls)
+                            p_p = 1;
+			if (para[1] == 'M')  /*  shapedpulse  */
+			{
+                       		length = length * 0.5 + shaped_base;
+				if (length > sh_wide)
+					length = sh_wide;
+			}
+			else
+                       		length = length * 0.5 + pulse_base;
+                       if (length > p_wide)
+                               length = p_wide;
+                       pixels = pixels + length;
+                 }
+		 if (para[1] == 'M')  /*  shapedpulse  */
+		 {
+		       image++;
+                       pixels = pixels + curve_base * 2;
+		 }
+                 puls_puls = 1;
+            }  /* pulse or decpulse or simpulse or shapedpulse */
+        }   /* end of while */
+	if (level != 0)
+	    node1 = NULL;
+        *pulse_no = pulses;
+	*length3 = total;
+	*pixel3 = pixels;
+        if (node1 != NULL)
+	     node1->flag = ch_flag;
+	return(node1);
+}
+
+
+static int
+is_digit_str (label)
+char  *label;
+{
+	int   char_e;
+
+
+	char_e = 0;
+	/*  if the first letter is not digit, do not  check further */
+	while (*label == ' ')
+		label++;
+	if (*label < '0' || *label > '9')
+		return(0);
+	label++;
+	while (*label != '\0')
+	{
+	      if (*label < '0' || *label > '9')
+	      {
+		  if (*label == 'e')
+		     char_e++;
+		  else if (*label != '.' && *label != '-' && *label != '+')
+			return (0);
+		  if (char_e >= 2)
+			return(0);
+	      }
+	      label++;
+	}
+	return(1);
+}
+
+
+
+static int
+disp_label(ch, x, x2, y, level, gap, label)
+int   ch, x, x2, y, level, gap;
+char  *label;
+{
+	int len, posx, posy, down;
+
+	if (ch != 0 && !CHFLAG[ch])
+	    return;
+	if (ch == 0)
+	    ch = TODEV;
+	if (is_digit_str(label))
+	    return;
+	color(YELLOW);
+        len = strlen(label);
+        if (len > 0 && len < textLen)
+        {
+           posx = x + (x2 - x - pf_x * len) / 2;
+	   if (posx < 0)
+		posx = 0;
+           for (down = 0; down < level; down++)
+	   {
+	      if (posx > predsx[ch][down])
+	             break;
+	   }
+           if (down < level)
+	   {
+                    predsx[ch][down] = posx + pf_x * len + pf_x / 2;
+	            posy = y - pf_y * (down + 1) - pf_y * 0.3;
+                    amove(posx, posy);
+                    dstring(label);
+	   }
+        }
+}
+
+static int
+disp_value(ch, x, x2, y, level, gap, val)
+int     ch, x, x2, y, level, gap;
+float   val;
+{
+	int   len, posx, posy, i, interval;
+	char  label[paramLen];
+
+	if (ch != 0 && !CHFLAG[ch])
+	    return;
+        color(CYAN);
+        if (val >= 0.0)
+        {
+             if (val >= 1000)
+             {
+		  val = val / 1000;
+                  if (val >= 1000)
+                  {
+                         val = val / 1000;
+                         color(SCOLOR);
+                         if (colorwindow)
+                                sprintf(label, "%.1f", val);
+                         else
+                                sprintf(label, "%.1fs", val);
+                  }
+                  else
+                  {
+                         color(MCOLOR);
+                         if (colorwindow)
+                                 sprintf(label, "%.1f", val);
+                         else
+                                 sprintf(label, "%.1fm", val);
+                  }
+             }
+             else
+             {
+                  color(UCOLOR);
+                  if (colorwindow)
+                         sprintf(label, "%.1f", val);
+                  else
+                         sprintf(label, "%.1fu", val);
+             }
+        }
+        else
+             sprintf(label, "?");
+        len = strlen(label);
+	if (len > 1)
+             interval = pf_x * (len - 1) + 4;
+	else
+             interval = pf_x;
+        posx = x + (x2 - x - interval) / 2;
+	if (posx < 0)
+	   posx = 0;
+	posy = y + pf_y * 0.3;
+	if (level < 0)  /*  don't need to adjust position  */
+	{
+             amove(posx, posy);
+	     dpsDstring(label, posx, posy);
+	     return;
+	}
+	for (i = 0; i < level; i++)
+	{
+	     if (posx > predvx[ch][i])
+	            break;
+	}
+	if ( i < level)
+	{
+             predvx[ch][i] = posx + interval + pf_x / 2;
+	     posy = posy + pf_y * i;
+             amove(posx, posy);
+	     dpsDstring(label, posx, posy);
+	}
+}
+
+
+
+
+
+drawPSG()
+{
+        int  i, n, level, mess_h, NUMch, GRADch, gap;
+	double  tmpval;
+
+	curnode = psgstart;
+        if ( P_getreal(SYSTEMGLOBAL,"numrfch",&tmpval,1) >= 0 )
+        {
+               NUMch = (int) (tmpval + 0.0005);
+               if (( NUMch < 1) || (NUMch > RFCHAN_NUM))
+               {
+                     Werrprintf(
+                        "Number of RF Channels specified '%d' is not correct..",
+                        NUMch);
+               }
+        }
+        else
+              NUMch = 2;
+        if (NUMch > 1)
+	{
+	     if (getparm("dm", "string", CURRENT, dmmstr[DODEV], 30))
+	     {
+	        if (CHFLAG[DODEV])
+		{
+	    	  Wprintf("'dm': not found, value assigned to 'n'\n");
+                  sprintf(dmmstr[DODEV], "nnnnn");
+		}
+	     }
+        }	
+        if (NUMch > 2)
+	{
+	     if (getparm("dm2", "string", CURRENT, dmmstr[DO2DEV], 30))
+	     {
+	        if (CHFLAG[DO2DEV])
+		{
+	    	   Wprintf("'dm2': not found, value assigned to 'n'\n");
+                   sprintf(dmmstr[DO2DEV], "nnnnn");
+		}
+	     }
+        }	
+        if (NUMch > 3)
+	{
+	     if (getparm("dm3", "string", CURRENT, dmmstr[DO3DEV], 30))
+	     {
+	     	if (CHFLAG[DO3DEV])
+		{
+	    	    Wprintf("'dm3': not found, value assigned to 'n'\n");
+             	    sprintf(dmmstr[DO3DEV], "nnnnn");
+		}
+	     }
+        }	
+	for(i = TODEV; i <= RFCHAN_NUM; i++)
+	{
+		n = strlen(dmmstr[i]);
+		while (n > 0)
+		{
+		     n--;
+		     if (dmmstr[i][n] != 'n')
+		     {
+			  CHFLAG[i] = 1;
+			  break;
+		     }
+		}
+		if (CHFLAG[i] && !rfchan[i])
+		{
+		   Wprintf("RF Channel %d not available, check", i);
+		   if (i == TODEV)
+		     Wprintf(" 'tn'\n");
+		   else if (i == DODEV)
+		     Wprintf(" 'dn'\n");
+		   else
+		     Wprintf(" 'dn%d'\n", i - TODEV);
+		}
+		CHFLAG[i] = CHFLAG[i] & rfchan[i];
+	}
+	if(!CHFLAG[TODEV] && !CHFLAG[DODEV] && !CHFLAG[DO2DEV] && !CHFLAG[DO3DEV])
+	{
+	      Werrprintf("none of chanel is active, check tn, dn... ");
+	      return;
+	}
+	n = 1+CHFLAG[DODEV]+CHFLAG[DO2DEV]+CHFLAG[DO3DEV];
+	if (NUMch < n) 
+	   Wprintf("\nWarning: This sequence requires %d channels\n", n);
+	NUMch = n;
+     	mess_h = 0;
+	gap = 8;
+#ifdef SUN
+        if (dps_plot)
+	{
+                mess_h = ycharpixels * 3;
+		gap = 12;
+	}
+#endif
+	if (WisSunColor() && !dps_plot)
+        {
+                colorwindow = 1;
+                xs = dps_xpnts - pf_x * 5;
+                ys = dps_ypnts - 2 * pf_y;
+                amove(xs, ys);
+                color(SCOLOR);
+                box(pf_x, pf_y);
+                amove(xs + pf_x + 3, ys);
+                dstring("sec");
+                ys = ys - pf_y;
+                amove(xs, ys);
+                color(MCOLOR);
+                box(pf_x, pf_y);
+                amove(xs + pf_x + 3, ys);
+                dstring("ms");
+                ys = ys - pf_y;
+                amove(xs, ys);
+                color(UCOLOR);
+                box(pf_x, pf_y);
+                amove(xs + pf_x + 3, ys);
+                dstring("us");
+        }
+        else
+              colorwindow = 0;
+	chx[TODEV] = x_margin;
+	chx[DODEV] = x_margin;
+	chx[DO2DEV] = x_margin;
+	chx[DO3DEV] = x_margin;
+	xs = chx[TODEV];
+        textLen = 20;
+        if (dps_plot)
+		ys = pf_y + 10 + mess_h;
+	else
+		ys = 0;         /*   status baseline height  */
+        GRADch = 0;
+	if (gradX)
+	    GRADch = 1;
+	if (gradY)
+	    GRADch++;
+	if (gradZ)
+	    GRADch++;
+	if (GRADch ||  NUMch > 2)
+	{
+            dec_v_r = dec_s_r = 2;
+	    if (dps_ypnts > 40 * pf_y)  /* large window */
+            {
+               pul_v_r = pul_s_r = 3;  /* space reserved for text  */
+	       textLen = paramLen;
+	    }
+            else
+	    {
+               pul_v_r = 3;
+               pul_s_r = 2;
+	    }
+	}
+	else
+	{
+            dec_v_r = dec_s_r = 3;
+	    if (dps_ypnts > 40 * pf_y)  /* large window */
+            {
+               pul_v_r = pul_s_r = 5;  /* space reserved for text  */
+	       textLen = paramLen;
+	    }
+            else
+	    {
+               pul_v_r = 4;
+               pul_s_r = 3;
+	    }
+	    if(NUMch == 1)
+		pul_s_r += 3;
+	}
+        for(;;)
+	{
+	    i = pul_v_r + pul_s_r + (dec_s_r + dec_v_r) * (NUMch-1);
+	    pulseHeight = (dps_ypnts-ys-i*pf_y-gap*(NUMch+GRADch+1)) /
+				(NUMch + GRADch);
+	    if (pulseHeight > pf_y * 2)
+		break;
+	    if (pul_s_r > 1 || dec_s_r >1)
+	    {
+		if (pul_s_r > 1)
+		{
+			pul_v_r--;
+			pul_s_r--;
+		}
+		if (dec_s_r > 1)
+		{
+			dec_s_r--;
+			dec_v_r--;
+		}
+	    }	
+	    else
+		break;
+	}
+	if (pulseHeight < pf_y)
+	{
+	    pul_v_r = pul_s_r = dec_s_r = dec_v_r = 0;
+	    pulseHeight = (dps_ypnts-ys-gap*(NUMch+GRADch+1)) /
+                                (NUMch + GRADch);
+	}
+	del_v_r = pulseHeight / pf_y;
+	if(pulseHeight > dps_ypnts / 3)
+	    pulseHeight = dps_ypnts / 3;
+
+	color(YELLOW);
+	grad_yy = ys;
+        if (gradient && GRADch)
+        {
+	    grad_x = grad_y = grad_z = ys + gap;
+            grad_xx = grad_yx = grad_zx = x_margin;
+	    if (gradtype[2] != 'n' && gradZ)
+	    {
+                grad_z = grad_x + pulseHeight / 2;
+                amove(0, grad_z);
+                dstring("  Z");
+                grad_zy = grad_z;
+                grad_x = grad_z+pulseHeight / 2;
+	    }
+	    if (gradtype[1] != 'n' && gradY)
+	    {
+                grad_y = grad_x + pulseHeight / 2 + gap;
+                amove(0, grad_y);
+                dstring("  Y");
+                grad_yy = grad_y;
+                grad_x = grad_y + pulseHeight / 2;
+	    }
+	    if (gradtype[0] != 'n' && gradX)
+	    {
+                grad_x = grad_x + pulseHeight / 2 + gap;
+                amove(0, grad_x);
+                dstring("  X");
+                grad_xy = grad_x;
+	        chy[DO3DEV] = grad_x + pulseHeight / 2 + gap;
+	    }
+	    else
+	        chy[DO3DEV] = grad_x + gap;
+        }
+	else
+	    chy[DO3DEV] = ys + gap;
+
+	if (CHFLAG[DO3DEV])
+	{
+	    chy[DO3DEV] = chy[DO3DEV] + dec_s_r * pf_y;
+            amove(0, chy[DO3DEV]);
+            dstring("Dec3");
+            chy[DO2DEV] = chy[DO3DEV] + dec_v_r * pf_y + pulseHeight + gap;
+        }
+	else
+	    chy[DO2DEV] = chy[DO3DEV];
+	if (CHFLAG[DO2DEV])
+	{
+	    chy[DO2DEV] = chy[DO2DEV] + dec_s_r * pf_y;
+            amove(0, chy[DO2DEV]);
+            dstring("Dec2");
+            chy[DODEV] = chy[DO2DEV] + dec_v_r * pf_y + pulseHeight + gap;
+        }
+	else
+	    chy[DODEV] = chy[DO2DEV];
+	if (CHFLAG[DODEV])
+	{
+	    chy[DODEV] = chy[DODEV] + dec_s_r * pf_y;
+            amove(0, chy[DODEV]);
+            dstring("Dec");
+            chy[TODEV] = chy[DODEV]+(dec_v_r + pul_s_r) * pf_y +pulseHeight+gap;
+        }
+	else
+            chy[TODEV] = chy[DODEV] + pul_s_r * pf_y + gap;
+	if (CHFLAG[TODEV])
+	{
+	    amove(0, chy[TODEV]);
+	    dstring(" Tx");
+	}
+	statstr[0] = '\0';
+        chyc[TODEV] = chy[TODEV];
+        chyc[DODEV] = chy[DODEV];
+        chyc[DO2DEV] = chy[DO2DEV];
+        chyc[DO3DEV] = chy[DO3DEV];
+	level = 0;
+        for (n=0; n <= RFCHAN_NUM; n++)
+	{
+            for (i=0; i < 5; i++)
+            {
+                 predsx[n][i] = 3 * pf_x;
+                 predvx[n][i] = 3 * pf_x;
+	    }
+	    decpulse[n] = 0;
+        }
+	VGRAD[0] = VGRAD[1] = VGRAD[2] = 0;
+        amove(chx[TODEV], chy[TODEV]);
+	chx[TODEV] = draw_psg(level, chx, chy, chyc, powerI); 
+	if (!acquire && CHFLAG[TODEV])
+            fidWAVE(100, pulseHeight, chx[TODEV], chy[TODEV]);
+
+	return;
+}
+
+
+
+int draw_psg(level, px, py, pyc, ppower)
+	int  level;
+	int  px[], py[], pyc[], ppower[];
+{
+        int  x2, no_str, posy, posx, i, down, up;
+	int  pre_stat, yh;
+	int  cx[RFCHAN_NUM+1]; 
+	int  cx1[RFCHAN_NUM+1]; 
+	int  cx2[RFCHAN_NUM+1]; 
+	int  cy[RFCHAN_NUM+1]; 
+	int  cy1[RFCHAN_NUM+1]; 
+	int  cy2[RFCHAN_NUM+1]; 
+	int  cyc[RFCHAN_NUM+1]; 
+	int  cyc1[RFCHAN_NUM+1]; 
+	int  cyc2[RFCHAN_NUM+1]; 
+	int  old_yc[RFCHAN_NUM+1]; 
+	int  ph[RFCHAN_NUM+1];   /*  pulse height */ 
+	int  ph1[RFCHAN_NUM+1];
+	int  ph2[RFCHAN_NUM+1];
+	int  power[RFCHAN_NUM+1];
+	int  t_yc;
+	int  x_u, x_d, interval;
+	int  old_decon;
+	int  chan, ch_exist;
+	int  decMinHeight, trMinHeight;
+        char  value[paramLen];
+        float  length, pulse;
+        struct psgdata   *loopnode;
+
+        pre_stat = 0;
+	
+	for(i = TODEV; i <= RFCHAN_NUM; i++)
+	{
+	   cx[i] = px[i];
+	   cx1[i] = px[i];
+	   cx2[i] = px[i];
+	   cy[i] = py[i];
+	   cy1[i] = py[i];
+	   cy2[i] = py[i];
+	   cyc[i] = pyc[i];
+	   cyc1[i] = pyc[i];
+	   cyc2[i] = pyc[i];
+	   power[i] = ppower[i];
+	   old_yc[i] = py[i];
+	}
+
+        decMinHeight = pulseHeight / ((level+1) * 4);
+	for(i = DODEV; i <= RFCHAN_NUM; i++)
+	{
+	   if (CHFLAG[i])
+	      ph[i] = cy[i]+decMinHeight+(3-level)*decMinHeight*power[i] / power_ch[i];
+	   else
+	      ph[i] = cy[i] + 4 * decMinHeight;
+	   ph1[i] = ph2[i] = ph[i];
+	}
+	   
+        trMinHeight = pulseHeight / ((level+1) * 4);
+	t_yc = py[TODEV];
+	if (rfchan[TODEV])
+            ph[TODEV] = cy[TODEV] + trMinHeight + trMinHeight * (3-level) *
+				 power[TODEV] / power_ch[TODEV];
+	else
+	    ph[TODEV] = cy[TODEV] + 4 * trMinHeight;
+
+	color(GREEN);
+	while(curnode != NULL)
+        {
+	    if (curnode->name[0] == 'X')  /*   endif, endloop  */
+	    {
+		for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+		{
+		    px[chan] = cx[chan];
+		    pyc[chan] = cyc[chan];
+		}
+		return(cx[TODEV]);
+   	    }		
+	    if (curnode->name[0] == 'V')  /*   power  */
+	    {
+		chan = (int)curnode->value;
+		switch (chan) {
+		   case TODEV:
+			if(CHFLAG[TODEV])
+			{	
+			   power[TODEV] = curnode->wide;
+			   if (power[TODEV] < 0)
+			      power[TODEV] = 0;
+			   ph[TODEV] = py[TODEV] + trMinHeight + trMinHeight *
+					 (3-level) * power[TODEV] / power_ch[TODEV];
+			   if (xmtron)
+			   {
+			     color(GREEN);
+			     tdraw(cx[TODEV], cy[TODEV], cx[TODEV], ph[TODEV]);
+			     cy[TODEV] = ph[TODEV];
+			   }
+			}
+			break;
+		   case DODEV:
+		   case DO2DEV:
+		   case DO3DEV:
+			if(CHFLAG[chan])
+			{	
+                           power[chan] = curnode->wide;
+			   if (power[chan] < 0)
+				power[chan] = 0;
+                           ph[chan] = cy[chan] + decMinHeight + (3-level) * decMinHeight * power[chan] / power_ch[chan];
+			   if (decon[chan] || dstat[chan])
+			      update_dec(chan, cx, cy, cyc, ph, old_yc, 1); 
+			}
+			break;
+                }
+		curnode = curnode->next;
+		continue;
+	    }
+	    if (curnode->name[0] == 'H')  /*   power on or off  */
+	    {
+		if (curnode->name[1] == 'x' && CHFLAG[TODEV])  /* transmitter  */
+		{
+			if (curnode->value == 0)  /* off */
+			{
+				if (cy[TODEV] != py[TODEV])
+				{
+				     color(GREEN);
+				     amove(cx[TODEV], cy[TODEV]);
+				     adraw(cx[TODEV], py[TODEV]);
+				}
+				cy[TODEV] = py[TODEV];
+				xmtron = 0;
+			}
+			else    /*  on  */
+			{
+				cy[TODEV] = ph[TODEV];
+				xmtron = 1;
+			}
+		}		
+		else
+		{
+			switch (curnode->name[1]) {
+			   case '1':     /* dec1 */
+			         chan = DODEV;
+				 break;
+			   case '2':     /* dec2 */
+			         chan = DO2DEV;
+				 break;
+			   case '3':     /* dec3 */
+			         chan = DO3DEV;
+				 break;
+			}
+			update_dec(chan,cx,cy,cyc,ph,old_yc,curnode->value); 
+			decon[chan] = curnode->value;
+			dstat[chan] = decon[chan];
+			dec_vdraw[chan] = curnode->value;
+		}		
+		curnode = curnode->next;
+		continue;
+	    }
+	    if (curnode->name[0] == 'I')  /* ifzero  */
+	    {
+		if (level == 0)
+                        dec_query(curnode->next);
+                color(GREEN);
+		for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+		{
+		     if (decpulse[chan] && CHFLAG[chan])
+		     {
+                        if (!decon[chan] && cyc[chan] > cy[chan])
+                           scrnLine(cx[TODEV], cx[chan], cy[chan], cyc[chan]);
+                        amove(cx[chan], cyc[chan]);
+                        adraw(cx[TODEV], cyc[chan]);
+                        cx[chan] = cx[TODEV];
+		     }
+                }
+		color(BLUE);
+		pre_stat = 0;
+		sprintf(value, "%s=0?", &curnode->name[3]);
+		if (level == 0)
+		{
+			if (curnode->value == 0)
+			{
+			    cy1[TODEV] = cy[TODEV]+trMinHeight * 2 + pf_y / 2;
+			    cyc1[TODEV] = cy1[TODEV];
+			    cy2[TODEV] = cy[TODEV]-trMinHeight * 2 - pf_y / 2;
+			    cyc2[TODEV] = cy2[TODEV];
+			    for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+                	    {
+				if (decpulse[chan] && CHFLAG[chan])
+				{
+				     cy1[chan] = cy[chan] + pulseHeight * 0.4;
+				     cy2[chan] = cy[chan] - pulseHeight * 0.3;
+				     if (cy2[chan] <= grad_xy + 4)
+					cy2[chan] = grad_xy + 4;
+                                }
+                            }
+			}
+			else
+			{
+			    posy = trMinHeight * 2;
+			    up = 0;
+			    down = 0;
+			    if (curnode->value >= MAXLEVEL)
+				curnode->value = MAXLEVEL - 1;
+			    for (i = 0; i < curnode->value; i++)
+			    {
+				up = up + posy + 2;
+				posy = posy / 2;
+			    }
+			    cy1[TODEV] = cy[TODEV] + up + pf_y * curnode->value;
+			    cyc1[TODEV] = cy1[TODEV];
+			    cy2[TODEV] = cy[TODEV] - up - pf_y * curnode->value;
+			    cyc2[TODEV] = cy2[TODEV];
+			    for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+                	    {
+				if (decpulse[chan] && CHFLAG[chan])
+				{
+				     cy1[chan] = cy[chan] + pulseHeight * 0.4;
+				     cy2[chan] = cy[chan] - pulseHeight * 0.3;
+				     if (cy2[chan] <= grad_xy + 4)
+					cy2[chan] = grad_xy + 4;
+                                }
+                            }
+
+			}
+		}
+		else	
+		{
+		        cy1[TODEV] = cy[TODEV] +trMinHeight * 2 + pf_y / 2 + 2;
+			cyc1[TODEV] = cy1[TODEV];
+		        cy2[TODEV] = cy[TODEV] -trMinHeight * 2 - pf_y / 2 + 2;
+			cyc2[TODEV] = cy2[TODEV];
+			for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+                	{
+			    if (decpulse[chan] && CHFLAG[chan])
+			    {
+				cy1[chan] = cy[chan] + pulseHeight * 0.3;
+				cy2[chan] = cy[chan] - pulseHeight * 0.2;
+                            }
+                        }
+	        }			
+	        for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+               	{
+		     if (decpulse[chan] && CHFLAG[chan])
+		     {
+                        if (cyc[chan] > cy[chan])
+                        {
+                             cyc1[chan] = cy1[chan] + pulseHeight / 
+						((level + 1) * 2 + 3);
+                             cyc2[chan] = cy2[chan] + pulseHeight /
+						((level + 1) * 2 + 3);
+                        }
+                        else
+                        {
+                             cyc1[chan] = cy1[chan];
+                             cyc2[chan] = cy2[chan];
+                        }
+                        ph1[chan] = cy1[chan]+pulseHeight/((level+1) * 2);
+                        ph2[chan] = cy2[chan]+pulseHeight/((level+1) * 2);
+                        color(GREEN);
+                        if (!decon[chan] && cyc[chan] > cy[chan])
+                             scrnLine(cx[TODEV], cx[chan], cy[chan], cyc[chan]);
+                        amove(cx[chan], cyc[chan]);
+                        adraw(cx[TODEV], cyc[chan]);
+                        cx[chan] = cx[TODEV] + 2;
+                        color(BLUE);
+                        amove(cx[chan], cyc1[chan]);
+                        adraw(cx[chan], cy2[chan]);
+		     }
+                }
+                               
+		up = cy1[TODEV];
+		for(chan = TODEV; chan <= RFCHAN_NUM; chan++)
+		{
+		     cx1[chan] = cx[TODEV] + 2;
+		     cx2[chan] = cx[TODEV] + 2;
+		}
+		tdraw(cx1[TODEV], cy1[TODEV], cx1[TODEV], cy[TODEV]);
+		curnode = curnode->next;
+		x_u = draw_psg(level+1, cx1, cy1, cyc1, power);
+		if (strncmp(curnode->name, "XEN", 3) == 0)  /* elsenz  */
+		{
+			color(BLUE);
+			tdraw(cx2[TODEV], cy[TODEV], cx2[TODEV], cy2[TODEV]);
+  			curnode = curnode->next;
+			x_d = draw_psg(level+1, cx2, cy2, cyc2, power);
+			color(GREEN);
+			if (x_u > x_d)
+			{
+			    cx[TODEV] = x_u;
+			    if (CHFLAG[TODEV])
+			       dot_Line(x_d + 1,x_u,cy2[TODEV],cy2[TODEV]);
+			    color(BLUE);
+			    tdraw(x_u, cy2[TODEV], x_u, up);
+			}
+			else
+			{
+			    cx[TODEV] = x_d;
+			    if (CHFLAG[TODEV])
+			       dot_Line(x_u + 1, x_d, up, up);
+			    color(BLUE);
+			    tdraw(x_d, cy2[TODEV], x_d, cy1[TODEV]);
+			}
+		}
+		else
+		{
+			color(BLUE);
+		        cy2[TODEV] = cy[TODEV] - pf_y / 2 - 4;
+			tdraw(cx2[TODEV], cy2[TODEV], x_u, cy2[TODEV]);
+			cx[TODEV] = x_u;
+			tdraw(x_u, cy2[TODEV], x_u, up);
+		}
+		no_str = strlen(value);
+		if (pf_x*no_str <= (cx[TODEV]-cx1[TODEV]) && CHFLAG[TODEV])
+		{
+		     posx = cx1[TODEV] + (cx[TODEV]-cx1[TODEV]-pf_x*no_str) / 2;
+		     amove(posx, cy[TODEV]);
+		     color(MAGENTA);
+		     dstring(value);
+		}
+	        for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+               	{
+                     color(GREEN);
+		     if (decpulse[chan] && CHFLAG[chan])
+		     {
+                        if (!decon[chan] && cyc1[chan] > cy1[chan])
+                            scrnLine(cx[TODEV],cx1[chan],cy1[chan],cyc1[chan]);
+			dot_Line(cx1[chan], cx[TODEV], cyc1[chan], cyc1[chan]);
+                        if (!decon[chan] && cyc2[chan] > cy2[chan])
+                            scrnLine(cx[TODEV],cx2[chan],cy2[chan],cyc2[chan]);
+			dot_Line(cx2[chan], cx[TODEV], cyc2[chan], cyc2[chan]);
+                        color(BLUE);
+                        amove(cx[TODEV], cy2[chan]);
+                        adraw(cx[TODEV], cyc1[chan]);
+                        cx[chan] = cx[TODEV];
+		     }
+                }
+		cx[TODEV]++;
+		amove(cx[TODEV], cy[TODEV]);
+		curnode = curnode->next;
+		continue;
+	    } /* end of ifzero */
+	    if (curnode->name[0] == 'L')  /* loop, starthardloop  */
+	    {
+		color(RED);
+		pre_stat = 0;
+		cx[TODEV]++;
+		cy1[TODEV] = ph[TODEV] + 5;
+		cy2[TODEV] = py[TODEV] - 5;
+		loopnode = curnode;
+	        if (curnode->name[1] == 'F')  /* software loop  */
+		{
+		    i = 0;
+		    if ((loopnode->flag & CHANNEL[TODEV]) && CHFLAG[TODEV])
+		    {
+			l_S_loopmark(cx[TODEV], cy1[TODEV], cy2[TODEV]);
+			i = 1;
+		    }
+		    for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+		    {
+		        if (CHFLAG[chan] && (loopnode->flag & CHANNEL[chan]))
+			{
+			    yh = cyc[chan];
+			    update_dec(chan,cx,cy,cyc,ph,old_yc,decon[chan]); 
+			    cyc[chan] = yh;
+			    color(RED);
+			    l_S_loopmark(cx[TODEV], ph[chan] + 5, cy[chan] - 5);
+			    i = 1;
+			}
+		    }
+	            if (CHFLAG[TODEV])
+		        cx[TODEV] = cx[TODEV] + 3 * i;
+		    x2 = cx[TODEV];
+		    color(GREEN);
+		    if (ignore_loop)
+		    {
+			i = 0;
+		        if ((loopnode->flag & CHANNEL[TODEV]) && CHFLAG[TODEV])
+		        {
+			    if (loopnode->value == 0) 
+			    {
+			        x_u = cx[TODEV] + loop_width;
+			       	drawLoopBox(cx[TODEV],x_u,py[TODEV],ph[TODEV]);
+			        cx[TODEV] = x_u;
+			    }
+			    else
+			       drawLoopAcq(cx, py[TODEV], ph[TODEV], curnode);
+			    i = 1;
+		        }
+		        for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+		        {
+		            if ((loopnode->flag & CHANNEL[chan]) && CHFLAG[chan])
+		            {
+			       if (cx[TODEV] > x2)
+			           x_u = cx[TODEV];
+			       else 
+			           x_u = x2 + loop_width;
+			       drawLoopBox(x2, x_u, cy[chan], ph[chan]);
+			       i = 1;
+		            }
+		        }
+			if (cx[TODEV] <= x2)
+			       cx[TODEV] = x2 + loop_width * i;
+		    } 
+		    curnode = curnode->next;
+		    yh = cy[TODEV];
+		    cy[TODEV] = py[TODEV];
+		    x_u = draw_psg(level, cx, cy, cyc, power);
+		    cy[TODEV] = yh;
+		    color(RED);
+		    cx[TODEV] = x_u + 2;
+		    if ((loopnode->flag & CHANNEL[TODEV]) && CHFLAG[TODEV])
+		    {
+			r_S_loopmark(cx[TODEV], ph[TODEV] + 5, py[TODEV] - 5);
+			t_yc = py[TODEV];
+			if (!(loopnode->flag & CHANNEL[TODEV]))
+			{
+				cy[TODEV] = py[TODEV];
+				xmtron = 0;
+			}
+		    }
+		    else
+		    {
+			color(GREEN);
+			x2 = x2 - 3;
+		        if (t_yc != cy[TODEV])
+		        {
+				tdraw(x2, t_yc, x2, cy[TODEV]);
+		        	t_yc = cy[TODEV];
+		        }
+			tdraw(cx[TODEV], cy[TODEV], x2, cy[TODEV]);
+			color(RED);
+		    }
+		    for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+		    {
+		        if ((loopnode->flag & CHANNEL[chan]) && CHFLAG[chan])
+			{
+
+                           if (!ignore_loop)
+			   {
+			       yh = cyc[chan];
+			       update_dec(chan,cx,cy,cyc,ph,old_yc,decon[chan]); 
+			       cyc[chan] = yh;
+		           }
+			   color(RED);
+			   r_S_loopmark(cx[TODEV], ph[chan] + 5, cy[chan] - 5);
+			   cx[chan] = cx[TODEV] + 3;
+			   old_yc[chan] = cy[chan];
+			   if(!(loopnode->flag & CHANON[chan]))
+		           {
+			       cyc[chan] = cy[chan];
+			       decon[chan] = 0;
+			       dstat[chan] = 0;
+		           }
+			}
+		    }
+		}
+                else    /*   hardware loop  */
+		{
+		    i = 0;
+		    if ((loopnode->flag & CHANNEL[TODEV]) && CHFLAG[TODEV])
+		    {
+			l_H_loopmark(cx[TODEV], ph[TODEV] + 5, py[TODEV] - 5);
+			i = 1;
+		    }
+		    for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+		    {
+		        if ((loopnode->flag & CHANNEL[chan]) && CHFLAG[chan])
+		        {
+			    yh = cyc[chan];
+			    update_dec(chan,cx,cy,cyc,ph,old_yc,decon[chan]); 
+			    cyc[chan] = yh;
+			    color(RED);
+			    l_H_loopmark(cx[TODEV], ph[chan]+5, cy[chan]-5);
+			    i = 1;
+		        }
+		    }
+		    cx[TODEV] = cx[TODEV] + 3 * i;
+		    x2 = cx[TODEV];
+		    color(GREEN);
+                    if (ignore_loop)
+                    {
+			i = 0;
+                        if ((loopnode->flag & CHANNEL[TODEV]) && CHFLAG[TODEV])
+                        {
+                            if (loopnode->value == 0)
+                            {
+			        x_u = cx[TODEV] + loop_width;
+			       	drawLoopBox(cx[TODEV],x_u,py[TODEV],ph[TODEV]);
+                                cx[TODEV] = x_u;
+                            }
+                            else
+                               drawLoopAcq(cx, py[TODEV], ph[TODEV], curnode);
+			    i = 1;
+                        }
+		        for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+		        {
+                           if ((loopnode->flag & CHANNEL[chan]) && CHFLAG[chan])
+                           {
+			       if (cx[TODEV] > x2)
+			           x_u = cx[TODEV];
+			       else 
+			           x_u = x2 + loop_width;
+			       	drawLoopBox(x2, x_u, cy[chan], ph[chan]);
+			       i = 1;
+                           }
+                        }
+			if (cx[TODEV] <= x2)
+			       cx[TODEV] = x2 + loop_width * i;
+                    }
+		    curnode = curnode->next;
+		    yh = cy[TODEV];
+		    cy[TODEV] = py[TODEV];
+		    x_u = draw_psg(level, cx, cy, cyc, power);
+		    cy[TODEV] = yh;
+		    color(RED);
+                    cx[TODEV] = x_u + 2;
+                    if ((loopnode->flag & CHANNEL[TODEV]) && CHFLAG[TODEV])
+                    {
+                        r_H_loopmark(cx[TODEV], ph[TODEV] + 5, py[TODEV] - 5);
+                        t_yc = py[TODEV];
+                        if (!(loopnode->flag & CHANNEL[TODEV]))
+                        {
+                                cy[TODEV] = py[TODEV];
+                                xmtron = 0;
+                        }
+                    }
+                    else
+                    {
+			color(GREEN);
+                        x2 = x2 - 3;
+                        if (t_yc != cy[TODEV])
+                        {
+				tdraw(x2, t_yc, x2, cy[TODEV]);
+                                t_yc = cy[TODEV];
+                        }
+			tdraw(cx[TODEV], cy[TODEV], x2, cy[TODEV]);
+			color(RED);
+                    }
+
+		    for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+		    {
+                        if (CHFLAG[chan] && (loopnode->flag & CHANNEL[chan]))
+                        {
+                            if (!ignore_loop)
+			    {
+			        yh = cyc[chan];
+			        update_dec(chan,cx,cy,cyc,ph,old_yc,decon[chan]); 
+			        cyc[chan] = yh;
+			    }
+		 	    color(RED);
+                            r_H_loopmark(cx[TODEV], ph[chan] + 5, cy[chan] - 5);
+                            cx[chan] = cx[TODEV] + 3;
+                            old_yc[chan] = cy[chan];
+                            if(!(loopnode->flag & CHANON[chan]))
+                            {
+			        cyc[chan] = cy[chan];
+                                decon[chan] = 0;
+				dstat[chan] = 0;
+                            }
+			}
+                    }
+		}
+		cx[TODEV] = cx[TODEV] + 3;
+		amove(cx[TODEV], cy[TODEV]);
+		curnode = curnode->next;
+		continue;
+	    }
+			
+	    if ((strcmp(curnode->name, "UN") == 0) && CHFLAG[TODEV])
+	    {
+		color(BLUE);
+		cy1[TODEV] = py[TODEV] + pf_y;
+		if (cy1[TODEV] < ph[TODEV])
+			cy1[TODEV] = ph[TODEV];
+		cy2[TODEV] = py[TODEV] - pf_y + 3;
+		cx1[TODEV] = cx[TODEV] + pf_x * 2;
+		amove(cx[TODEV], cy1[TODEV]);
+		adraw(cx[TODEV], cy2[TODEV]);
+		adraw(cx1[TODEV], cy2[TODEV]);
+		adraw(cx1[TODEV], cy1[TODEV]);
+		adraw(cx[TODEV], cy1[TODEV]);
+		cx1[TODEV] = cx[TODEV] + pf_x / 2;
+		amove(cx1[TODEV], py[TODEV]);
+		dstring("?");
+		cx[TODEV] = cx[TODEV] + pf_x * 2 + 2;
+		curnode = curnode->next;
+		pre_stat = 0;
+		continue;
+	    }
+
+            color(GREEN);
+	    
+	    if (curnode->name[0] == 'D')
+	    {
+                length = curnode->wide;
+                pulse = 0;
+                if (length > 0.0)
+                     x2 = cx[TODEV] + (length * 10.0 + bias) * ratio + 0.5;
+                else
+                     x2 = cx[TODEV] + bias * ratio + 0.5;
+		if (t_yc != cy[TODEV])
+		{
+		    if (curnode->wide <= 0)
+		         tdot_Line(cx[TODEV], cx[TODEV], t_yc, cy[TODEV]);
+		    else
+			 tdraw(cx[TODEV], t_yc, cx[TODEV], cy[TODEV]);
+		    t_yc = cy[TODEV];
+		    pre_stat = 0;
+		}
+	        if (pre_stat || ((!CHFLAG[TODEV]) && level == 0))
+		    draw_mark(cx[TODEV], cy[TODEV]);
+		amove(cx[TODEV], cy[TODEV]);
+                if (curnode->wide <= 0)
+	            dot_Line(cx[TODEV], x2, cy[TODEV], cy[TODEV]);
+                else
+                    adraw(x2, cy[TODEV]);
+/**
+	        if (!CHFLAG[TODEV] && level == 0)
+		    draw_mark(cx[TODEV], cy[TODEV]);
+**/
+	        pre_stat = 1;
+            }
+	    else if(curnode->name[0] == 'P' || curnode->name[0] == 'W')
+            {   
+               if (curnode->wide <= 0.0)
+	       {
+	           if (curnode->name[1] == 'M')  /*  shapedpulse  */
+			x2 = cx[TODEV] + shaped_base;
+		   else
+                   	x2 = cx[TODEV] + pulse_base;
+	       }
+               else
+               {
+	           if (curnode->name[1] == 'M')  /*  shapedpulse  */
+		   {
+                   	length = curnode->wide * 0.5  + shaped_base;
+			if (length > sh_wide)
+				length = sh_wide;
+		   }
+		   else
+                   	length = curnode->wide * 0.5 + pulse_base;
+                   if (length > p_wide)
+                          length = p_wide;
+                   x2 = cx[TODEV] + length;
+               }
+	       if (curnode->name[0] == 'W')  /* decpulse */
+	       {
+		   if (curnode->name[1] == '2' || (curnode->name[2] == '2' 
+					&& curnode->name[1] == 'M'))
+			chan = DO2DEV;
+		   else if (curnode->name[1] == '3' || (curnode->name[2] == '3' 
+					&& curnode->name[1] == 'M'))
+			chan = DO3DEV;
+		   else
+			chan = DODEV;
+		   if (!CHFLAG[chan])
+		   {
+			curnode = curnode->next;
+			continue;
+		   }
+		   D_decoupler(level,cx,cy,cyc,ph,old_yc,curnode, chan);
+	           if (curnode->name[1] == 'M')  /*  decshapedpulse  */
+			x2 = x2 + curve_base * 2;
+		   color(GREEN);
+		   if (t_yc != cy[TODEV] && CHFLAG[TODEV])
+		   {
+		        amove(cx[TODEV], t_yc);
+			if (curnode->wide <= 0)
+		   	      dot_Line(cx[TODEV], cx[TODEV], t_yc, cy[TODEV]);
+			else
+		              adraw(cx[TODEV], cy[TODEV]);
+		        t_yc = cy[TODEV];
+			pre_stat = 0;
+		   }
+	           if (pre_stat || (!CHFLAG[TODEV] && level == 0))
+			draw_mark(cx[TODEV],cy[TODEV]);
+		   if (CHFLAG[TODEV])
+		        pre_stat = 1;
+		   else
+		        pre_stat = 0;
+		   amove(cx[TODEV], cy[TODEV]);
+		   if(CHFLAG[TODEV])
+		   {
+		     if (curnode->wide <= 0)
+		        dot_Line(cx[TODEV], x2, cy[TODEV], cy[TODEV]);
+		     else
+		        adraw(x2, cy[TODEV]);
+		   }
+		   if (curnode->next != NULL)
+		   {
+			if (curnode->next->name[0] == 'D' || curnode->next->name[0] == 'W')
+				tdraw(x2, cy[TODEV] + 3, x2, cy[TODEV] - 3);
+		   }
+		   cx[TODEV] = x2;
+		/*
+	           if (CHFLAG[TODEV])
+			draw_mark(cx[TODEV],cy[TODEV]);
+		*/
+		   curnode = curnode->next;
+		   continue;
+	       }  /* end of decpulse */
+	       pre_stat = 0;
+	       if (curnode->name[1] == 'M' && CHFLAG[TODEV])  /* shapedpulse */
+	       {
+		   if (t_yc != py[TODEV])
+		   {
+		        amove(cx[TODEV], t_yc);
+			if (curnode->value <= 0)
+		   	      dot_Line(cx[TODEV], cx[TODEV], t_yc, py[TODEV]);
+			else
+		              adraw(cx[TODEV], py[TODEV]);
+		        t_yc = py[TODEV];
+		   }
+                   yh = (ph[TODEV] - py[TODEV]) * 0.4;
+		   if (yh > 6)
+			yh = 6; 
+	           small_shaped(cx[TODEV], py[TODEV], yh, curve_base, (int)curnode->value);
+		   cx[TODEV] = cx[TODEV] + curve_base;
+		   x2 = x2 + curve_base;
+		   yh = ph[TODEV] - py[TODEV];
+		   shaped(cx[TODEV],py[TODEV],yh,x2-cx[TODEV]+1,(int)curnode->value);
+		   yh = yh * 0.4;
+		   if (yh > 6)
+			yh = 6; 
+	           small_shaped(x2,py[TODEV],yh,curve_base,(int)curnode->value);
+		   cx[TODEV] = cx[TODEV] - curve_base;
+		   x2 = x2 + curve_base;
+	       }
+		/*  it is pulse */
+               else if (curnode->wide <= 0 && CHFLAG[TODEV])
+	       {
+		   dot_Line(cx[TODEV], cx[TODEV], py[TODEV], ph[TODEV]);
+		   dot_Line(cx[TODEV]+1, x2, ph[TODEV], ph[TODEV]);
+          	   dot_Line(x2, x2, ph[TODEV], py[TODEV]);
+	       }
+               else if(CHFLAG[TODEV]) 
+	       {
+		   cy[TODEV] = py[TODEV];
+		   xmtron = 0;
+                   amove(cx[TODEV], cy[TODEV]);
+                   adraw(cx[TODEV], ph[TODEV]);
+                   adraw(x2, ph[TODEV]);
+                   adraw(x2, cy[TODEV]);
+	       }
+	       else  /*  pulse, but TODEV is not active */
+		   x2 = cx[TODEV];
+	       t_yc = py[TODEV];
+            } /* end of pulse, decpulse, and shapedpulse */
+	    else if (curnode->name[0] == 'S')   /*  simpulse  */
+	    {
+		ch_exist = CHFLAG[TODEV] | CHFLAG[DODEV];
+		D_decoupler(level,cx,cy,cyc,ph,old_yc,curnode->next, DODEV);
+		if (curnode->name[1] == '3' || (curnode->name[2] == '3'
+						 && curnode->name[1] == 'M'))
+		{
+		     D_decoupler(level,cx,cy,cyc,ph,old_yc,curnode->next->next, DO2DEV);
+		     ch_exist = ch_exist | CHFLAG[DO2DEV];
+		}
+		if (curnode->name[1] == '4' || (curnode->name[2] == '4'
+						 && curnode->name[1] == 'M'))
+		{
+		     D_decoupler(level,cx,cy,cyc,ph,old_yc,curnode->next->next, DO2DEV);
+		     D_decoupler(level,cx,cy,cyc,ph,old_yc,curnode->next->next->next, DO3DEV);
+		     ch_exist = ch_exist | CHFLAG[DO2DEV] | CHFLAG[DO3DEV];
+		}
+		if (!ch_exist)
+		     posx = cx[TODEV];
+		pre_stat = 0;
+		color(GREEN);
+	        if (curnode->name[1] == 'M')  /* simshapedpulse */
+	        {
+		     if (t_yc != py[TODEV])
+		     {
+			if (curnode->value <= 0)
+		   	      tdot_Line(cx[TODEV], cx[TODEV], t_yc, py[TODEV]);
+			else
+			      tdraw(cx[TODEV], t_yc, cx[TODEV], py[TODEV]);
+		     }
+		     t_yc = py[TODEV];
+		     yh = (ph[TODEV] - py[TODEV]) * 0.4;
+		     if(yh > 6)
+			 yh = 6;
+		     if (CHFLAG[TODEV])
+		          small_shaped(cx[TODEV],py[TODEV],yh,curve_base,
+						(int)curnode->value); 
+		     cx[TODEV] = cx[TODEV]+ curve_base;
+		     if (curnode->wide <= 0.0)
+		         x2 = cx[TODEV] + shaped_base;
+		     else
+		     {
+			length = curnode->wide * 0.5 + shaped_base;
+			if (length > sh_wide)
+				length = sh_wide;
+                  	if (length > p_wide)
+                                length = p_wide;
+			x2 = cx[TODEV] + length;
+		     }
+		     yh = ph[TODEV] - py[TODEV];
+		     if (CHFLAG[TODEV])
+		          shaped(cx[TODEV],py[TODEV],yh,x2-cx[TODEV]+1,
+						(int)curnode->value);
+		     yh = yh * 0.4;
+		     if(yh > 6)
+			   yh = 6;
+		     if (CHFLAG[TODEV])
+                          small_shaped(x2,py[TODEV],yh,curve_base,(int)curnode->value);
+		     cx[TODEV] = cx[TODEV] - curve_base;
+		     x2 = x2 + curve_base;
+	        }
+		else if (curnode->wide <= 0.0)
+		{
+		     x2 = cx[TODEV] + pulse_base;
+		     amove(cx[TODEV], py[TODEV]);
+		     tdot_Line(cx[TODEV], cx[TODEV], py[TODEV], ph[TODEV]);
+		     tdot_Line(cx[TODEV]+1, x2, ph[TODEV], ph[TODEV]);
+          	     tdot_Line(x2, x2, ph[TODEV], py[TODEV]);
+		}
+		else
+		{
+		     amove(cx[TODEV], py[TODEV]);
+		     length = curnode->wide * 0.5 + pulse_base;
+		     if (length > p_wide)
+				length = p_wide;
+		     if (curnode->value <= 0.0)
+		     {
+			x2 = cx[TODEV] + length;
+		        tdot_Line(cx[TODEV], cx[TODEV], py[TODEV], ph[TODEV]);
+		       	tdot_Line(cx[TODEV], x2, ph[TODEV], ph[TODEV]);
+          	        tdot_Line(x2, x2, ph[TODEV], py[TODEV]);
+		     }
+	             else
+		     {
+			cy[TODEV] = py[TODEV];
+			xmtron = 0;
+			if (t_yc != cy[TODEV] && CHFLAG[TODEV])
+			{
+				adraw(cx[TODEV], t_yc);
+				amove(cx[TODEV], py[TODEV]);
+			}
+		       	pulse = curnode->value * 0.5 + pulse_base;
+		       	if (pulse > p_wide)
+		        	pulse = p_wide;
+                        if (curnode->value < curnode->wide)
+			{
+                                while ((pulse > 6.0) && (length - pulse) < 10.0)
+                                     pulse = pulse - 1.0;
+				x2 = cx[TODEV] + (length - pulse) / 2;
+				if(CHFLAG[TODEV])
+				{
+				    adraw(x2, cy[TODEV]);
+				    adraw(x2, ph[TODEV]);
+				}
+				x2 = x2 + pulse;
+				if(CHFLAG[TODEV])
+				{
+				    adraw(x2, ph[TODEV]);
+				    adraw(x2, cy[TODEV]);
+				}
+				x2 = cx[TODEV] + length;
+				if(CHFLAG[TODEV])
+				    adraw(x2, cy[TODEV]);
+			}
+			else
+			{
+		               	x2 = cx[TODEV] + length;
+				if(CHFLAG[TODEV])
+				{
+		                    adraw(cx[TODEV], ph[TODEV]);
+		                    adraw(x2, ph[TODEV]);
+                		    adraw(x2, cy[TODEV]);
+				}
+			}
+			t_yc = cy[TODEV];
+		     }
+	        } 
+		if (!ch_exist)
+		{
+		     x2 = posx;
+		     cx[TODEV] = posx;
+		}
+	    }  /* simpulse */
+	    else if (curnode->name[0] == 'G')   /*  gradient  */
+	    {
+		drawGradient(curnode, cx[TODEV]);
+		if (gradtype[2] != 'n' && curnode->name[1] == 'Z') /* zgradpulse */
+	 	{
+		   color(GREEN);
+	           if (pre_stat || ((!CHFLAG[TODEV]) && level == 0))
+		       draw_mark(cx[TODEV], cy[TODEV]);
+                   length = curnode->wide;
+                   pulse = 0;
+                   if (length > 0.0)
+                         x2 = cx[TODEV] + (length * 10.0 + bias) * ratio + 0.5;
+                   else
+                         x2 = cx[TODEV] + bias * ratio + 0.5;
+	  	   amove(cx[TODEV], t_yc);
+                   adraw(x2, cy[TODEV]);
+	           pre_stat = 1;
+		   cx[TODEV] = x2;
+		}
+		if (curnode->name[1] == 'S')  /* shapedgradient */
+	        {
+		        if (t_yc != cy[TODEV])
+			{
+		    	    amove(cx[TODEV], t_yc);
+		            adraw(cx[TODEV], cy[TODEV]);
+		            t_yc = cy[TODEV];
+		            pre_stat = 0;
+			}
+	        	if (pre_stat || (!CHFLAG[TODEV] && level == 0))
+		       	    draw_mark(cx[TODEV], cy[TODEV]);
+			amove(cx[TODEV], cy[TODEV]);
+			if (dps_plot)
+			{
+	              	    x2 = cx[TODEV] + bias * ratio;
+			    i = 8;
+			}
+			else
+			{
+	              	    x2 = cx[TODEV] + bias * ratio + 6;
+			    i = 4;
+			}
+			interval = (bias * ratio) / 3;
+			if (interval > 20)
+			    interval = 20;
+			if (interval < 4)
+			    interval = 4;
+			
+		        posx = cx[TODEV] + (x2 - cx[TODEV] - interval) / 2;
+			adraw(posx, cy[TODEV]);
+			rmove(-2, -i);
+			rdraw(4, 2 * i);
+			adraw(posx+interval-2, cy[TODEV]-i);
+			rdraw(4, 2 * i);
+			amove(posx+interval, cy[TODEV]);
+			adraw(x2, cy[TODEV]);
+		        pre_stat = 1;
+	                disp_label(TODEV, cx[TODEV], x2, py[TODEV],pul_s_r,
+					 i, &curnode->name[2]);
+                        if (curnode->wide > 0.0)
+                            curnode->wide = curnode->wide * 1.0e+6;
+                        if (cy[TODEV] == py[TODEV])
+		           disp_value(0, cx[TODEV], x2, cy[TODEV], del_v_r,
+					 i+2, curnode->wide);
+		        else
+		           disp_value(TODEV, cx[TODEV], x2, ph[TODEV], pul_v_r,
+					 i+2, curnode->wide);
+			cx[TODEV] = x2;
+	        }
+                curnode = curnode->next;
+		continue;
+	    }
+	    else if (curnode->name[0] == 'A' &&  curnode->name[1] == 'C') 
+	    {   /*  acquire  */
+		if (CHFLAG[TODEV])
+		{
+	 	    if (t_yc != py[TODEV])
+		    {
+			amove(cx[TODEV], t_yc);
+			adraw(cx[TODEV], py[TODEV]);
+			t_yc = py[TODEV];
+		    }
+		    acquireWave(fidwidth, pulseHeight / (level+1), cx[TODEV],
+						 py[TODEV], curnode->value);
+		    cx[TODEV] = cx[TODEV] + fidwidth;
+		}
+                curnode = curnode->next;
+		continue;
+	    }
+	    else if (curnode->name[0] == 'K')  /* xgates */
+	    {
+		draw_xgate(cx[TODEV], t_yc, cx, cy, cyc, ph, old_yc, curnode->value);
+		x2 = cx[TODEV] + pf_x;
+		cx[TODEV] = x2;
+	        pre_stat = 1;
+                curnode = curnode->next;
+		continue;
+	    }
+	    else if (curnode->name[0] == 'B')  /* spinlock */
+	    {
+		cyc[TODEV] = t_yc;
+		switch (curnode->name[1]) {
+		  case  '1': 
+			    chan = TODEV;
+			    pre_stat = 0;
+			    break;
+		  case  '2': 
+			    chan = DODEV;
+			    break;
+		  case  '3': 
+			    chan = DO2DEV;
+			    break;
+		  case  '4': 
+			    chan = DO3DEV;
+			    break;
+		  default:
+			    curnode = curnode->next;
+			    continue;
+			    break;
+		}
+		if (!CHFLAG[chan])
+		{
+                	curnode = curnode->next;
+			continue;
+		}
+		if (pre_stat)
+                {
+                   if (CHFLAG[TODEV] && level == 0)
+                       draw_mark(cx[TODEV], t_yc);
+                }
+	        D_spinlock(level,cx,cy,cyc,ph,old_yc, curnode, chan);
+		if (chan != TODEV)
+			pre_stat = 1;
+		x2 += spinwidth;
+                curnode = curnode->next;
+		continue;
+	    }
+	    else  /*  status  */
+	    {
+		draw_mark(cx[TODEV], ys);
+		if (statstr != NULL)
+		{
+		    color(YELLOW);
+		    xs = xs + (cx[TODEV] - xs) / 2 - pf_x / 2;
+	            amove(xs, ys - pf_y - 5);
+		    dstring(statstr);
+		}
+		color(GREEN);
+		strcpy(statstr, curnode->name + 2);
+	        curnode = curnode->next;
+		xs = cx[TODEV];
+		/*  change the power of decoupler  */
+		for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+		{
+		     if (!CHFLAG[chan])
+			continue;
+		     yh = cyc[chan];
+		     old_decon = decon[chan];
+		     dec_vdraw[chan] = 0;
+		     if (strlen(dmmstr[chan]) > 0 && (statstr[0] -64) >
+					 strlen(dmmstr[chan]))
+		     {
+		        if (dmmstr[chan][strlen(dmmstr[chan]) - 1] == 'y')
+		        {
+			    dec_vdraw[chan] = 1;
+			    if (!decon[chan])
+			        cyc[chan] = ph[chan];
+			    dstat[chan] = 1;
+		        }
+		        else	
+		        {
+			    decon[chan] = 0;
+			    cyc[chan] = cy[chan];
+			    dstat[chan] = 0;
+		        }
+		     }
+		     else
+		     {
+		        if (strlen(dmmstr[chan]) > 0 &&
+			     dmmstr[chan][statstr[0] - 65] == 'y')
+		        {
+			    dec_vdraw[chan] = 1;
+			    if (!decon[chan])
+			        cyc[chan] = ph[chan];
+			    dstat[chan] = 1;
+		        }
+		        else	
+		        {
+			    decon[chan] = 0;
+			    cyc[chan] = cy[chan];
+			    dstat[chan] = 0;
+		        }
+		    }
+		    if (yh != cyc[chan] && cx[chan] != cx[TODEV])
+		    {
+		        if (old_yc[chan] != yh)
+		        {
+			    amove(cx[chan], yh);
+			    adraw(cx[chan], old_yc[chan]);
+			    old_yc[chan] = yh;
+		        }
+		        amove(cx[chan], yh);
+		        adraw(cx[TODEV], yh);
+		        if (!old_decon && yh > cy[chan])
+		            scrnLine(cx[TODEV], cx[chan], cy[chan], yh);
+
+		        cx[chan] = cx[TODEV];
+		    }
+		}
+		continue;
+	    } 
+            if (level != 0)  /* don't display the text of value and parameter */
+	    {
+            	cx[TODEV] = x2;    
+	        if (curnode->name[0] == 'S')
+	        {     if(curnode->name[1] == '4' || (curnode->name[2] == '4'
+						 && curnode->name[1] == 'M') )
+			  curnode = curnode->next->next->next;
+	              else if(curnode->name[1] == '3' || (curnode->name[2] == '3'
+						 && curnode->name[1] == 'M') )
+			  curnode = curnode->next->next;
+		      else 
+                          curnode = curnode->next;
+	        }
+                curnode = curnode->next;
+		continue;
+	    }
+
+            /*  display the text of parameter  */
+            color(YELLOW);
+	    value[0] = '\0';
+            no_str = strlen(curnode->name);
+            for(i = 0; i < no_str; i++)
+            {    if (curnode->name[i] == '_')
+                 {    strcpy(value, curnode->name+i+1);
+		      break;
+		 }
+            } 
+
+            /*   display the value of parameter  */
+            if (curnode->name[0] == 'D')  /* delay */
+            {
+	         disp_label(0, cx[TODEV], x2, py[TODEV], pul_s_r, 3, value);
+                 if (curnode->value > 0.0)
+                          curnode->value = curnode->value * 1.0e+6;
+                 if (cy[TODEV] == py[TODEV])
+		       disp_value(0, cx[TODEV], x2, cy[TODEV], del_v_r, 3,
+							 curnode->value);
+		 else
+		       disp_value(TODEV, cx[TODEV], x2, ph[TODEV], pul_v_r, 3,
+							 curnode->value);
+             }
+             else  /*  pulse  */ 
+             {
+	         disp_label(TODEV, cx[TODEV], x2, py[TODEV], pul_s_r, 3, value);
+		 disp_value(TODEV, cx[TODEV], x2, ph[TODEV], pul_v_r, 3,
+							 curnode->value);
+             }
+
+             cx[TODEV] = x2;    
+	     if (curnode->name[0] == 'S')
+	     {     if(curnode->name[1] == '4' || (curnode->name[2] == '4'
+						 && curnode->name[1] == 'M') )
+			  curnode = curnode->next->next->next;
+	           else if(curnode->name[1] == '3' || (curnode->name[2] == '3'
+					      && curnode->name[1] == 'M') )
+			curnode = curnode->next->next;
+		   else 
+                        curnode = curnode->next;
+	     }
+             curnode = curnode->next;
+       	}
+	color(GREEN);
+    	if (!acquire && CHFLAG[TODEV])
+	{
+	    	if (t_yc != py[TODEV])
+		     tdraw(x2, t_yc, x2, py[TODEV]);
+		x2 = cx[TODEV] + 100;
+	}
+	else
+		x2 = cx[TODEV];
+	for(chan = DODEV; chan <= RFCHAN_NUM; chan++)
+	{
+	     if (!CHFLAG[chan])
+		 continue;
+             if (old_yc[chan] != cyc[chan])
+	     {
+	         amove(cx[chan], cyc[chan]);
+	         adraw(cx[chan], old_yc[chan]);
+	     }
+	     if (cyc[chan] > cy[chan])
+	     {	
+		if (!decon[chan])
+	 	     scrnLine(x2, cx[chan], cy[chan], cyc[chan]);
+		if (dec_vdraw[chan] > 1)
+		{
+		     amove(cx[chan], cy[chan]);
+		     adraw(cx[chan], cyc[chan]);
+		}
+	        amove(cx[chan], cyc[chan]);
+		adraw(x2, cyc[chan]);
+	     }	
+	     else
+	     {	
+	        amove(cx[chan], cyc[chan]);
+		adraw(x2, cyc[chan]);
+	     }
+	}
+	if(!CHFLAG[TODEV] && level == 0)
+	{
+	     amove(x_margin, chy[TODEV]);
+	     adraw(x2, chy[TODEV]); 
+	     draw_mark(x2, chy[TODEV]);
+	}
+	amove(x_margin, ys);
+	adraw(x2, ys); 
+	draw_mark(x2, ys);
+	if (statstr != NULL)
+	{
+		xs = xs + (x2 - xs) / 2 - pf_x / 2;
+		amove(xs, ys - pf_y - 5);
+		color(YELLOW);
+		dstring(statstr);
+	}
+        if (gradient)
+                fillGradients(x2);
+        releaseWithId("dpsdata");
+	return(cx[TODEV]);
+}
+
+
+/************************************************************************
+*       draw sine wave to represent acquistion                          *
+************************************************************************/
+fidWAVE(width, high, x, y)
+int  width, high, x, y;
+{
+	float  deg;
+	double at;
+        int    y2, i;
+
+	P_getreal(CURRENT,"at",&at,1);
+	high = high * 0.6;
+	if (pul_s_r > 0 && dec_v_r > 0)
+	{
+	    if (high >= (pul_s_r + dec_v_r) * pf_y - 2)
+		  high = (pul_s_r + dec_v_r) * pf_y - 2;
+	}
+	at = at * 1.0e+6;
+        disp_value(0, x, x+width, y+high, del_v_r, 3, (float)at);
+        deg = 0.0;
+        color(GREEN);
+	amove(x, y);
+	x = x + 2;
+	adraw(x, y);
+        for (i = 0; i < width; i++)
+        {
+	   deg = deg + 0.314;
+           if (deg > 6.28)
+           {   deg = 0.0;
+               high = high * 0.6;
+               y2 = y;
+	   }
+           else
+               y2 = y +  high * sin(deg);
+           adraw(x, y2);
+	   x++;
+           if (x >= dps_xpnts)
+                break;
+	}
+}
+	       
+
+
+
+
+/***************************************************************************
+*        check file                                                        *
+***************************************************************************/
+int testdpsfile(argc, argv)
+int argc;
+char **argv;
+{
+        char  seqfile[MAXPATHL];
+
+	if (argc > 1)
+	{   
+             if (argv[1][0] != '/')
+             {   
+                 sprintf(psgfile, "%s/seqlib/%s",userdir, argv[1]);
+                 if (access(psgfile, 0) != 0)
+                 {
+                    sprintf(psgfile,"%s/seqlib/%s", systemdir, argv[1]);
+                    if (access(psgfile, 0) != 0)
+                    {   Werrprintf("psgfile: %s can't be found",
+                                      psgfile);
+                         return(0);
+                    }
+                 }
+             }
+             else
+             {   sprintf (psgfile, "%s", argv[1]);
+                 if (access(psgfile, 0) != 0)
+                 {   Werrprintf("psgfile: %s can't be found", psgfile);
+                     return(0);
+                 }
+             } 
+        }
+        else
+        {  
+           if (getparm("seqfil", "string", CURRENT, seqfile, MAXPATHL))
+           {   Werrprintf("ERROR:  can not find 'seqfil' parameter");
+               return(0);
+           }
+           sprintf(psgfile, "%s/seqlib/%s", userdir, seqfile);
+           if (access(psgfile, 0) != 0)
+	   {
+               sprintf(psgfile, "%s/seqlib/%s", systemdir, seqfile);
+               if (access(psgfile, 0) != 0)
+               {   Werrprintf("psgfile: %s can not be found", psgfile);
+                   return(0);
+               }
+           }
+        }
+        return(1);
+}	
+
+
+
+
+
+dot_Line(x1, x2, y1, y2)
+int  x1, x2, y1, y2;
+{
+        int    i, steps, xa, ya;
+	double x, y, incrx, incry, len;
+
+        if (x1 > x2)
+	{
+		i = x1;
+		x1 = x2;
+		x2 = i;
+		i = y1;
+		y1 = y2;
+		y2 = i;
+	}
+	x = x2 - x1;
+	y = y2 - y1;
+	len = sqrt(x*x + y*y);
+	steps = (int)(len / dot_gap);
+	incrx = x / (float)steps;
+	incry = y / (float)steps;
+	i = 0;
+	while(i < steps)
+	{
+	    i++;
+	    xa = x1 + (int)(incrx * i + 0.5);
+	    ya = y1 + (int)(incry * i + 0.5);
+            amove(xa, ya);
+            adraw(xa, ya); 
+	}
+	    
+	amove(x2, y2);
+	adraw(x2, y2);
+        return;
+}
+
+
+update_dec(ch, cx, cy, cyc, yp, old_yc, new_on_off)
+int     ch, cx[], cy[], cyc[], yp[], old_yc[], new_on_off;
+{
+	int   xd, ydc;
+
+        if (!CHFLAG[ch])
+	    return;
+	xd = cx[ch];
+	cx[ch] = cx[TODEV];
+	ydc = cyc[ch];
+	amove(xd, ydc);
+	color(GREEN);
+ 	if (xd < cx[TODEV])
+	{
+	    if (old_yc[ch] != ydc)
+	    {
+		   adraw(xd, old_yc[ch]);
+		   old_yc[ch] = ydc;
+		   amove(xd, ydc);
+	    }
+	    adraw(cx[TODEV], ydc);		
+	    if (!decon[ch] && ydc > cy[ch]) 
+		     scrnLine(cx[TODEV], xd, cy[ch], ydc);
+	}
+        if (new_on_off)
+	{
+	    amove(cx[TODEV], yp[ch]);
+	    cyc[ch] = yp[ch];
+	}
+	else
+	    cyc[ch] = cy[ch];
+}
+	
+	
+
+
+D_decoupler(level, cx, cy, cyc, yp, old_yc, dnode, chan)
+	int  level, cx[], cy[], cyc[], yp[], old_yc[], chan;  
+        struct psgdata *dnode;
+{
+        float   wide, pp;
+	int     xx, xk, len, posx, posy, i;
+	char    str[paramLen];
+	int     xd, xh, xw, yh, yw, yd, ydp;
+	int     interval;
+
+        if (!CHFLAG[chan])
+	    return;
+	xd = cx[chan];
+	xk = cx[TODEV];
+	yd = cy[chan];
+	ydp = yp[chan];
+	amove(xd, cyc[chan]);
+	color(GREEN);
+ 	if (xd < xk)
+	{
+		adraw(xk, cyc[chan]);		
+		if (old_yc[chan] != cyc[chan])
+		{
+			amove(xd, cyc[chan]);
+			adraw(xd, old_yc[chan]);
+			old_yc[chan] = cyc[chan];
+		}
+	        if (!decon[chan] && cyc[chan] > yd) 
+		       scrnLine(xk, xd, yd, cyc[chan]);
+	}
+
+	xd = xk;
+	wide = dnode->wide;
+	if (dnode->name[1] == 'M')   /*  decshapedpulse  */
+	{
+		if (old_yc[chan] != yd)
+		{
+			if (dnode->value > 0)
+			{
+			     amove(xk, old_yc[chan]);
+			     adraw(xk, yd);
+			}
+			else
+	                     dot_Line(xk, xk, old_yc[chan], yd);
+		}
+		amove(xk, yd);
+		yh = (ydp - yd) * 0.4;
+		if(yh > 6)
+		     yh = 6;
+		small_shaped(xk, yd, yh, curve_base, (int)dnode->value); 
+	        xk = xk + curve_base;
+		yh = ydp - yd;
+		if (wide <= 0)
+			wide = shaped_base;
+		else
+		{
+			wide = dnode->wide * 0.5 + shaped_base;
+			if (wide > sh_wide)
+				wide = sh_wide;
+                	if (wide > p_wide)
+                       		wide = p_wide;
+		}
+		xx = xk + wide;
+			
+		shaped(xk, yd, yh, (int)wide + 1, (int)dnode->value);
+		yh = yh * 0.4;
+		if(yh > 6)
+		     yh = 6;
+                small_shaped(xx, yd, yh, curve_base, (int)dnode->value);
+		xx = xx + curve_base;
+		if (dec_vdraw[chan])
+		     dec_vdraw[chan] = 2;
+	}
+	else if (wide <= 0)
+	{
+		xx = xk + pulse_base;
+		amove(xd, yd);
+		dot_Line(xd, xd, yd, ydp);
+		dot_Line(xd+1, xx, ydp, ydp);
+          	dot_Line(xx, xx, ydp, yd);
+	}
+	else
+	{
+		amove(xd, yd);
+		wide = dnode->wide * 0.5 + pulse_base;
+		if (wide > p_wide)
+			wide = p_wide;
+		if (dnode->value <= 0)
+		{
+			xx = xd + wide;
+	                dot_Line(xd, xd, yd, ydp);
+	       	        dot_Line(xd+1, xx, ydp, ydp);
+       	                dot_Line(xx, xx, ydp, yd);
+		}
+		else
+		{
+		        decon[chan] = 0;
+		        dec_vdraw[chan] = 0;
+			cyc[chan] = yd;
+		       	pp = dnode->value * 0.5 + pulse_base;
+		       	if (pp > p_wide)
+		        	pp = p_wide;
+                        if (dnode->value < dnode->wide)
+			{
+				while ((pp > 6) && (wide - pp) < 10)
+                                     pp = pp - 1;
+				xx = xd + (wide - pp) / 2;
+				adraw(xx, yd);
+				adraw(xx, ydp);
+				xx = xx + pp;
+				adraw(xx, ydp);
+				adraw(xx, yd);
+				xx = xd + wide;
+				adraw(xx, yd);
+			}
+			else
+			{
+		               	xx = xd + wide;
+		                adraw(xd, ydp);
+		                adraw(xx, ydp);
+                		adraw(xx, yd);
+			}
+		}
+	}
+        cx[chan] = xx;
+	old_yc[chan] = yd;
+	if (level > 0)
+		return;
+
+	/*    display the text of parameter  */
+		
+        str[0] = '\0';
+        len = strlen(dnode->name);
+        for(i = 0; i < len; i++)
+        {    if (dnode->name[i] == '_')
+	     {   strcpy(str, dnode->name+i+1);
+		 break;
+	     }
+	}
+        disp_label(chan, xd, xx, yd, dec_s_r, 3, str);
+
+        /*   display the value of parameter  */
+	disp_value(chan, xd, xx, ydp+3, dec_v_r, 3, dnode->value);
+}
+	   
+
+scrnLine(xk, xd, yd, ydc)
+	int xk, xd, yd, ydc;
+{
+	int     xh, xw, yh, yw;
+	int     dens;
+
+	yh = ydc - 2;
+	xh = xd;
+	if(dps_plot)
+		dens = pf_y / 3;
+	else
+		dens = 4;
+	while( yh >= yd)
+	{
+		amove(xd, yh);
+		if ((ydc - yh) < (xk - xh))
+		{
+			xw = xh + ydc - yh;
+			adraw(xw, ydc);
+		}
+		else
+		{
+			yw = yh + xk - xh;
+			adraw(xk, yw);
+		}
+		yh = yh - dens;
+	}
+	xh = xd + yd - yh;
+	yh = yd;
+	while( xh <= xk)
+	{
+		amove(xh, yd);
+		if ((ydc - yd) < (xk - xh))
+		{
+			xw = xh + ydc - yd;
+			adraw(xw, ydc);
+		}
+		else
+		{
+			yw = yd + xk - xh;
+			adraw(xk, yw);
+		}
+		xh = xh + dens;
+	}
+        if ((xh - xk) <= 2)
+	{
+		amove(xk, yd);
+		adraw(xk, yd);
+	}
+}
+
+
+
+dec_query(pnode, chan)
+ struct psgdata  *pnode;
+ int    chan;
+{
+	int  n, level;
+        struct psgdata  *node;
+
+	node = pnode;
+	level = 1;
+	for(n = 0; n <= RFCHAN_NUM; n++)
+	     decpulse[n] = 0;
+	while( level > 0 && node != NULL)
+	{
+		if (node->name[0] == 'I')
+			level++;
+		if (strcmp(node->name, "XED") == 0)
+			level--;
+		if (node->name[0] == 'W')
+		{
+		    if (node->name[1] == '2' || (node->name[1] == 'M' &&
+				node->name[2] == '2'))
+		    {
+			  decpulse[DO2DEV]++;
+		    }
+		    else if (node->name[1] == '3' || (node->name[1] == 'M' &&
+				node->name[2] == '3'))
+		    {
+			  decpulse[DO3DEV]++;
+		    }
+		    else
+			  decpulse[DODEV]++;
+		}
+		else if (node->name[0] == 'S')
+		{
+		    decpulse[DODEV]++;
+		    if (node->name[1] == '3' || (node->name[1] == 'M' &&
+				node->name[2] == '3'))
+			  decpulse[DO2DEV]++;
+		}
+		node = node->next;
+	}
+}
+
+
+
+shaped(sx, sy, sh, sw, flag)
+	int sx, sy, sh, sw, flag;
+{
+	float   deg, step, gap;
+	int     y2, x2, i, hop, diff;
+
+	step = 3.14 / sw;
+	deg = 0;
+	amove(sx, sy);
+        if (flag > 0)  /*  solid line  */
+        {
+	    for(i = 0; i < sw; i++)
+	    {
+	   	deg = deg + step;
+	    	y2 = sy + sh * sin(deg);
+	    	adraw(sx, y2);
+	    	sx++;
+	    }
+	}
+	else   /*  dot line  */
+	{
+	    y2 = sy;
+	    x2 = sx;
+	    if (dps_plot)
+		gap = 3;
+	    else
+		gap = 2;
+	    for(i = 0; i < sw; i++)
+	    {
+	   	deg = deg + step;
+		hop = sy + sh * sin(deg);
+		diff = 0;
+		if ((abs(hop - y2) >= gap) || (x2 - sx > gap))	
+		{
+		    	if (dps_plot && raster >= 1 && raster <= 2)
+                    	{
+                            if (hop > y2)
+                                diff = 4;
+                            else if (hop < y2)
+                                diff = -4;
+                            y2 = y2 + diff;
+                            while (abs(hop - y2) > 3)
+                            {
+                             	amove(x2, y2);
+                            	adraw(x2, y2);
+                             	y2 = y2 + diff;
+                            }
+                        }
+			y2 = hop;
+			sx = x2;
+			amove(sx, y2);
+			adraw(sx, y2);
+		}
+		x2++;
+	    }
+	    sx = x2;
+	}
+}
+
+
+
+
+small_shaped(sx, sy, sh, sw, flag)
+	int sx, sy, sh, sw, flag;
+{
+	float   deg, step;
+	int     y2, x2, i, hop;
+
+	step = 3.14 / sw;
+	deg = 3.14;
+	amove(sx, sy);
+        if (flag > 0)
+        {
+	    for(i = 0; i < sw; i++)
+	    {
+	    	sx++;
+	   	deg = deg + step;
+	    	y2 = sy + sh * sin(deg);
+	    	adraw(sx, y2);
+	    }
+	}
+	else
+	{
+	    y2 = sy;
+	    x2 = sx;
+	    for(i = 0; i < sw; i++)
+	    {
+	   	deg = deg + step;
+		hop = sy + sh * sin(deg);
+		if ((abs(hop - y2) >= 2) || (x2 - sx >= 2))	
+		{
+			y2 = hop;
+			sx = x2;
+			amove(sx, y2);
+			adraw(sx, y2);
+		}
+		x2++;
+	    }
+	    sx = x2;
+	}
+}
+
+
+#ifdef SUN
+disp_name(message)
+	char  *message;
+{
+	int     sx, sy, mess_len;
+	int     dx;
+	int     x_step;
+	double  incr_step;
+
+	mess_len = strlen(message);
+        incr_step = 1.5;
+        charsize(incr_step);
+        sy = ycharpixels;
+#ifdef  X11
+        if (raster >= 1 && raster <= 2)
+             dx = textWidth(message, 1);
+	else
+             dx = xcharpixels * mess_len;
+#else
+        dx = xcharpixels * mess_len;
+#endif  X11
+        while (dps_xpnts < dx)
+        {
+              incr_step = incr_step - 0.2;
+              if (incr_step < 0.3)  /*  character size is too small */
+                          return;
+              charsize(incr_step);
+#ifdef  X11
+              if (raster >= 1 && raster <= 2)
+                  dx = textWidth(message, 1);
+	      else
+                  dx = xcharpixels * mess_len;
+#else
+              dx = xcharpixels * mess_len;
+#endif  X11
+        }
+        sx = (dps_xpnts - dx) / 2;
+        if (sx < 0)
+              sx = 0;;
+        amove(sx, sy);
+        dstring(message);
+        charsize(1.0);
+        return;
+}
+#endif SUN
+
+
+
+drawGradient(pnode, cur_x)
+struct psgdata  *pnode;
+int     cur_x;
+{
+	int    origin_y, cur_y, ph, length;
+	int   *old_x, *old_y;
+	int    grades, gamp, id, y, dx;
+	char   *name;
+
+	switch(pnode->grad[0])
+	{
+		case 'x':  origin_y = grad_x;
+			   old_x = &grad_xx;
+			   old_y = &grad_xy;
+			   id = 0;
+			   break;
+		case 'y':  origin_y = grad_y;
+			   old_x = &grad_yx;
+			   old_y = &grad_yy;
+			   id = 1;
+			   break;
+		case 'z':  origin_y = grad_z;
+			   old_x = &grad_zx;
+			   old_y = &grad_zy;
+			   id = 2;
+			   break;
+		default:
+			   return;
+			   break;
+	}
+        if (gradtype[id] == 'n')
+		return;
+        if (gradtype[id] == 's' || gradtype[id] == 'S')
+		grades = 2048;
+        else if (gradtype[id] == 'l' || gradtype[id] == 'L')
+		grades = 2048;
+	else
+		grades = 32767;
+	gamp = (int) pnode->value;
+        if (gamp > grades)
+		gamp = grades;
+	else if (gamp < -grades)
+		gamp = -grades;
+	ph = (pulseHeight * gamp) / (grades* 2);
+	if (gamp > 0)
+	{
+	     if (ph < pulseHeight/6)
+		ph = pulseHeight/6;
+	}
+	else if (gamp < 0)
+	{
+	     if (ph > -(pulseHeight/6))
+		ph = -(pulseHeight/6);
+	}
+	cur_y = origin_y + ph;
+        color(GREEN);
+	amove(*old_x, *old_y);
+	adraw(cur_x, *old_y);
+	if (VGRAD[id])
+	{
+	    draw_vgradient(*old_x, cur_x, *old_y, origin_y);
+	    VGRAD[id] = 0;
+	}
+	    
+	switch (pnode->name[1]) {
+	  case 'R':    /* gradient */
+		cur_y = origin_y + ph;
+		amove(cur_x, *old_y);
+		adraw(cur_x, cur_y);
+		break;
+	  case 'V':    /* vgradient */
+		cur_y = origin_y + pulseHeight / 2;
+		amove(cur_x, cur_y);
+		rdraw(0, -pulseHeight+1);
+		VGRAD[id] = 1;
+		break;
+	  case 'S':    /* shapedgradient */
+		amove(cur_x, *old_y);
+		adraw(cur_x, origin_y);
+		name = &pnode->name[2];
+		length = (int)pnode->wide;
+	        if (dps_plot)
+	              length = bias * ratio;
+	        else
+	              length = bias * ratio + 6;
+		if (!strcmp(name, "rampup"))
+		{
+		    cur_y = origin_y + ph;
+		    if (pnode->wide > 0.0)
+		        rdraw(length, ph);
+		    else
+			dot_Line(cur_x, cur_x+length, origin_y, cur_y);
+		}
+		else if (!strcmp(name, "rampdn"))
+		{
+		    cur_y = origin_y - ph;
+		    if (pnode->wide > 0.0)
+		       rdraw(length, -ph);
+		    else
+			dot_Line(cur_x, cur_x+length, origin_y, cur_y);
+		}
+		else
+		{
+		    shaped(cur_x,origin_y,ph,length,(int)pnode->wide); 
+		    cur_y = origin_y;
+		}
+		cur_x = cur_x + length;
+		break;
+	  case 'Z':    /* zgradpulse */
+		if (pnode->wide > 0.0)
+		{
+		    amove(cur_x, *old_y);
+		    adraw(cur_x, cur_y);
+                    length = (pnode->wide * 10.0 + bias) * ratio + 0.5;
+		    rdraw(length, 0);
+		    rdraw(0, -ph);
+		}
+		else
+		{
+		    dot_Line(cur_x, cur_x, *old_y, cur_y);
+                    length = bias * ratio + 0.5;
+		    dot_Line(cur_x, cur_x + length, cur_y, cur_y);
+		    dot_Line(cur_x+length, cur_x+length, origin_y, cur_y);
+		}
+		dx = cur_x + (length - (strlen(pnode->name) - 3) * pf_x) / 2;
+		if (dx < 0)
+		    dx = 0;
+		if (!is_digit_str(pnode->name + 3))
+		{
+		   color(YELLOW);
+		   if ( ph >= 0 )
+		       amove(dx, origin_y - pf_y);
+		   else
+		       amove(dx, cur_y - pf_y);
+		   dstring(pnode->name + 3);
+		}
+		dx = cur_x + length;
+		if (ph >= 0)
+		   disp_value(0, cur_x, dx, cur_y, -1, 3, pnode->wide*1.0e6);
+		else
+		   disp_value(0, cur_x, dx, origin_y, -1, 3, pnode->wide*1.0e6);
+		cur_x = cur_x + length;
+		cur_y = origin_y;
+	}
+        *old_x = cur_x;
+	*old_y = cur_y;
+}
+
+
+draw_vgradient(x, x2, y, orgy)
+int  x, x2, y, orgy;
+{
+	int   y1, y2, gap;
+
+	amove(x, y);
+	adraw(x2, y);
+	rdraw(0, -pulseHeight+1);
+	rdraw(x-x2, 0);
+	if (dps_plot)
+	{
+	    gap = 5;
+	    y2 = orgy + 3;
+	}
+	else
+	{
+	    gap = 3;
+	    y2 = orgy + 1;
+	}
+	while (y2 < y-1)
+	{
+	   amove(x, y2);
+	   adraw(x2, y2);
+	   y2 += gap;
+	}
+	y2 = orgy - 2;
+	y1 = y - pulseHeight + 1;
+	while (y2 > y1+1)
+	{
+	   amove(x, y2);
+	   adraw(x2, y2);
+	   y2 -= gap;
+	}
+}
+	
+
+fillGradients(x)
+int   x;
+{
+	color(GREEN);
+	if (gradtype[0] != 'n' && gradX)
+	{
+	    if (VGRAD[0])
+		draw_vgradient(grad_xx, x, grad_xy, grad_x);
+	    else
+	    {
+                amove(grad_xx, grad_xy);
+	    	adraw(x, grad_xy);
+	    }
+	}
+	if (gradtype[1] != 'n' && gradY)
+	{
+	    if (VGRAD[1])
+		draw_vgradient(grad_xx, x, grad_xy, grad_y);
+	    else
+	    {
+	        amove(grad_yx, grad_yy);
+	        adraw(x, grad_yy);
+	    }
+	}
+	if (gradtype[2] != 'n' && gradZ)
+	{
+	    if (VGRAD[2])
+		draw_vgradient(grad_xx, x, grad_xy, grad_z);
+	    else
+	    {
+	        amove(grad_zx, grad_zy);
+	        adraw(x, grad_zy);
+	    }
+	}
+}
+
+
+static struct psgdata 
+*alloc_node()
+{
+     struct psgdata   *datanode;
+
+     if((datanode = (struct psgdata *) allocateWithId 
+             (sizeof(struct psgdata), "dpsdata")) == 0)
+     {
+             releaseWithId("dpsdata");
+             Werrprintf("memory allocate failure");
+             fclose(fin);
+     }
+     else
+     {
+	    datanode->value = 0;
+	    datanode->wide = 0;
+	    datanode->next = NULL;
+     }
+     return(datanode);
+}
+
+
+
+acquireWave(width, high, x, y, value)
+int  width, high, x, y;
+float   value;
+{
+	float  deg, rate;
+        int    y1, y2, i, k, m, height;
+
+        if (width >= 28)
+	    rate = 0.7;
+	else
+	    rate = 0.6;
+        high = high * rate;
+        disp_value(TODEV, x, x+width, y+high, pul_v_r, 3, value);
+        deg = 0.0;
+        y1 = y;
+        color(GREEN);
+	amove(x, y);
+	x = x + 2;
+	width = width - 2;
+	adraw(x, y);
+	k = width / 8;
+	height = high;
+	for(m = 0; m < k; m++) 
+             height = height * rate;
+        for (i = 0; i < width / 2; i++)
+        {
+	   deg = deg + 1.57;
+           if (deg >= 6.28)
+           {   deg = 0.0;
+	       k = k - 1; 
+	       height = high;
+	       for(m = 0; m < k; m++) 
+                  height = height * rate;
+               y2 = y;
+	   }
+           else
+               y2 = y +  height * sin(deg);
+           adraw(x, y2);
+	   x++;
+           if (x > dps_xpnts - x_margin)
+                break;
+ 	   y1 = y2; 
+	}
+        predsx[TODEV][0] = x + width / 3;
+        predsx[TODEV][1] = x + width / 4;
+        predsx[TODEV][2] = x;
+        predsx[0][0] = x + width / 3;
+        predsx[0][1] = x + width / 4;
+        predsx[0][2] = x;
+	
+        for (i = 0; i < width / 2; i++)
+        {
+	   deg = deg + 1.57;
+           if (deg >= 6.28)
+           {   deg = 0.0;
+               high = high * rate;
+               y2 = y;
+	   }
+           else
+               y2 = y +  high * sin(deg);
+           adraw(x, y2);
+	   x++;
+           if (x >= dps_xpnts)
+                break;
+ 	   y1 = y2; 
+	}
+        adraw(x, y);
+	return;
+}
+	       
+
+struct psgdata 
+*acq_in_loop(node)
+struct psgdata  *node;
+{
+	int    acqs, interval, pi, i; 
+	int    acq1, acq2, ch_flag, ch;
+	
+	acqs = 0;
+	interval = 0;
+	pi = 0;
+	ch_flag = 0xF0;
+	while(node !=NULL)
+	{
+	    switch (node->name[0])  {	
+	    case 'A':   /* acquire */ 
+			if (!pi)
+			{
+			    if (!interval)
+			       pi = 1;   /*  no pulse or delay precedes acq  */
+			    else
+			       pi = 2;
+			}
+			acqs++;
+			ch_flag = ch_flag | CHANNEL[TODEV];
+			break;
+	    case 'I':   /*  ifzero  */
+			node = (struct psgdata *)acq_in_loop(node->next);
+			ch_flag = ch_flag | node->flag;
+			if(strncmp(node->name, "XEN", 3) == 0)  /* elsenz */
+			{
+			    if (node->value > 0)
+			    {
+				if (pi == 0)
+				      pi = node->wide;
+				acq1 = node->value;
+			    }
+			    else
+				acq1 = 0;
+			    node = (struct psgdata *)acq_in_loop(node->next);
+			    ch_flag = ch_flag | node->flag;
+			    if (node->value > 0)
+			    {
+				if (pi == 0)
+				      pi = node->wide;
+				acq2 = node->value;
+			    }
+			    else
+				acq2 = 0;
+			    if (acq1 > acq2)
+				acqs = acqs + acq1;
+			    else
+				acqs = acqs + acq2;
+			}
+		        else   /* endif  */	
+			{
+			    if (node->value > 0)
+			    {
+				if (pi == 0)
+				      pi = node->wide;
+			    }
+			    acqs = acqs + node->value;
+			}
+			break;
+	    case 'L':
+			node = (struct psgdata *)acq_in_loop(node->next);
+			ch_flag = ch_flag | node->flag;
+			if (node->value > 0)
+			{
+			     if (pi == 0)
+				      pi = node->wide;
+			}
+			acqs = acqs + node->value;
+			break;
+	    case 'X':
+			node->value = acqs;
+			node->wide = pi;
+			node->flag = ch_flag;
+			return((struct psgdata *)node);
+			break;
+	    case 'D':
+			interval++;
+			delay_no--;
+			break;
+ 	    case 'P':
+			interval++;
+			ch_flag = ch_flag | CHANNEL[TODEV];
+		        if (node->value > 0)
+			     ch_flag = ch_flag & CHANNEL[TODEV];
+			if (node->next->name[0] == 'X')
+			{   if(pi == 2)
+				pi = 3;
+			    else if (pi == 1)
+				pi = 4;
+			}
+			break;
+ 	    case 'S':
+			interval++;
+			if (node->name[1] == '3' || (node->name[1] == 'M' && 
+				node->name[2] == '3'))
+				ch_flag = 7;
+			else
+				ch_flag = ch_flag | 0x3;
+			if (node->next->name[0] == 'X')
+			{   if(pi == 2)
+				pi = 3;
+			    else if (pi == 1)
+				pi = 4;
+			}
+		        if (node->name[1] != 'M')  /*  not shapedpulse  */
+			{
+			    if (node->value > 0)
+				ch_flag = ch_flag & CHANNEL[TODEV];
+			    node = node->next;
+			    if (node->value > 0)
+				ch_flag = ch_flag & CHANOFF[DODEV];
+			    if (node->name[1] == '3') /*  sim3pulse  */
+			    {
+			    	node = node->next;
+			    	if (node->value > 0)
+				     ch_flag = ch_flag & CHANOFF[DO2DEV];
+			    }
+			}
+			break;
+ 	    case 'W':
+			if (node->name[1] == '2' || (node->name[1] == 'M' && 
+				node->name[2] == '2'))
+			         ch = DO2DEV;
+			else if (node->name[1] == '3' || (node->name[1] == 'M'
+				 && node->name[2] == '3'))
+			         ch = DO3DEV;
+			else
+			         ch = DODEV;
+			ch_flag = ch_flag | CHANNEL[ch];
+			if (node->name[1] != 'M')
+			{
+		    	     if (node->value > 0)
+			         ch_flag = ch_flag & CHANOFF[ch];
+			}
+			break;
+ 	    case 'H':
+			interval++;
+			switch (node->name[1]) {
+			    case 'x':         /*  xmtr  */
+				      ch = TODEV;
+				      break;
+			    case '1':         /*  dec  */
+				      ch = DODEV;
+				      break;
+			    case '2':         /*  dec2n  */
+				      ch = DO2DEV;
+				      break;
+			    case '3':         /*  dec3  */
+				      ch = DO3DEV;
+				      break;
+		            default:
+				      ch = 0;
+				      break;
+			}
+			ch_flag = ch_flag | CHANNEL[ch];
+                        if (node->value > 0)
+                            ch_flag = ch_flag & CHANON[ch];
+                        else
+                            ch_flag = ch_flag & CHANOFF[ch];
+			break;
+	    default:
+			if (node->next->name[0] == 'X')
+			{   if(pi == 2)
+				pi = 3;
+			    else if (pi == 1)
+				pi = 4;
+			}
+			break;
+	    }
+	    if (node->next == NULL) /* something wrong */
+	    {
+		node->value = acqs;
+		node->wide = pi;
+		node->flag = ch_flag;
+		return((struct psgdata *)node);
+	    }
+	    node = node->next;
+	}
+}
+			
+drawLoopAcq(xs, ys, yps, node)
+int    xs[];
+int    ys, yps;
+struct psgdata *node;
+{
+ 	int   acqs, gap, yh;
+
+	acqs = node->value;
+	yh = ys + (yps - ys) / 3;
+        color(GREEN);
+	switch((int) node->wide) {
+	case 1: 
+	case 4: 
+		acquireWave(fidwidth, yps - ys, xs[TODEV], ys, node->value);	
+		acqs--;
+		xs[TODEV] = xs[TODEV] + fidwidth;
+		break;
+	case 2: 
+	case 3: 
+		break;
+	default:
+		return;
+	}
+        gap = loop_interval;
+	while(acqs > 0)
+	{
+		amove(xs[TODEV], ys);
+		adraw(xs[TODEV], yh);
+		rdraw(gap, 0);
+		scrnLine(xs[TODEV]+gap, xs[TODEV], ys, ys + (yps - ys)/3);
+		xs[TODEV] = xs[TODEV] + gap;
+		amove(xs[TODEV], yh);
+		adraw(xs[TODEV], ys);
+		acquireWave(fidwidth, yps - ys, xs[TODEV], ys, node->value);
+		acqs--;
+		xs[TODEV] = xs[TODEV] + fidwidth;
+	}
+	if (node->wide == 3 || node->wide == 4)
+	{
+		amove(xs[TODEV], ys);
+		adraw(xs[TODEV], yh);
+		rdraw(gap, 0);
+		scrnLine(xs[TODEV]+gap, xs[TODEV], ys, ys + (yps - ys)/3);
+		xs[TODEV] = xs[TODEV] + gap;
+		amove(xs[TODEV], yh);
+		adraw(xs[TODEV], ys);
+	}
+}
+	
+
+
+dpsDstring(str, px, py)
+char *str;
+int   px, py;
+{
+	while(*str != NULL)
+	{
+	   if (*str != '.')
+		dchar(*str++);
+	   else
+	   {
+		rmove(-pf_x / 2 + 2, 0);
+		dchar(*str++);
+		rmove(-pf_x / 2 + 2, 0);
+	   }
+	}
+}
+			
+l_S_loopmark(x, yh, yl)
+int   x, yh, yl;
+{
+	dot_Line(x, x, yh, yl);
+	dot_Line(x, x + 5, yh, yh + 5);
+	dot_Line(x, x + 5, yl, yl - 5);
+        x++;
+	dot_Line(x, x, yh, yl);
+	dot_Line(x, x + 5, yh, yh + 5);
+	dot_Line(x, x + 5, yl, yl - 5);
+}
+
+
+r_S_loopmark(x, yh, yl)
+int   x, yh, yl;
+{
+	dot_Line(x, x, yh, yl);
+	dot_Line(x, x - 5, yh, yh + 5);
+	dot_Line(x, x - 5, yl, yl - 5);
+        x++;
+	dot_Line(x, x, yh, yl);
+	dot_Line(x, x - 5, yh, yh + 5);
+	dot_Line(x, x - 5, yl, yl - 5);
+}
+
+
+l_H_loopmark(x, yh, yl)
+int   x, yh, yl;
+{
+	amove(x, yh);
+	adraw(x, yl);
+	amove(x, yh);
+	adraw(x + 5, yh + 5);
+	amove(x, yl);
+	adraw(x + 5, yl - 5);
+	x++;
+	amove(x, yh);
+	adraw(x, yl);
+	amove(x, yh);
+	adraw(x + 5, yh + 5);
+	amove(x, yl);
+	adraw(x + 5, yl - 5);
+}
+
+r_H_loopmark(x, yh, yl)
+int   x, yh, yl;
+{
+	amove(x, yh);
+	adraw(x, yl);
+	amove(x, yh);
+	adraw(x - 5, yh + 5);
+	amove(x, yl);
+	adraw(x - 5, yl - 5);
+	x++;
+	amove(x, yh);
+	adraw(x, yl);
+	amove(x, yh);
+	adraw(x - 5, yh + 5);
+	amove(x, yl);
+	adraw(x - 5, yl - 5);
+}
+
+
+drawLoopBox(x1, x2, y1, y2)
+int   x1, x2, y1, y2;
+{
+	int    ym;
+
+	ym = y1 + (y2 - y1) / 2;
+	amove(x1, y1);
+	adraw(x1, ym);
+	adraw(x2, ym);
+	adraw(x2, y1);
+	scrnLine(x2, x1, y1, ym);
+}
+ 
+set_chan_power(chan, val)
+int    chan, val;
+{
+	if(val > power_ch[chan])
+	       power_ch[chan] = val;
+}
+
+tdraw(x1, y1, x2, y2)
+{
+	if (!CHFLAG[TODEV])
+	    return;
+	amove(x1, y1);
+	adraw(x2, y2);
+}
+
+tdot_Line(x1, x2, y1, y2)
+int  x1, x2, y1, y2;
+{
+	if (CHFLAG[TODEV])
+           dot_Line(x1, x2, y1, y2);
+}
+
+
+
+D_spinlock(level, cx, cy, cyc, yp, old_yc, dnode, chan)
+	int  level, cx[], cy[], cyc[], yp[], old_yc[], chan;  
+        struct psgdata *dnode;
+{
+	int     xk, posx, posy, i;
+	int     xd, xh, ydp;
+	int     gap, gh;
+
+	color(GREEN);
+	xd = cx[chan];
+	xk = cx[TODEV];
+	ydp = yp[chan];
+	amove(xd, cyc[chan]);
+ 	if (xd < xk)
+	{
+		adraw(xk, cyc[chan]);		
+		if (old_yc[chan] != cyc[chan])
+		{
+			amove(xd, cyc[chan]);
+			adraw(xd, old_yc[chan]);
+			old_yc[chan] = cyc[chan];
+		}
+		if (chan >= DODEV)
+	           if (!decon[chan] && cyc[chan] > cy[chan]) 
+		       scrnLine(xk, xd, cy[chan], cyc[chan]);
+	}
+	cx[chan] = cx[TODEV];
+	xd = xk;
+	xk += spinwidth;
+	gap = spinwidth / 5;
+	if (gap < 4)
+	   gap = 4;
+	gh = yp[chan] - cy[chan] - pf_y - gap;
+	if (gh <= 4)
+	     gh = 4;
+	if (gh > pf_y * 2)
+	     gh = gh / 2;
+	if (dnode->wide <= 0.0)
+	{
+	     dot_Line(xd, xd, cy[chan], yp[chan]);
+	     dot_Line(xd, xk, yp[chan], yp[chan]);
+	     dot_Line(xk, xk, cy[chan], yp[chan]);
+	}
+	else
+	{
+	     amove(xd, cy[chan]);
+	     adraw(xd, yp[chan]);
+	     adraw(xk, yp[chan]);
+	     adraw(xk, cy[chan]);
+	}
+	ydp = yp[chan] - gh;
+	xd = cx[chan] + gap;
+	xk = xk - gap + 1;
+	while (xd <= xk)
+	{
+	     if (dnode->wide <= 0.0)
+		dot_Line(xd, xd, yp[chan], ydp);
+	     else
+	     {
+	     	amove(xd, yp[chan]);
+	     	adraw(xd, ydp);
+	     }
+	     xd += gap;
+	}
+	sprintf(para, "x%d", (int)dnode->value);
+	xd = cx[chan] + (spinwidth - strlen(para) * pf_x) / 2;
+	posy = yp[chan] - cy[chan] - gh - pf_y;
+	if (posy <= 1)
+	   posy = cy[chan];
+	else
+	   posy = cy[chan] + posy / 2;	
+	amove(xd, posy);
+	dstring(para);
+        gap = strlen(dnode->name);
+        for(i = 0; i < gap; i++)
+        {    if (dnode->name[i] == '_')
+	     {   strcpy(para, dnode->name+i+1);
+		 break;
+	     }
+	}
+	if (chan > TODEV)
+	{
+           disp_label(chan, cx[chan], cx[chan] + spinwidth, cy[chan],
+			 dec_s_r, 3, para);
+	   disp_value(chan, cx[chan], cx[chan] + spinwidth, yp[chan] + 3,
+			 dec_v_r, 3, dnode->wide);
+           cx[chan] = cx[TODEV] + spinwidth;
+	   color(GREEN);
+	   xd = cx[TODEV];
+	   cx[TODEV] = xd + spinwidth;
+	   amove(xd, cyc[TODEV]);
+	   rdraw(spinwidth, 0);
+	}
+	else
+	{
+	   disp_label(0, cx[chan], cx[chan] + spinwidth, cy[chan], 
+			 pul_s_r, 3, para);
+	   disp_value(chan, cx[chan], cx[chan] + spinwidth, yp[chan],
+			 pul_v_r, 3, dnode->wide);
+           cx[chan] = cx[TODEV] + spinwidth;
+	}
+	cyc[chan] = cy[chan];
+	old_yc[chan] = cy[chan];
+}
+
+
+draw_xgate(x, y, cx, cy, cyc, yp, old_yc, num)
+int   x, y, cx[], cy[], cyc[], yp[], old_yc[];
+float num;
+{
+	int  gy, chan, gx;
+
+	color(GREEN);
+	gy = y + pf_y / 2;
+	amove(x, gy);
+	rdraw(0, -pf_y);
+	rdraw(pf_x, 0);
+	rdraw(0, pf_y);
+	rdraw(-pf_x, 0);
+	amove(x, gy);
+	rdraw(pf_x, -pf_y);
+	amove(x + pf_x, gy);
+	rdraw(-pf_x, -pf_y);
+	for(chan = DODEV; chan <= DO3DEV; chan++)
+	{
+	    if(CHFLAG[chan])
+	    {	
+		if (cx[chan] < x)
+		{
+		    if (old_yc[chan] != cyc[chan])
+		    {
+			amove(cx[chan], old_yc[chan]);
+			adraw(cx[chan], cyc[chan]);
+		    }
+		    amove(cx[chan], cyc[chan]);
+		    adraw(x, cyc[chan]);
+		    if (!decon[chan] && cyc[chan] > cy[chan])
+			scrnLine(x, cx[chan], cy[chan], cyc[chan]);
+		}
+
+		gy = cyc[chan] + pf_y / 2;
+		amove(x, gy);
+		rdraw(0, -pf_y);
+		rdraw(pf_x, 0);
+		rdraw(0, pf_y);
+		rdraw(-pf_x, 0);
+		amove(x, gy);
+		rdraw(pf_x, -pf_y);
+		amove(x + pf_x, gy);
+		rdraw(-pf_x, -pf_y);
+		cx[chan] = x + pf_x;
+	    }	
+	}
+/**
+	gy = mnumypnts - pf_y * 3;
+	amove(x, gy);
+	gx = pf_x / 4;
+	gy = pf_y * 0.7;
+	rdraw(gx, 0);
+	rdraw(gx, gy);
+	rdraw(gx, -gy);
+	rdraw(gx, 0);
+	sprintf(para, "%d", (int) num);
+	gx = x - ((strlen(para) - 1) * pf_x) / 2;
+	gy = mnumypnts - pf_y * 2;
+	amove(gx, gy);
+	dstring(para);
+**/
+}
+
+
+draw_mark(x, y)
+ int  x, y;
+{
+	amove(x, y + mark_pts / 2);
+	rdraw(0, -mark_pts);
+}
+

@@ -1,0 +1,7 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"**************************************"
+" _sfrq - disables tn when sfrq is changed"
+"**************************************"
+tn='none'
+tof=0
+setfrq(1)

@@ -1,0 +1,601 @@
+#
+#
+MAKEFILE=makencomm
+
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+JSCCSDIR=$(sccsjdir)
+JDKDIR=$(JDK_HOME)
+
+# Shared Library version number   E.G.  3.2 -> libncomm.so.3.2
+SHAREDLIB_VER=$(psg_so_ver)
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+# set defines acording to system Type
+CC:sh = OSTYPE=`uname -r | awk '{ print substr($0,1,1) }'`; \
+         if [ $OSTYPE = "5" ]; then \
+                echo "cc -Xa -DSOLARIS"; \
+         elif [ $OSTYPE = "4" ]; then \
+                echo "acc -Xa"; \
+	 else			\
+		echo "cc -Xa";	\
+         fi;
+
+OBJDIR:sh = OSTYPE=`uname -r | awk '{ print substr($0,1,1) }'`; \
+         if [ $OSTYPE = "5" ]; then \
+                echo "sol"; \
+         elif [ $OSTYPE = "4" ]; then \
+                echo ""; \
+	 else				\
+		echo "";	\
+         fi;
+
+OPTIMIZE:sh = OSTYPE=`uname -r | awk '{ print substr($0,1,1) }'`; \
+         if [ $OSTYPE = "5" ]; then \
+                echo "-xO2"; \
+         elif [ $OSTYPE = "4" ]; then \
+                echo "-O2"; \
+	 else 				\
+		echo "-O";	\
+         fi;
+
+DEBUGOPT:sh = OSTYPE=`uname -r | awk '{ print substr($0,1,1) }'`; \
+         if [ $OSTYPE = "5" ]; then \
+                echo "-g - g -xF"; \
+         elif [ $OSTYPE = "4" ]; then \
+                echo "-g -sb"; \
+	 else 				\
+		echo "-g";	\
+         fi;
+
+# use echo where we don't perform action
+RANLIB:sh = OSTYPE=`uname -r | awk '{ print substr($0,1,1) }'`; \
+         if [ $OSTYPE = "5" ]; then \
+                echo "echo"; \
+         elif [ $OSTYPE = "4" ]; then \
+                echo "ranlib"; \
+         else 			\
+                echo "ranlib"; \
+         fi;
+
+PIC:sh = OSTYPE=`uname -r | awk '{ print substr($0,1,1) }'`; \
+         if [ $OSTYPE = "5" ]; then \
+                echo "-K PIC"; \
+         elif [ $OSTYPE = "4" ]; then \
+                echo "-PIC"; \
+         else 			\
+                echo "-PIC"; \
+         fi;
+
+LDSOFLAGS:sh = OSTYPE=`uname -r | awk '{ print substr($0,1,1) }'`; \
+         if [ $OSTYPE = "5" ]; then \
+                echo "-G"; \
+         elif [ $OSTYPE = "4" ]; then \
+                echo "-assert pure-text"; \
+         else 			\
+                echo ""; \
+         fi;
+
+# use echo where we don't perform action
+SLINK:sh = OSTYPE=`uname -r | awk '{ print substr($0,1,1) }'`; \
+         if [ $OSTYPE = "5" ]; then \
+                echo "ln -s"; \
+         elif [ $OSTYPE = "4" ]; then \
+                echo "echo"; \
+         else 			\
+                echo "echo"; \
+         fi;
+
+# for testing it is '../' normally it would be a absolute path..
+#SRC_DIR=../
+SRC_DIR=$(SRCDIR)/sysncomm/
+
+NCOMM_SRC_DIR= $(SRC_DIR)
+EXPPROC_SRC_DIR= $(SRC_DIR)
+VNMR_SRC_DIR= $(SRC_DIR)
+VWCOM_SRC_DIR= $(SRC_DIR)
+VWACQ_SRC_DIR= $(SRC_DIR)
+PSG_SRC_DIR= $(SRC_DIR)
+JPSG_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+EXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)expproc/SCCS/s.
+VNMR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmr/SCCS/s.
+VWCOM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vwcom/SCCS/s.
+VWACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vwacq/SCCS/s.
+PSG_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)psg/SCCS/s.
+JPSG_SCCS_SRC=$(JSCCSDIR)/$(PROJCAT)proccom/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+NCOMM_LN = ln -s $(NCOMM_SRC_DIR)$(@)
+EXPPROC_LN = ln -s $(EXPPROC_SRC_DIR)$(@)
+VNMR_LN = ln -s $(VNMR_SRC_DIR)$(@)
+VWCOM_LN = ln -s $(VWCOM_SRC_DIR)$(@)
+VWACQ_LN = ln -s $(VWACQ_SRC_DIR)$(@)
+PSG_LN = ln -s $(PSG_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+NCOMM_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ncomm/SCCS get
+EXPPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)expproc/SCCS get
+VNMR_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vnmr/SCCS get
+VWCOM_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vwcom/SCCS get
+VWACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vwacq/SCCS get
+PSG_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)psg/SCCS get
+JPSG_SGET = sccs -p$(JSCCSDIR)/$(PROJCAT)proccom/SCCS get
+
+#----  default source extraction to links -------
+NCOMM_GET= $(NCOMM_LN)
+EXPPROC_GET= $(EXPPROC_LN)
+VNMR_GET= $(VNMR_LN)
+VWCOM_GET= $(VWCOM_LN)
+VWACQ_GET= $(VWACQ_LN)
+PSG_GET= $(PSG_LN)
+JPSG_GET= $(JPSG_SGET)
+
+
+# DESCRIPTION
+# This file contains rules for building Nessie Host Communications
+# software
+#
+# INCLUDES
+#     makeTarget
+#*/
+#CFLAGS = -g -DDEBUG -O2
+CFLAGS = -Xa -O2
+COMPILE.c = $(CC) $(ANSI_HDR) $(CFLAGS) $(CPPFLAGS) -c
+LINK.c = $(CC) $(LDFLAGS)
+#LDSOFLAGS = -assert pure-text 
+
+ 
+# Object libraries which stand alone
+NCOMM_HDR_LIB=			\
+		mfileObj.h	\
+		errLogLib.h	\
+		hhashLib.h	\
+		ipcKeyDbm.h	\
+		ipcMsgQLib.h	\
+		semLib.h	\
+		msgQLib.h	\
+		eventHandler.h	\
+		eventQueue.h	\
+		eventQueueP.h	\
+		listObj.h	\
+		sendAsync.h	\
+		shrMLib.h
+
+NCOMM_SRC_LIB=			\
+		mfileObj.c	\
+		errLogLib.c	\
+		hhashLib.c	\
+		ipcKeyDbm.c	\
+		ipcMsgQLib.c	\
+		semLib.c	\
+		msgQLib.c	\
+		asyncIo.c	\
+		eventHandler.c	\
+		eventQueue.c	\
+		listObj.c	\
+		sendAsync.c	\
+		shrMLib.c
+
+NCOMM_OBJ_LIB= $(NCOMM_SRC_LIB:.c=.o)
+
+NCOMMM_TARGETS = $(NCOMM_SRC_LIB:.c=)
+
+NCOMM_MAN_LIB= $(NCOMM_SRC_LIB:.c=.nr)
+
+NCOMM_INSTALLMAN_LIB= $(NCOMM_SRC_LIB:.c=.2)
+
+# chanLib obj consist of chanLib.h sockets.h chanlib.c sockets.c signals.c fdmask.c
+CHANOBJ_HDR=			\
+		chanLib.h	\
+		chanLibP.h	\
+		sockets.h
+
+CHANOBJ_SRC=			\
+		chanLib.c	\
+		sockets.c	\
+		signals.c	\
+		fdmask.c
+
+CHANOBJ_OBJ=$(CHANOBJ_SRC:.c=.o)
+
+# expproc headers needed
+EXPPROC_HDR=                    \
+		shrexpinfo.h	\
+		shrstatinfo.h	\
+		expQfuncs.h	\
+                hostMsgChannels.h
+
+EXPPROC_SRC=			\
+		expQfuncs.c	\
+		statfuncs.c
+
+EXPPROC_OBJ=$(EXPPROC_SRC:.c=.o)
+
+VNMR_HDR=                    \
+		acquisition.h	\
+		variables.h	\
+                comm.h
+
+VNMR_SRC=			\
+		comm.c	\
+		socket.c	\
+		socket1.c
+
+VNMR_OBJ=$(VNMR_SRC:.c=.o)
+
+PSG_HDR=
+
+PSG_SRC=		\
+		convertapbout.c	
+
+PSG_OBJ=$(PSG_SRC:.c=.o)
+
+VWCOM_HDR=			\
+		connBroker.h
+
+VWACQ_HDR=			\
+		hostAcqStructs.h
+
+
+# -----   Java NATIVE method for jpsg  
+JPSG_HDR=			\
+		proccom_ProcCom.h
+
+JPSG_SRC=			\
+		ProcCom.c
+
+JPSG_OBJ=$(JPSG_SRC:.c=.o)
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) $(CHANOBJ_SRC) $(CHANOBJ_HDR) $(EXPPROC_SRC) $(EXPPROC_HDR) $(VNMR_SRC) $(VNMR_HDR) $(VWCOM_HDR) $(VWACQ_HDR) $(PSG_SRC) $(JPSG_HDR) $(JPSG_SRC)
+
+ALL_C_SRC= $(ALLSRC)
+
+ALLOBJS= $(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ) $(VNMR_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ)
+
+#---- Targets ------------------------------------
+std : lib mv_libs
+
+
+dbx:  dbxlib
+
+
+lib : $$(MAKEFILE) Source
+	@( if [ ! -d $(OBJDIR)lib ]; then	\
+	   mkdir $(OBJDIR)lib; 			\
+	fi)
+	( cd $(OBJDIR)lib;			\
+	$(MAKE) -e -f ../$(MAKEFILE) \
+	"CFLAGS = $(OPTIMIZE) $(PIC) -DNESSIE"		\
+	libncomm.a libncomm.so libacqcomm.a libacqcomm.so )
+	@echo "NMR_ID libncomm and libacqcomm complete -------------"
+
+dbxlib : $$(MAKEFILE) Source
+	@( if [ ! -d $(OBJDIR)libdbx ]; then	\
+	   mkdir $(OBJDIR)libdbx;		\
+	fi)
+	( cd $(OBJDIR)libdbx;			\
+	$(MAKE) -e -f ../$(MAKEFILE) \
+	"CFLAGS = $(DEBUGOPT) $(PIC) -DDEBUG -DNESSIE"		\
+	libncomm.a libncomm.so libacqcomm.a libacqcomm.so )
+	@echo "NMR_ID dbx libncomm and libacqcomm complete -------------"
+
+AIX IRIX : lib
+
+
+SOLARIS : lib dbxlib
+	@echo "NDC libs on Solaris complete---------------"
+
+chan : $$(MAKEFILE) Source
+	@( if [ ! -d chanobj ]; then	\
+	   mkdir chanobj; 	\
+	fi)
+	( cd chanobj;			\
+	$(MAKE) -e -f ../$(MAKEFILE) \
+	chanlib.o )
+
+chandbx : $$(MAKEFILE) Source
+	@( if [ ! -d chandbx ]; then	\
+	   mkdir chandbx; 	\
+	fi)
+	( cd chandbx;			\
+	$(MAKE) -e -f ../$(MAKEFILE) \
+	chanlib_dbx.o )
+
+man : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE) \
+	$(NCOMM_MAN_LIB)
+	rm -f *.nr
+	@echo "VxWorks libs complete ---------------------"
+
+installman : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE) \
+	$(NCOMM_INSTALLMAN_LIB)
+	cp *.2 $(sourcedir)/nman/man2
+	(cd $(sourcedir); catman -M nman -w )
+	@echo "VxWorks libs complete ---------------------"
+
+depend:	$$(MAKEFILE) getsrc
+	@ echo making dependencies...
+	@ grep '^#include' $(ALL_C_SRC) \
+		| sed 's/<\([^>]*\)>/"\/usr\/include\/\1"/' \
+		| sed 's/:[^"]*"\([^"]*\)".*/: \1/' \
+		| sed 's/\.c/.o/' \
+                | sed 's/\.y/.o/' \
+                | sed 's/\.l/.o/' >makedepd
+	@ ls -1 $(ALL_C_SRC) | awk "{ {len = length(\$$0)} {s2 = substr(\$$0, 1, len - 2)} {print s2 \".o: \", \$$0 >> \"makedepd\"} } "
+	@ awk "{ if ( \$$2 !~ /\/usr\// ) { print \$$0; } }" makedepd | sort > makedep
+	@ echo '/^# DO NOT DELETE THIS LINE/+2,$$d' >eddep
+	@ echo '$$r makedep' >>eddep
+	@ echo 'w' >>eddep
+	@ cp $(MAKEFILE) $(MAKEFILE).bak
+	@ ed - $(MAKEFILE) < eddep
+	@ rm eddep makedep makedepd
+	@ echo '# DEPENDENCIES MUST END AT END OF FILE' >> $(MAKEFILE)
+	@ echo '# IF YOU PUT STUFF HERE IT WILL GO AWAY' >> $(MAKEFILE)
+	@ echo '# see make depend above' >> $(MAKEFILE)
+
+#-----  Recursive Targets ----------------------------------------------------
+alllibs :  $(ALLOBJS) 
+	@echo Object complete
+
+
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+	     "NCOMM_GET= $(NCOMM_SGET)"			\
+	     "NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)" 	\
+             "EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)"	\
+             "EXPPROC_GET= $(EXPPROC_SGET)" 		\
+             "VNMR_SRC_DIR= $(VNMR_SCCS_SRC)"	\
+             "VNMR_GET= $(VNMR_SGET)" 		\
+             "PSG_SRC_DIR= $(PSG_SCCS_SRC)"	\
+             "PSG_GET= $(PSG_SGET)" 		\
+             "VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)"	\
+             "VWACQ_GET= $(VWACQ_SGET)" 		\
+             "VWCOM_SRC_DIR= $(VWCOM_SCCS_SRC)"	\
+             "VWCOM_GET= $(VWCOM_SGET)" 		\
+             "JPSG_SRC_DIR= $(JPSG_SCCS_SRC)"	\
+	     src)
+
+getsrc : 
+	( $(MAKE) -e -f $(MAKEFILE) \
+             "NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)" 	\
+	     "NCOMM_GET= $(NCOMM_SGET)" 		\
+             "EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)"	\
+             "EXPPROC_GET= $(EXPPROC_SGET)" 		\
+             "VNMR_SRC_DIR= $(VNMR_SCCS_SRC)"	\
+             "VNMR_GET= $(VNMR_SGET)" 		\
+             "PSG_SRC_DIR= $(PSG_SCCS_SRC)"	\
+             "PSG_GET= $(PSG_SGET)" 		\
+             "VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)"	\
+             "VWACQ_GET= $(VWACQ_SGET)" 		\
+             "VWCOM_SRC_DIR= $(VWCOM_SCCS_SRC)"	\
+             "VWCOM_GET= $(VWCOM_SGET)" 		\
+             "JPSG_SRC_DIR= $(JPSG_SCCS_SRC)"	\
+	     src )
+
+
+src : $$(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+libncomm.a : $(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ)
+	(umask 2; ar rv $(@:.so=.a)  $(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ))
+	(umask 2; $(RANLIB) $@; )
+	@echo libncomm.a is complete
+
+libncomm.so :
+	- (umask 2; rm -f libncomm.s*)
+	(umask 2; ld $(LDSOFLAGS) -o $@.$(SHAREDLIB_VER)                  \
+			$(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ))
+	@echo libncomm.so.x is complete
+
+libacqcomm.a : $(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ) $(VNMR_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ) $(JPSG_OBJ)
+	(umask 2; ar rv $(@:.so=.a)  $(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ) $(VNMR_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ) $(JPSG_OBJ))
+	(umask 2; $(RANLIB) $@; )
+	@echo libacqcomm.a is complete
+
+libacqcomm.so :
+	- (umask 2; rm -f libacqcomm.s*)
+	(umask 2; ld $(LDSOFLAGS) -o $@.$(SHAREDLIB_VER)                  \
+		$(NCOMM_OBJ_LIB) $(CHANOBJ_OBJ) $(VNMR_OBJ) $(EXPPROC_OBJ) $(PSG_OBJ) $(JPSG_OBJ))
+	@echo libacqcomm.so.x is complete
+
+mv_libs :
+	( cd $(OBJDIR)lib;			\
+	       rm -f ../libncomm*; rm -f ../libacqcomm*;	\
+		mv -f lib*comm*  ..;				\
+		cd ..;						\
+		$(SLINK) libacqcomm.so.$(SHAREDLIB_VER) libacqcomm.so;	\
+		$(SLINK) libncomm.so.$(SHAREDLIB_VER) libncomm.so)
+	@echo libs moved up
+
+chanlib.o chanlib_dbx.o : $(CHANOBJ_OBJ)
+	ld -r -o $@ $(CHANOBJ_OBJ)
+	mv -f $@ ..
+	@echo libchan.o is complete
+
+ProcCom.o : $(JPSG_HDR) $(JSPG_SRC)
+	$(CC) -c $(PIC) -I$(JDKDIR)/include -I$(JDKDIR)/include/solaris $(@:.o=.c)
+
+#--- Object dependencies -------------------------------------------
+
+$(ALLOBJS) : $(@:.o=.c)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(NCOMM_MAN_LIB) : $(@:.nr=.c)
+	-(umask 2; mangen $(@:.nr=.c) ; nroff -man $@ > $(@:.nr=.man) )
+
+$(NCOMM_INSTALLMAN_LIB) : $(@:.2=.c)
+	-(umask 2; mangen $(@:.2=.c) ; mv $(@:.2=.nr) $@ )
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(NCOMM_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) $(CHANOBJ_SRC) $(CHANOBJ_HDR): $$(NCOMM_SRC_DIR)$$(@)
+	$(NCOMM_GET) $@
+
+$(EXPPROC_SRC) $(EXPPROC_HDR) : $$(EXPPROC_SRC_DIR)$$(@)
+	$(EXPPROC_GET) $@
+
+$(VNMR_SRC) $(VNMR_HDR) : $$(VNMR_SRC_DIR)$$(@)
+	$(VNMR_GET) $@
+
+$(VWACQ_HDR) : $$(VWACQ_SRC_DIR)$$(@)
+	$(VWACQ_GET) $@
+
+$(VWCOM_HDR) : $$(VWCOM_SRC_DIR)$$(@)
+	$(VWCOM_GET) $@
+
+$(PSG_SRC) $(PSG_HDR) : $$(PSG_SRC_DIR)$$(@)
+	$(PSG_GET) $@
+
+$(JPSG_SRC) $(JPSG_HDR) : $$(JPSG_SRC_DIR)$$(@)
+	$(JPSG_GET) $@
+
+# ---------  Manual dependences ------------- 
+mfileObj.nr:  mfileObj.c
+errLogLib.nr: errLogLib.c
+eventHandler.nr: eventHandler.c
+eventQueue.nr: eventQueue.c
+hhashLib.nr: hhashLib.c
+ipcKeyDbm.nr: ipcKeyDbm.c
+listObj.nr: listObj.c
+semLib.nr:  semLib.c
+ipcMsgQLib.nr:  ipcMsgQLib.c
+msgQLib.nr:  msgQLib.c
+shrMLib.nr:  shrMLib.c
+sendAsync.nr:  sendAsync.c
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+# DEPENDENCIES MUST END AT END OF FILE
+ProcCom.o:  ProcCom.c
+ProcCom.o: proccom_ProcCom.h
+acquisition.o:  acquisition.h
+asyncIo.o:  asyncIo.c
+asyncIo.o: errLogLib.h
+asyncIo.o: eventHandler.h
+chanLib.o:  chanLib.c
+chanLib.o:  chanLib.h
+chanLib.o: chanLibP.h
+chanLib.o: errLogLib.h
+chanLib.o: eventHandler.h
+chanLib.o: listObj.h
+chanLibP.h: chanLib.h
+chanLibP.h: sockets.h
+chanLibP.o:  chanLibP.h
+comm.o:  comm.c
+comm.o:  comm.h
+comm.o: acquisition.h
+comm.o: errLogLib.h
+comm.o: shrstatinfo.h
+connBroker.o:  connBroker.h
+convertapbout.o:  convertapbout.c
+errLogLib.o:  errLogLib.c
+errLogLib.o:  errLogLib.h
+eventHandler.o:  eventHandler.c
+eventHandler.o:  eventHandler.h
+eventHandler.o: errLogLib.h
+eventHandler.o: eventHandler.h
+eventHandler.o: eventQueue.h
+eventHandler.o: listObj.h
+eventQueue.o:  eventQueue.c
+eventQueue.o:  eventQueue.h
+eventQueue.o: eventQueueP.h
+eventQueueP.h: eventQueue.h
+eventQueueP.o:  eventQueueP.h
+expQfuncs.o:  expQfuncs.c
+expQfuncs.o:  expQfuncs.h
+expQfuncs.o: errLogLib.h
+expQfuncs.o: expQfuncs.h
+expQfuncs.o: mfileObj.h
+expQfuncs.o: shrMLib.h
+expQfuncs.o: shrexpinfo.h
+fdmask.o:  fdmask.c
+hhashLib.o:  hhashLib.c
+hhashLib.o:  hhashLib.h
+hhashLib.o: errLogLib.h
+hhashLib.o: hhashLib.h
+hostAcqStructs.o:  hostAcqStructs.h
+hostMsgChannels.o:  hostMsgChannels.h
+ipcKeyDbm.h: shrMLib.h
+ipcKeyDbm.o:  ipcKeyDbm.c
+ipcKeyDbm.o:  ipcKeyDbm.h
+ipcKeyDbm.o: errLogLib.h
+ipcKeyDbm.o: ipcKeyDbm.h
+ipcKeyDbm.o: shrMLib.h
+ipcMsgQLib.o:  ipcMsgQLib.c
+ipcMsgQLib.o:  ipcMsgQLib.h
+ipcMsgQLib.o: errLogLib.h
+ipcMsgQLib.o: ipcMsgQLib.h
+listObj.o:  listObj.c
+listObj.o:  listObj.h
+listObj.o: listObj.h
+mfileObj.o:  mfileObj.c
+mfileObj.o:  mfileObj.h
+mfileObj.o: errLogLib.h
+mfileObj.o: mfileObj.h
+msgQLib.h: ipcMsgQLib.h
+msgQLib.h: shrMLib.h
+msgQLib.o:  msgQLib.c
+msgQLib.o:  msgQLib.h
+msgQLib.o: chanLib.h
+msgQLib.o: errLogLib.h
+msgQLib.o: hostMsgChannels.h
+msgQLib.o: mfileObj.h
+msgQLib.o: msgQLib.h
+semLib.o:  semLib.c
+semLib.o:  semLib.h
+semLib.o: errLogLib.h
+semLib.o: mfileObj.h
+semLib.o: semLib.h
+sendAsync.o:  sendAsync.c
+sendAsync.o:  sendAsync.h
+sendAsync.o: errLogLib.h
+sendAsync.o: sockets.h
+shrMLib.h: mfileObj.h
+shrMLib.o:  shrMLib.c
+shrMLib.o:  shrMLib.h
+shrMLib.o: errLogLib.h
+shrMLib.o: shrMLib.h
+shrexpinfo.o:  shrexpinfo.h
+shrstatinfo.h: hostAcqStructs.h
+shrstatinfo.o:  shrstatinfo.h
+signals.o:  signals.c
+socket.o:  socket.c
+socket.o: acquisition.h
+socket.o: comm.h
+socket.o: expQfuncs.h
+socket.o: mfileObj.h
+socket.o: shrstatinfo.h
+socket.o: variables.h
+socket1.o:  socket1.c
+socket1.o: acquisition.h
+socket1.o: comm.h
+sockets.o:  sockets.c
+sockets.o:  sockets.h
+sockets.o: errLogLib.h
+sockets.o: sockets.h
+statfuncs.o:  statfuncs.c
+statfuncs.o: errLogLib.h
+statfuncs.o: hostAcqStructs.h
+statfuncs.o: mfileObj.h
+statfuncs.o: shrMLib.h
+statfuncs.o: shrstatinfo.h
+variables.o:  variables.h
+# DEPENDENCIES MUST END AT END OF FILE
+# IF YOU PUT STUFF HERE IT WILL GO AWAY
+# see make depend above

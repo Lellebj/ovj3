@@ -1,0 +1,1431 @@
+#
+#
+#makevnmrbg.lnx
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!  ATTENTION  !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#
+# This makefile will share between Linux and Mac despite of its name
+# On a Mac machine, making sure the PATH env. variable set as below
+# PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin"
+# as of  Feb. 03 2005
+#
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#
+#  Note: vnmr yacc must be in /vobj/'arch'/yacc which is unique to architecture 
+#  This make file uses sccsdir, sccsjdir, solobjdir, 
+#  and vcommondir environmental parameters
+#
+
+
+vnmrsystem	=  /vnmr
+SHELL		=  /bin/sh
+MAKEFILE	=  makevnmrbg.lnx
+CCC		=  c++
+
+REV_DATE	=  $(VNMR_REV_DATE)
+COMPDATE:sh	=  date '+Compiled: %m/%d/%y %H:%M'
+
+SCCSDIR		=  $(sccsdir)
+SCCSJDIR	=  $(sccsjdir)
+SRC_DIR		=  ./
+
+STD_YACC	=  /usr/bin/yacc
+
+# LIBS            =  -lXm -lXt -lX11 -ll -lm  -ldl -lnsl
+LIBS            =  -lXm -lXt -lX11 -lm  -ldl -lnsl
+
+#-- Normal operational compile flags
+#   Default values are for inova (used for make depend)
+
+#COPTIONS:sh =   /usr/bin/which cc | awk ' \
+#                /SUNWs/ { print sun; match=1 } \
+#               /gnu\/local\/bin\// { print gnu; match=1 } \
+#               match == 0 { print dflt } ' \
+#               sun='-O' gnu='-O -Wno-deprecated' dflt='-O'
+
+COPTIONS = -m32 -O
+CPPOPTIONS  = -m32 -O
+LPCFLAGS =  -m32 -O
+
+CINCLDIR    = -I./ 
+
+CDEFINE     = -DLINUX -DVNMRJ -DBSDACQ -DSUN -DX11 -DMOTIF -DNESSIE -DUSE_HTONS
+CPPDEFINE   = -DLINUX
+
+LDOPTIONS   = -O -rdynamic
+LDFLAGS     = $(LDOPTIONS) -m32 -L. -L /usr/X11R6/lib -Wl,-rpath /usr/lib
+
+COMPILE.c   = $(CC)  $(COPTIONS) $(CINCLDIR) $(CDEFINE) -c
+COMPILE.cc  = $(CCC) $(CPPOPTIONS) $(CINCLDIR) $(CPPDEFINE) -c
+
+LPCOMPILE.c = $(CC)  $(LPCFLAGS) $(CDEFINE) -c
+LINK.c      = $(CCC) $(LDFLAGS) 
+
+
+#--- SCCS Sources ----  
+ACQI_SCCS_SRC      = $(SCCSDIR)/acqi/SCCS/s.
+ACQPROC_SCCS_SRC   = $(SCCSDIR)/acqproc/SCCS/s.
+VNMR_SCCS_SRC      = $(SCCSDIR)/vnmr/SCCS/s.
+VNMRJ_SCCS_SRC     = $(SCCSJDIR)/vnmrj/SCCS/s.
+VNMRBG_SCCS_SRC    = $(SCCSDIR)/vnmrbg/SCCS/s.
+XRACQ_SCCS_SRC     = $(SCCSDIR)/xracq/SCCS/s.
+PSG_SCCS_SRC       = $(SCCSDIR)/psg/SCCS/s.
+FT3D_SCCS_SRC      = $(SCCSDIR)/3D/SCCS/s.
+NCOMM_SCCS_SRC     = $(SCCSDIR)/ncomm/SCCS/s.
+EXPPROC_SCCS_SRC   = $(SCCSDIR)/expproc/SCCS/s.
+VWACQ_SCCS_SRC     = $(SCCSDIR)/vwacq/SCCS/s.
+NACQI_SCCS_SRC     = $(SCCSDIR)/nacqi/SCCS/s.
+XWIN_SCCS_SRC	   = $(SCCSDIR)/xwin/SCCS/s.
+SV_GUI_SCCS_SRC	   = $(SCCSDIR)/sunview/SCCS/s.
+AIP_SCCS_SRC       = $(SCCSDIR)/aip/SCCS/s.
+DDL_SCCS_SRC       = $(SCCSDIR)/ddl/SCCS/s.
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+ACQI_SGET       = sccs -p$(SCCSDIR)/acqi/SCCS get
+ACQPROC_SGET    = sccs -p$(SCCSDIR)/acqproc/SCCS get
+VNMR_SGET       = sccs -p$(SCCSDIR)/vnmr/SCCS get
+VNMRBG_SGET     = sccs -p$(SCCSDIR)/vnmrbg/SCCS get
+XRACQ_SGET      = sccs -p$(SCCSDIR)/xracq/SCCS get
+PSG_SGET        = sccs -p$(SCCSDIR)/psg/SCCS get
+FT3D_SGET       = sccs -p$(SCCSDIR)/3D/SCCS get
+NCOMM_SGET      = sccs -p$(SCCSDIR)/ncomm/SCCS get
+EXPPROC_SGET    = sccs -p$(SCCSDIR)/expproc/SCCS get
+VWACQ_SGET      = sccs -p$(SCCSDIR)/vwacq/SCCS get
+NACQI_SGET      = sccs -p$(SCCSDIR)/nacqi/SCCS get
+JSRC_SGET       = sccs -p$(SCCSJDIR)/vnmrj/SCCS get
+
+SVIEW_SGET	= sccs -p$(SCCSDIR)/sunview/SCCS get
+XWIN_SGET	= sccs -p$(SCCSDIR)/xwin/SCCS get
+
+AIP_SGET        = sccs -p$(SCCSDIR)/aip/SCCS get
+DDL_SGET        = sccs -p$(SCCSDIR)/ddl/SCCS get
+
+#/vcommon/j2re1.4.2.linux/include directory was copied over 
+#from vj1:/opt/j2sdk1.4.2/include (Linux machine)
+JSDK_DIR        = $(lnxjredir)
+VJ_SPC_DIR      = ./libvnmrjdir
+
+J_INCLUDE = -I$(JSDK_DIR)/include -I$(JSDK_DIR)/include/linux
+
+#------------------------------------------------------------------------
+#--- VNMRJ Native Library 
+#------------------------------------------------------------------------
+VJ_NTV_CFLAGS = -shared -m32
+
+VJ_NTV_SRC  =  \
+                vnmrjNative.c
+                                                                                                                              
+VJ_NTV_HDR  =  \
+                VnmrXCanvas.h \
+                vjNative.h
+                                                                                                                              
+VJ_NTV_OBJ  = $(VJ_NTV_SRC:.c=.o)
+
+
+
+#------------------------------------------------------------------------
+#--- VNMRBG objects that are needed for unmrlib 
+#------------------------------------------------------------------------
+UNMR_BG_SRC  = \
+		dcon.c 		\
+		dconi.c 	\
+		decc.c		\
+		dfid.c		\
+		dpcon.c 	\
+		iplan.c		\
+		iplan_graphics.c	\
+		locki.c		\
+		main.c		\
+		master.c	\
+		smagic.c 	\
+		crosshair.c 	\
+		mouseHandler.c 	\
+		frameManager.c 	\
+		wjunk.c
+
+UNMR_BG_HDR  = \
+		aipJFuncs.h 	\
+		vjXdef.h
+
+# -- vnmrbg specials from xwin
+WIN_BG_SRC  =	\
+		graphics_win.c	\
+		master_win.c    \
+		smagic_win.c
+
+#------------------------------------------------------------------------
+#-- Expproc source files
+#------------------------------------------------------------------------
+EXPPROC_SRC  =	\
+		expQfuncs.c	\
+		statfuncs.c
+
+EXPPROC_OBJ  = $(EXPPROC_SRC:.c=.o)
+
+EXPPROC_HDR  =	\
+		expQfuncs.h	\
+		shrexpinfo.h	\
+		hostMsgChannels.h	\
+		shrstatinfo.h
+
+#------------------------------------------------------------------------
+#-- vwacq files
+#------------------------------------------------------------------------
+#--- vwacq (New Digital Console) header files that are needed for iadisplay
+VWACQ_HDR  = \
+	acqcmds.h	\
+	hostAcqStructs.h
+
+#------------------------------------------------------------------------
+#--- iadisplay source files for the New Digital Console version only
+#------------------------------------------------------------------------
+NACQI_SRC  =   msgqueue.c
+NACQI_OBJ  =   $(NACQI_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#--- VNMR objects that are needed for unmrlib 
+#------------------------------------------------------------------------
+UNMR_COM_SRC    = \
+		acqfuncs.c 	\
+		acqhwcmd.c 	\
+		addsub.c 	\
+		ai.c 		\
+		allocate.c 	\
+		asm.c		\
+		asmfuncs.c	\
+		assign.c	\
+		bgvars.c 	\
+		bootup.c 	\
+		builtin.c 	\
+		builtin1.c 	\
+		buttons.c	\
+		calcq.c		\
+		createparams.c	\
+		data.c 		\
+		ddf.c 		\
+		ddif.c 		\
+		ddph.c 		\
+		debug.c 	\
+		df2d.c		\
+		dfww.c 		\
+		dg.c 		\
+                disp3Dmap.c     \
+		dll.c		\
+		dosyfit.c	\
+                dosyfit3D.c     \
+		dpf.c		\
+		dps.c		\
+		ds.c		\
+		dscale.c	\
+		dsn.c		\
+		dsp.c		\
+		dsww.c 		\
+		element.c 	\
+		emouse.c 	\
+		execcmd.c 	\
+		fiddle.c	\
+		files.c 	\
+		flashc.c	\
+		ft.c		\
+		ft2d.c 		\
+		ftinit.c	\
+		full.c 		\
+		gdevsw.c	\
+		glide.c 	\
+		go.c 		\
+                gradfit.c       \
+		graphics.c 	\
+		graphics_util.c \
+                gxyzcalib.c     \
+                gxyzcalib2.c    \
+                gxyzmap.c       \
+		gzfit.c 	\
+		handler.c 	\
+		help.c 		\
+		history.c 	\
+		hpa.c 		\
+		ht.c 		\
+		init2d.c 	\
+		init_display.c 	\
+		init_proc.c 	\
+		integ.c 	\
+		io.c 		\
+		jexp.c 		\
+		ll2d.c 		\
+		lockfreqfunc.c	\
+		locksys.c	\
+		lookup.c 	\
+		lstring.c 	\
+		macro.c 	\
+		magnetom.c	\
+		makeslice.c	\
+		md5c.c		\
+		mfdata.c	\
+		ops.c 		\
+		p11Tools.c	\
+		part11.c	\
+		pcmap.c		\
+                phase_fid.c     \
+		plot_handlers.c	\
+		plot_construct.c \
+		proc2d.c 	\
+		pvars.c		\
+		recon_all.c	\
+		recon_mm.c	\
+		readlk.c 	\
+		rtvarcmds.c	\
+		savretphf.c	\
+		set3dproc.c	\
+		shellcmds.c	\
+		shims.c		\
+		sky.c		\
+		specfreq.c	\
+		sread.c 	\
+		swrite.c 	\
+		symtab.c 	\
+		table.c 	\
+		tempstuff.c 	\
+		terminal.c 	\
+		text.c 		\
+		tools.c 	\
+		variables1.c 	\
+		vcolor.c 	\
+		vdialog.c 	\
+		vfilesys.c 	\
+		weight.c	\
+		annotate.c	\
+		wti.c
+
+# -- special compile options required
+UNMR_SPC_SRC  =  \
+                acqhdl.c        \
+                displayops.c    \
+                foldj.c
+
+
+UNMR_COM_OBJ  = $(UNMR_COM_SRC:.c=.o)
+UNMR_BG_OBJ   = $(UNMR_BG_SRC:.c=.o)
+UNMR_SPC_OBJ  = $(UNMR_SPC_SRC:.c=.o)
+
+UNMR_HDR      = \
+                acqerrmsges.h   \
+                acquisition.h   \
+                allocate.h      \
+                asm.h           \
+                data.h          \
+                disp.h          \
+                dps_menu.icon   \
+                dpsdef.h        \
+                element.h       \
+                epi_recon.h     \
+                errorcodes.h    \
+                md5global.h     \
+                md5.h           \
+                part11.h        \
+                ftpar.h         \
+                graphics.h      \
+		graphics_util.h \
+                group.h         \
+                init.h          \
+                init2d.h        \
+                iplan.h         \
+                iplan_graphics.h        \
+                locksys.h       \
+                node.h          \
+                params.h        \
+                phase_correct.h \
+                process.h       \
+                pvars.h         \
+                shims.h         \
+                sky.h         \
+                stack.h         \
+                symtab.h        \
+                tools.h         \
+                variables.h     \
+                vfilesys.h      \
+                vglide.h        \
+                vnmrsys.h       \
+                whenmask.h      \
+                wjunk.h
+
+DDLLIB_HDR  = \
+		ddlList.h		\
+		ddlNode.h		\
+		ddlParser.h		\
+		ddlScanner.h		\
+		ddlSymbol.h
+
+DDLLIB_SRC  = \
+		ddlAction.C		\
+		ddlNode.C		\
+		ddlParser.C		\
+		ddlScanner.C		\
+		ddlSymbolTable.C
+
+DDLLIB_OBJ     = $(DDLLIB_SRC:.C=.o)
+
+YACC_DDL_SRC   = ddlGrammar.y
+YACC_DDL_OBJ   = ddlGrammar.o
+
+AIPLIB_GNU_HDR = generic.h  
+
+AIPLIB_HDR     = \
+		aipBox.h		\
+		aipCFuncs.h		\
+		aipCInterface.h		\
+		aipCommands.h		\
+		aipCStructs.h		\
+		aipDataInfo.h		\
+		aipDataManager.h	\
+		aipDataStruct.h		\
+		aipEdgelist.h		\
+		aipGframe.h		\
+		aipGframeManager.h	\
+		aipGraphics.h		\
+		aipGraphicsWin.h	\
+		aipHistogram.h		\
+		aipImgInfo.h		\
+		aipInitStart.h		\
+		aipInterface.h		\
+		aipInterpolation.h	\
+		aipLine.h		\
+		aipMouse.h		\
+		aipOrthoSlices.h	\
+		aipOval.h		\
+		aipParmList.h		\
+		aipPoint.h		\
+		aipPolygon.h		\
+		aipPolyline.h		\
+		aipRoi.h		\
+		aipRoiManager.h		\
+		aipRoiStat.h		\
+		aipStderr.h		\
+		aipStructs.h		\
+		aipUtils.h		\
+		aipViewInfo.h		\
+		aipVnmrFuncs.h		\
+		aipVolData.h		\
+		aipVsInfo.h		\
+		aipWinMath.h		\
+		aipWinMovie.h		\
+		aipMakeMovie.h		\
+		aipWinRotation.h	\
+		aipWriteData.h		\
+		aipReviewQueue.h	\
+		aipRQparser.h		\
+		aipRQnode.h		\
+		aipRQimage.h		\
+		aipRQgroup.h		\
+		aipRQstudy.h		\
+		ddlCInterface.h		\
+		sharedPtr.h
+
+#		aipGframeInfo.h
+
+AIPLIB_SRC_test = 	\
+		aipstub.C
+
+AIPLIB_SRC      =	\
+		aipBox.C		\
+		aipCommands.C		\
+		aipDataInfo.C		\
+		aipDataManager.C	\
+		aipEdgelist.C		\
+		aipGframe.C		\
+		aipGframeManager.C	\
+		aipGraphicsWin.C	\
+		aipHistogram.C		\
+		aipImgInfo.C		\
+		aipInitStart.C		\
+		aipInterface.C		\
+		aipInterpolation.C	\
+		aipLine.C		\
+		aipMouse.C		\
+		aipOrthoSlices.C	\
+		aipOval.C		\
+		aipParmList.C		\
+		aipPoint.C		\
+		aipPolygon.C		\
+		aipPolyline.C		\
+		aipRoi.C		\
+		aipRoiManager.C		\
+		aipRoiStat.C		\
+		aipStderr.C		\
+		aipUtils.C		\
+		aipViewInfo.C		\
+		aipVnmrFuncs.C		\
+		aipVolData.C		\
+		aipVsInfo.C		\
+		aipWinMath.C		\
+		aipWinMovie.C		\
+		aipMakeMovie.C		\
+		aipWinRotation.C	\
+		aipWriteData.C		\
+                aipReviewQueue.C        \
+		aipRQparser.C		\
+		aipRQnode.C		\
+		aipRQimage.C		\
+		aipRQgroup.C		\
+		aipRQstudy.C		\
+		ddlCInterface.C
+
+FORCE_DOT_O =	ddlCInterface.o
+
+AIPLIB_OBJ  =   $(AIPLIB_SRC:.C=.o)
+
+VNMRBG_CC_SRC      =	\
+		graphics3D.C
+
+VNMRBG_CC_OBJ  =   $(VNMRBG_CC_SRC:.C=.o)
+
+# ---- Common GUI source for OpenWindows & Motif ----
+XWIN_COM_ICON  = \
+		master.icon	\
+		vnmr_text.icon  \
+                vnmr.icon
+
+XWIN_C_SRC   =	banner.c \
+		ras_dump.c
+
+WIN_OBJ      = $(XWIN_C_SRC:.c=.o) $(WIN_BG_SRC:.c=.o)
+
+XWIN_SRC     = $(XWIN_COM_ICON) $(XWIN_C_SRC)
+
+ACQPROC_HDR  =
+
+XRACQ_HDR    =	\
+		ACQ_HAL.h	\
+		ACQ_SUN.h	\
+		STAT_DEFS.h	\
+		acodes.h
+
+#--- PSG files that are needed for unmrlib 
+
+PSG_SRC  = \
+	   ap_device.c 	\
+	   device.c 	\
+	   ecc_setup.c	\
+	   ecc_worstCase.c	\
+	   freq_device.c\
+	   freqfuncs.c	\
+	   objerror.c
+
+PSG_OBJ  =$(PSG_SRC:.c=.o)
+
+PSG_HDR  = \
+	   REV_NUMS.h	\
+	   Pbox_HT.h	\
+	   ap_device.p	\
+	   common.p	\
+	   device.p	\
+	   ecc.h	\
+	   freq_device.p\
+	   objerror.h	\
+	   oopc.h	\
+	   rfconst.h
+
+
+#---  FT3D files needed by Vnmr -------
+
+FT3D_SRC  = lock3Dfiles.c
+
+FT3D_OBJ  = $(FT3D_SRC:.c=.o)
+
+FT3D_HDR  = lock3D.h	\
+	    struct3d.h
+
+#------------------------------------------------------------------------
+#--- VNMR objects that are needed for magiclib 
+#    don't move YACC_OBJ , creates magic.gram.h needed by others
+
+MAGIC_COM_SRC  = \
+		    exec.c	\
+		    dli.c	\
+		    fft.c 	\
+		    lexjunk.c	\
+		    lpz.c	\
+		    matrix.c 	\
+		    node.c
+
+MAGIC_SPC_SRC  = downsample.c	\
+		    lpqld.c
+
+MAGIC_COM_OBJ  = $(MAGIC_COM_SRC:.c=.o)
+MAGIC_SPC_OBJ  = $(MAGIC_SPC_SRC:.c=.o)
+
+
+#------------------------------------------------------------------------
+#--- VNMR objects that are needed for unmrlib 
+#------------------------------------------------------------------------
+ACQCOM_HDR  =	comm.h
+
+ACQCOM_SRC  =	socket1.c	\
+                comm.c          \
+                socket.c        
+
+
+ACQCOM_OBJ  =   $(ACQCOM_SRC:.c=.o)
+
+NCOMM_HDR   =   \
+                sockets.h       \
+                chanLib.h       \
+                mfileObj.h      \
+                errLogLib.h     \
+                hhashLib.h      \
+                ipcKeyDbm.h     \
+                ipcMsgQLib.h    \
+                semLib.h        \
+                msgQLib.h       \
+                eventHandler.h  \
+                eventQueue.h    \
+                eventQueueP.h   \
+                listObj.h       \
+                sendAsync.h     \
+                shrMLib.h
+
+MAC_NCOMM_SRC  = \
+                mfileObj.c      \
+                semLib.c        \
+                errLogLib.c     \
+                sockets.c       \
+                hhashLib.c      \
+                asyncIo.c       \
+                eventHandler.c  \
+                eventQueue.c    \
+                listObj.c       \
+                sendAsync.c     \
+                fdmask.c     \
+                shrMLib.c
+
+NCOMM_SRC  = \
+                sockets.c       \
+                mfileObj.c      \
+                errLogLib.c     \
+                hhashLib.c      \
+                ipcKeyDbm.c     \
+                ipcMsgQLib.c    \
+                semLib.c        \
+                msgQLib.c       \
+                asyncIo.c       \
+                eventHandler.c  \
+                eventQueue.c    \
+                listObj.c       \
+                sendAsync.c     \
+                fdmask.c     \
+                shrMLib.c
+
+NCOMM_OBJ  = 	$(NCOMM_SRC:.c=.o) 
+
+NACQI_HDR  =	 acqInterface.h
+
+#---- The yacc and lex sources for Vnmr -----
+YACC_SRC   = \
+		magic.gram.y	\
+		magic.parser
+
+YACC_OBJ   =	magic.gram.o
+
+LEX_L_SRC    =	magic.lex.l
+LEX_C_SRC    =	magic.lex.c
+
+LEX_OBJ    =	$(LEX_C_SRC:.c=.o)
+
+
+
+#------------------------------------------------------------------------
+#---- All Sources and headers required for compilation -----
+#------------------------------------------------------------------------
+ALL_C_SRC  = $(UNMR_COM_SRC) $(UNMR_BG_SRC) $(UNMR_SPC_SRC) \
+             $(MAGIC_COM_SRC) $(MAGIC_SPC_SRC) \
+	     $(XWIN_C_SRC) $(WIN_BG_SRC) $(VJ_NTV_SRC) \
+             $(YACC_SRC) $(LEX_L_SRC) $(LEX_C_SRC)\
+	     $(PSG_SRC) $(ACQCOM_SRC) $(NCOMM_SRC) $(EXPPROC_SRC) $(NACQI_SRC) \
+	     $(FT3D_SRC) $(AIPLIB_SRC) $(DDLLIB_SRC) $(YACC_DDL_SRC) $(VNMRBG_CC_SRC)
+
+ALL_H_SRC  = $(UNMR_HDR) $(PSG_HDR) $(ACQCOM_HDR) $(NCOMM_HDR) $(VJ_NTV_HDR) \
+	     $(ACQPROC_HDR) $(EXPPROC_HDR) $(XRACQ_HDR) $(VWACQ_HDR) $(NACQI_HDR) \
+	     $(FT3D_HDR) $(AIPLIB_HDR) $(AIPLIB_GNU_HDR) $(DDLLIB_HDR) \
+	     $(UNMR_BG_HDR)
+
+UNMR_ALL_OBJ  =  $(UNMR_COM_OBJ) $(UNMR_BG_OBJ) $(UNMR_SPC_OBJ) $(WIN_OBJ) $(PSG_OBJ) $(FT3D_OBJ) $(EXPPROC_OBJ) \
+		 $(NACQI_OBJ) $(AIPLIB_OBJ) $(VNMRBG_CC_OBJ) $(DDLLIB_OBJ) $(YACC_DDL_OBJ) revdate.o
+
+MAGIC_ALL_OBJ =  $(MAGIC_COM_OBJ) $(MAGIC_SPC_OBJ) $(YACC_OBJ) $(LEX_OBJ)
+
+#--- make Targets ----------------------------------------------
+LINUX std all: nessie
+
+MACOS : $(MAKEFILE) mac_depend magic.gram.c
+	echo "+++++++++++++++ Doing target $@ --------------------------"
+	( $(MAKE) -f $(MAKEFILE) \
+	 "LIBS      = -lXt -lX11 /usr/X11R6/lib/libSM.a /usr/X11R6/lib/libXp.a \
+	             /usr/X11R6/lib/libXext.a /usr/X11R6/lib/libICE.a -ll -lm -ldl "\
+	 "CINCLDIR  = -I./  -I/usr/X11R6/include"\
+	 "CDEFINE   = -DLINUX -DVNMRJ -DBSDACQ -DSUN -DX11 -DMOTIF_OFF -DNESSIE -DMACOS"\
+         "LDOPTIONS   = -O"\
+	 "LDFLAGS   = -O -L. -L/usr/X11R6/lib  -L/usr/lib"\
+         "COPTIONS = -O "\
+         "CPPOPTIONS = -O -Wno-deprecated"\
+         "LPCFLAGS = -O"\
+	 "JSDK_DIR  = /System/Library/Frameworks/JavaVM.framework/Headers"\
+	 "J_INCLUDE = -I$(JSDK_DIR)"\
+	 "NCOMM_SRC=$(MAC_NCOMM_SRC)"\
+	 "YACC_SRC="\
+	 "YACC_DDL_SRC ="\
+	 "LEX_L_SRC ="\
+	 "EXPPROC_SRC  = statfuncs.c"\
+	 "VJ_NTV_CFLAGS ="\
+	 Vnmrbg )
+	 @echo "DONE target $@ --------------------------"
+
+#	 $(MAKE) -f $(MAKEFILE)  Vnmrbg vjlib
+
+nessie : $(MAKEFILE) depend magic.gram.c ddlGrammar.C
+	 echo "+++++++++++++++ Doing target $@ --------------------------"
+	 $(MAKE) -f $(MAKEFILE)  Vnmrbg
+	 @echo "DONE target $@ --------------------------"
+
+src: $(MAKEFILE) $(ALL_C_SRC) $(ALL_H_SRC) yytoddl revdate.c
+	@echo target src :  is up  to date.........
+	@echo ""
+
+
+win_dumb : $(MAKEFILE) $(XWIN_SRC)
+	@echo ---  $< --- target win_src :  is up to date.........
+	@echo ---  $@ ---
+
+win_src: $(MAKEFILE) $(XWIN_SRC)
+	@echo target win_src :  is up to date.........
+	@echo ""
+
+.PHONY: clean cleanall
+
+clean:
+	rm *.o
+
+cleanall:
+	rm -f *.c *.C *.h *.o *.p *.icon *.y *.l *.parser *.output yytoddl
+	rm -rf libvnmrjdir
+	rm -f Vnmrbg
+
+
+# For the makedepend we define a bunch of stuff at once to get the
+# "worst case" dependency list.
+# The -Y for makedepend keeps it from looking for include files in the
+# standard system places, so we will not get any dependencies on
+# system header files.  However, this results in warnings about not
+# being able to find any system header files.  So we send complaints
+# to /dev/null.
+#
+# NB: This target depends on "makedepend" being in your PATH.
+#
+mac_depend: depend_src mac_ddlGrammar.h.C
+	echo "Doing mac_depend --------------"
+	(LIBS="-lXt -lX11 /usr/X11R6/lib/libSM.a /usr/X11R6/lib/libXp.a \
+               /usr/X11R6/lib/libXext.a /usr/X11R6/lib/libICE.a -ll -lm -ldl ";\
+	   CINCLDIR="-I./  -I/usr/X11R6/include";\
+	   CDEFINE="-DLINUX -DVNMRJ -DBSDACQ -DSUN -DX11 -DMOTIF_OFF -DNESSIE -DMACOS";\
+	   LDFLAGS="$(LDOPTIONS) -L. -L/usr/X11R6/lib  -L/usr/lib";\
+	   JSDK_DIR="/System/Library/Frameworks/JavaVM.framework/Headers";\
+	   J_INCLUDE="-I $(JSDK_DIR)";\
+	   NCOMM_SRC="$(MAC_NCOMM_SRC)";\
+	   YACC_SRC=;\
+	   YACC_DDL_SRC=;\
+	   LEX_L_SRC=;\
+	   EXPPROC_SRC="statfuncs.c";\
+	   VJ_NTV_CFLAGS=;\
+	   export LIBS CINCLDIR CDEFINE LDFLAGS JSDK_DIR J_INCLUDE UNMR_COM_SRC \
+                  NCOMM_SRC PSG_SRC YACC_SRC YACC_DDL_SRC LEX_L_SRC EXPPROC_SRC \
+                  VJ_NTV_CFLAGS;\
+	   makedepend -f $(MAKEFILE) -Y $(CDEFINE) $(ALL_C_SRC) 2>/dev/null)
+	echo "DONE mac_depend --------------"
+
+depend: depend_src ddlGrammar.h
+	makedepend -f $(MAKEFILE) -Y $(CDEFINE) $(ALL_C_SRC) 2>/dev/null
+
+depend_src :
+	( $(MAKE) -e -f $(MAKEFILE) src win_src )
+
+Vnmrbg: $(UNMR_ALL_OBJ) $(MAGIC_ALL_OBJ) $(ACQCOM_OBJ) $(NCOMM_OBJ)
+	(umask 2; $(LINK.c) -o $@  $(UNMR_ALL_OBJ) $(MAGIC_ALL_OBJ) $(ACQCOM_OBJ) $(NCOMM_OBJ) $(LIBS))
+
+#--- Object Targets ---------------------------
+
+$(UNMR_COM_OBJ)	\
+$(UNMR_BG_OBJ)	\
+$(MAGIC_COM_OBJ)\
+$(FT3D_OBJ)	\
+$(PSG_OBJ)	\
+$(WIN_OBJ)	\
+$(ACQCOM_OBJ)	\
+$(NCOMM_OBJ) : %.o:%.c
+	(umask 2; $(COMPILE.c) $< )
+
+$(VJ_NTV_OBJ): %.o:%.c
+	(umask 2; $(CC) -c $(VJ_NTV_CFLAGS) -I. $(J_INCLUDE) $< )
+
+$(AIPLIB_OBJ)	\
+$(DDLLIB_OBJ) 	\
+$(VNMRBG_CC_OBJ) \
+$(YACC_DDL_OBJ) : %.o:%.C
+	(umask 2; $(COMPILE.cc) $< )
+
+
+#--- Special Object Targets ----------------------
+
+# This object is always compiled, VNMRLNX_REV_ID & VNMR_REV_DATE are envirionment
+# variables and COMPDATE is a makefile define passed to the makefile via a recusive
+# make call or from vmake itself.
+# REVISION_ID typically - "VERSION 4.2 REVISION A"
+# REVISION_DATE typically - "Aug. 17, 1993"
+# COMPDATE typically - "Compiled: 8/17/92 15:45"
+#
+revdate.o       : revdate.c doit
+	(umask 2; $(COMPILE.c) -DREVISION_ID='"$(VNMRLNX_REV_ID)"' -DREVISION_DATE='"$(REV_DATE)"' -DCOMPDATE='"$(COMPDATE)"' $(@:.o=.c) )
+
+revdate.c	:
+		$(VNMR_SGET) $@
+doit :
+
+acqhdl.o	: %.o:%.c 
+		(umask 2; $(COMPILE.c) -DACQPROC_LC $< )
+
+displayops.o	: %.o:%.c
+		(umask 2; $(COMPILE.c) $< )
+
+foldj.o		: %.o:%.c
+		(umask 2; $(COMPILE.c) $< )
+
+lpqld.o		: %.o:%.c
+		(umask 2; $(LPCOMPILE.c) $< )
+
+#--------------------------------------
+vjlib:
+	( $(MAKE) -e -f $(MAKEFILE) libvnmrj.so )
+	 @echo " $@ complete -------------"
+
+SPC_LIBS  =  -L /usr/X11R6/lib -L ${JSDK_DIR}/lib/i386 \
+	     -lXt -lX11  -lXm -ljawt\
+	     -Wl,-rpath ${vnmrsystem}/jre/lib/i386
+
+libvnmrj.so : ntv_src $(VJ_NTV_OBJ)
+	(umask 2; cc $(VJ_NTV_CFLAGS)  $(VJ_NTV_OBJ) -o libvnmrj.so $(SPC_LIBS))
+
+ntv_src: $(VJ_NTV_SRC) $(VJ_NTV_HDR)
+	@echo  "$(VJ_NTV_SRC) $(VJ_NTV_HDR) ---spcsrc----"
+
+mac_ddlGrammar.C mac_ddlGrammar.h.C :
+	(umask 2; \
+	 echo *************************************************** ;\
+	 /bin/cp $(solobjdir)/proglib/vnmrbg/ddlGrammar.h .         ;      \
+	 /bin/cp $(solobjdir)/proglib/vnmrbg/ddlGrammar.C .         ;      \
+	 rm -f tmpGrammar ;      \
+	 cat ddlGrammar.C | sed 's/#include <values.h>//' > tmpGrammar ; \
+	 rm -f ddlGrammar.C ;    \
+	 mv tmpGrammar ddlGrammar.C ;    \
+	 echo *************************************************** ;\
+	)
+	echo "DONE mac_ddlGrammar.h.C ---------"
+
+ddlGrammar.C ddlGrammar.h : ddlGrammar.y yytoddl
+	(umask 2; \
+		echo *************************************************** ;\
+		/bin/cp $(solobjdir)/proglib/vnmrbg/ddlGrammar.h . 	 ;\
+		/bin/cp $(solobjdir)/proglib/vnmrbg/ddlGrammar.C . 	 ;\
+		echo *************************************************** ;\
+	)
+
+#magic.gram.c : $(YACC_SRC)
+magic.gram.c :
+	(umask 2; \
+		echo *************************************************** ;\
+		/bin/cp $(solobjdir)/proglib/vnmrbg/magic.gram.h . 	 ;	\
+		/bin/cp $(solobjdir)/proglib/vnmrbg/magic.gram.c . 	 ;	\
+		echo *************************************************** ;\
+	)
+
+# stub for vmake, YACC_OBJ is compiled first to be sure magic.gram.h is present
+# otherwise will always attempt to compile YACC_OBJ
+magic.gram.h	: 
+
+$(YACC_OBJ) : %.o:%.c
+		(umask 2; $(COMPILE.c) $< )
+		@echo --- $(COMPILE.c) ------------gram-YACC_OBJ -----------DONE- ;
+
+#magic.lex.c     : $(LEX_L_SRC)
+#	 	lex $(@:.c=.l)
+#		mv lex.yy.c $@
+
+$(LEX_C_SRC) :
+	(umask 2; \
+		echo *************************************************** ;\
+		/bin/cp $(solobjdir)/proglib/vnmrbg/$@ . 	 ;	\
+		cat $@ | sed 's/{stdin}/(FILE *) 0/g' | sed 's/{stdout}/(FILE *) 0/g' > lex_tmp	;\
+		mv lex_tmp $@;	\
+		echo *************************************************** ;\
+	)
+
+$(LEX_OBJ) : %.o:%.c
+		(umask 2; $(COMPILE.c) $< )
+		@echo --- $(COMPILE.c) ----------lex-LEX_OBJ-------------Done- ;
+
+
+
+#------------ SCCS source extraction ---------------
+
+$(MAKEFILE) :%:$(VNMRBG_SCCS_SRC)%
+	@echo "GETTING makefile"
+	$(VNMRBG_SGET) $@
+
+$(UNMR_COM_SRC) $(UNMR_SPC_SRC) $(UNMR_HDR) \
+$(MAGIC_COM_SRC) $(MAGIC_SPC_SRC) \
+$(ACQCOM_SRC) $(ACQCOM_HDR) \
+$(YACC_SRC) $(LEX_L_SRC): %:$(VNMR_SCCS_SRC)%
+	$(VNMR_SGET) $@
+
+$(UNMR_BG_SRC)  $(WIN_BG_SRC) $(UNMR_BG_HDR) $(VNMRBG_CC_SRC): %:$(VNMRBG_SCCS_SRC)%
+	$(VNMRBG_SGET) $@
+
+$(VJ_NTV_SRC)   \
+$(VJ_NTV_HDR): %:$(VNMRJ_SCCS_SRC)%
+	$(JSRC_SGET) $@
+	@echo "-------DONE special $@-------"
+
+$(XWIN_SRC) : %:$(XWIN_SCCS_SRC)%
+	@echo
+	@echo
+	@echo -\$\?--  $? -------------------------------
+	@echo -\$\<--  $< -------------------------------
+	@echo -\$\@--  $@ -------------------------------
+	$(XWIN_SGET) $@
+	@echo
+
+$(AIPLIB_SRC) $(AIPLIB_HDR) $(AIPLIB_GNU_HDR) : %:$(AIP_SCCS_SRC)%
+	$(AIP_SGET) $@
+
+$(DDLLIB_SRC) $(DDLLIB_HDR) ddlGrammar.y yytoddl : %:$(DDL_SCCS_SRC)%
+	$(DDL_SGET) $@
+
+$(XRACQ_HDR):  %:$(XRACQ_SCCS_SRC)%
+	$(XRACQ_SGET) $@
+
+$(ACQPROC_HDR): %:$(ACQPROC_SCCS_SRC)%
+	$(ACQPROC_SGET) $@
+
+$(PSG_SRC) $(PSG_HDR): %:$(PSG_SCCS_SRC)%
+	$(PSG_SGET) $@
+
+$(FT3D_SRC) $(FT3D_HDR): %:$(FT3D_SCCS_SRC)%
+	$(FT3D_SGET) $@
+
+$(NCOMM_SRC) $(NCOMM_HDR): %:$(NCOMM_SCCS_SRC)%
+	$(NCOMM_SGET) $@
+
+$(EXPPROC_SRC) $(EXPPROC_HDR): %:$(EXPPROC_SCCS_SRC)%
+	$(EXPPROC_SGET) $@
+
+$(VWACQ_HDR): %:$(VWACQ_SCCS_SRC)% 
+	$(VWACQ_SGET) $@
+
+$(NACQI_SRC) $(NACQI_HDR): %:$(NACQI_SCCS_SRC)% 
+	$(NACQI_SGET) $@
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+
+acqfuncs.o: vnmrsys.h variables.h group.h params.h tools.h locksys.h pvars.h
+acqfuncs.o: ACQ_HAL.h ACQ_SUN.h shims.h acquisition.h
+acqhwcmd.o: vnmrsys.h ACQ_SUN.h STAT_DEFS.h group.h params.h locksys.h
+acqhwcmd.o: variables.h shims.h acquisition.h pvars.h wjunk.h sockets.h
+addsub.o: vnmrsys.h disp.h data.h group.h init2d.h tools.h variables.h
+ai.o: group.h data.h init2d.h variables.h vnmrsys.h
+asm.o: vnmrsys.h group.h acquisition.h pvars.h variables.h wjunk.h
+asmfuncs.o: asm.h
+assign.o: group.h params.h variables.h allocate.h pvars.h tools.h wjunk.h
+bgvars.o: group.h symtab.h variables.h
+bootup.o: vnmrsys.h locksys.h data.h group.h variables.h init2d.h
+bootup.o: acquisition.h pvars.h tools.h wjunk.h
+builtin.o: symtab.h variables.h vnmrsys.h group.h pvars.h allocate.h tools.h
+builtin.o: wjunk.h
+builtin1.o: vnmrsys.h group.h params.h symtab.h variables.h pvars.h wjunk.h
+builtin1.o: allocate.h tools.h
+buttons.o: vnmrsys.h tools.h wjunk.h allocate.h
+calcq.o: vnmrsys.h group.h data.h tools.h variables.h init2d.h
+createparams.o: vnmrsys.h group.h
+data.o: vnmrsys.h data.h group.h allocate.h wjunk.h
+ddf.o: vnmrsys.h data.h group.h tools.h variables.h pvars.h
+ddif.o: group.h tools.h data.h variables.h vnmrsys.h pvars.h wjunk.h
+ddph.o: vnmrsys.h group.h data.h tools.h variables.h init2d.h
+debug.o: vnmrsys.h wjunk.h
+df2d.o: data.h ftpar.h process.h group.h variables.h vnmrsys.h tools.h
+df2d.o: pvars.h wjunk.h
+dfww.o: vnmrsys.h data.h disp.h graphics.h group.h init2d.h tools.h
+dfww.o: variables.h
+dg.o: group.h variables.h vnmrsys.h graphics.h pvars.h wjunk.h tools.h
+disp3Dmap.o: vnmrsys.h group.h data.h tools.h variables.h init2d.h
+dll.o: data.h disp.h graphics.h group.h init2d.h tools.h variables.h
+dll.o: vnmrsys.h pvars.h wjunk.h
+dosyfit.o: vnmrsys.h data.h disp.h init2d.h graphics.h group.h
+dosyfit3D.o: vnmrsys.h data.h disp.h init2d.h graphics.h group.h
+dpf.o: data.h graphics.h group.h init2d.h tools.h variables.h vnmrsys.h
+dps.o: vnmrsys.h graphics.h dpsdef.h vfilesys.h pvars.h variables.h wjunk.h
+dps.o: group.h symtab.h tools.h REV_NUMS.h dps_menu.icon
+ds.o: vnmrsys.h data.h disp.h graphics.h group.h init2d.h tools.h pvars.h
+ds.o: variables.h wjunk.h
+dscale.o: graphics.h group.h data.h disp.h init2d.h tools.h
+dsn.o: data.h graphics.h group.h init2d.h tools.h variables.h vnmrsys.h
+dsn.o: pvars.h wjunk.h
+dsp.o: vnmrsys.h data.h group.h init2d.h variables.h tools.h
+dsww.o: data.h disp.h graphics.h group.h init2d.h tools.h pvars.h variables.h
+dsww.o: wjunk.h vnmrsys.h
+element.o: vnmrsys.h element.h tools.h
+emouse.o: vnmrsys.h
+execcmd.o: vnmrsys.h
+fiddle.o: group.h tools.h data.h variables.h vnmrsys.h pvars.h wjunk.h
+files.o: vnmrsys.h element.h tools.h
+flashc.o: data.h group.h mfileObj.h symtab.h vnmrsys.h variables.h
+ft.o: data.h ftpar.h process.h group.h variables.h vnmrsys.h pvars.h tools.h
+ft2d.o: data.h ftpar.h process.h group.h variables.h vnmrsys.h tools.h
+ft2d.o: allocate.h pvars.h wjunk.h
+ftinit.o: data.h allocate.h ftpar.h process.h group.h variables.h vnmrsys.h
+ftinit.o: pvars.h wjunk.h tools.h
+full.o: disp.h group.h tools.h vnmrsys.h
+gdevsw.o: vnmrsys.h graphics.h
+glide.o: wjunk.h group.h pvars.h variables.h vnmrsys.h vglide.h
+go.o: vnmrsys.h sockets.h data.h group.h params.h symtab.h tools.h
+go.o: variables.h REV_NUMS.h locksys.h STAT_DEFS.h acquisition.h whenmask.h
+go.o: vfilesys.h pvars.h wjunk.h
+gradfit.o: group.h tools.h data.h variables.h vnmrsys.h
+graphics.o: vnmrsys.h graphics.h group.h
+graphics_util.o: vnmrsys.h graphics.h graphics_util.h wjunk.h
+gxyzmap.o: vnmrsys.h group.h data.h tools.h variables.h init2d.h
+gzfit.o: vnmrsys.h data.h group.h tools.h variables.h pvars.h
+handler.o: wjunk.h
+help.o: vnmrsys.h vfilesys.h
+hpa.o: data.h graphics.h group.h tools.h variables.h vnmrsys.h
+ht.o: ftpar.h data.h process.h group.h variables.h vnmrsys.h pvars.h wjunk.h
+ht.o: Pbox_HT.h
+init2d.o: data.h disp.h graphics.h group.h variables.h vnmrsys.h pvars.h
+init2d.o: wjunk.h
+init_display.o: disp.h group.h variables.h pvars.h
+init_proc.o: disp.h group.h variables.h process.h
+integ.o: vnmrsys.h data.h init2d.h group.h tools.h variables.h pvars.h
+io.o: vnmrsys.h group.h node.h magic.gram.h
+jexp.o: vnmrsys.h data.h group.h init2d.h locksys.h variables.h pvars.h
+jexp.o: tools.h vfilesys.h shims.h wjunk.h
+ll2d.o: data.h init2d.h variables.h vnmrsys.h disp.h tools.h graphics.h
+ll2d.o: group.h
+lockfreqfunc.o: vnmrsys.h group.h
+locksys.o: vnmrsys.h locksys.h tools.h wjunk.h
+lookup.o: tools.h vnmrsys.h group.h pvars.h variables.h wjunk.h
+lstring.o: allocate.h tools.h
+macro.o: node.h symtab.h vnmrsys.h
+magnetom.o: vnmrsys.h variables.h group.h element.h data.h init2d.h
+makeslice.o: group.h tools.h data.h variables.h vnmrsys.h disp.h
+md5c.o: md5global.h md5.h
+mfdata.o: mfileObj.h data.h group.h tools.h vnmrsys.h variables.h
+ops.o: variables.h
+part11.o: part11.h vnmrsys.h group.h variables.h tools.h shims.h md5global.h
+part11.o: md5.h locksys.h allocate.h
+pcmap.o: mfileObj.h data.h group.h tools.h vnmrsys.h variables.h
+pcmap.o: phase_correct.h
+phase_fid.o: data.h group.h mfileObj.h symtab.h vnmrsys.h variables.h
+phase_fid.o: process.h epi_recon.h phase_correct.h allocate.h aipCInterface.h
+phase_fid.o: aipCStructs.h
+plot_handlers.o: vnmrsys.h graphics.h pvars.h variables.h tools.h group.h
+plot_construct.o: group.h pvars.h variables.h wjunk.h vnmrsys.h graphics.h
+plot_construct.o: sockets.h
+proc2d.o: group.h data.h disp.h init2d.h vnmrsys.h process.h
+pvars.o: vnmrsys.h group.h symtab.h params.h variables.h wjunk.h
+recon_all.o: data.h group.h mfileObj.h symtab.h vnmrsys.h variables.h
+recon_all.o: process.h epi_recon.h phase_correct.h vfilesys.h allocate.h
+recon_all.o: pvars.h wjunk.h aipCInterface.h aipCStructs.h
+recon_mm.o: data.h group.h mfileObj.h symtab.h vnmrsys.h variables.h
+recon_mm.o: process.h epi_recon.h phase_correct.h allocate.h pvars.h wjunk.h
+recon_mm.o: aipCInterface.h aipCStructs.h
+readlk.o: vnmrsys.h tools.h acquisition.h
+savretphf.o: vnmrsys.h data.h disp.h group.h init2d.h
+set3dproc.o: vnmrsys.h data.h process.h group.h struct3d.h ftpar.h tools.h
+set3dproc.o: lock3D.h variables.h params.h
+shellcmds.o: vnmrsys.h group.h tools.h
+shims.o: group.h
+specfreq.o: vnmrsys.h variables.h group.h params.h tools.h ACQ_HAL.h
+specfreq.o: ACQ_SUN.h oopc.h rfconst.h
+sread.o: vnmrsys.h data.h group.h params.h tools.h variables.h
+swrite.o: vnmrsys.h data.h group.h init2d.h symtab.h tools.h variables.h
+symtab.o: symtab.h allocate.h
+table.o: tools.h vnmrsys.h wjunk.h
+terminal.o: vnmrsys.h wjunk.h
+text.o: vnmrsys.h allocate.h data.h disp.h group.h graphics.h init2d.h
+text.o: tools.h variables.h pvars.h wjunk.h vfilesys.h
+tools.o: vnmrsys.h tools.h allocate.h
+variables1.o: graphics.h group.h params.h symtab.h variables.h init.h
+variables1.o: allocate.h pvars.h tools.h wjunk.h
+vcolor.o: vnmrsys.h graphics.h group.h
+vdialog.o: group.h vnmrsys.h variables.h vglide.h allocate.h
+vfilesys.o: vnmrsys.h allocate.h group.h pvars.h variables.h tools.h wjunk.h
+weight.o: data.h disp.h group.h vnmrsys.h
+annotate.o: vnmrsys.h graphics.h group.h aipCStructs.h graphics_util.h
+wti.o: data.h ftpar.h process.h init2d.h graphics.h group.h vnmrsys.h
+wti.o: variables.h
+dcon.o: data.h disp.h graphics.h group.h init2d.h sky.h variables.h vnmrsys.h
+dcon.o: pvars.h
+dconi.o: vnmrsys.h data.h disp.h init2d.h graphics.h group.h sky.h
+decc.o: vnmrsys.h group.h pvars.h variables.h tools.h
+dfid.o: vnmrsys.h data.h disp.h graphics.h group.h init2d.h sky.h tools.h
+dfid.o: variables.h pvars.h allocate.h
+dpcon.o: data.h disp.h graphics.h group.h init2d.h sky.h vnmrsys.h allocate.h
+iplan.o: iplan.h vnmrsys.h group.h variables.h data.h graphics.h init2d.h
+iplan.o: iplan_graphics.h aipCInterface.h aipCStructs.h
+iplan_graphics.o: iplan.h vnmrsys.h group.h variables.h data.h graphics.h
+iplan_graphics.o: init2d.h iplan_graphics.h aipCInterface.h aipCStructs.h
+iplan_graphics.o: tools.h
+locki.o: data.h group.h ACQ_SUN.h vnmrsys.h shrexpinfo.h expQfuncs.h
+locki.o: mfileObj.h shrstatinfo.h hostAcqStructs.h acqcmds.h graphics.h
+locki.o: allocate.h
+main.o: vnmrsys.h
+master.o: locksys.h acquisition.h sockets.h
+smagic.o: vnmrsys.h locksys.h allocate.h wjunk.h acquisition.h sockets.h
+smagic.o: group.h variables.h params.h vfilesys.h comm.h aipCFuncs.h
+smagic.o: aipDataStruct.h tools.h pvars.h
+crosshair.o: vnmrsys.h data.h disp.h graphics.h group.h init2d.h tools.h
+crosshair.o: pvars.h variables.h wjunk.h
+mouseHandler.o: graphics.h group.h pvars.h variables.h
+frameManager.o: vnmrsys.h data.h disp.h graphics.h group.h init2d.h tools.h
+frameManager.o: pvars.h variables.h wjunk.h
+wjunk.o: vnmrsys.h graphics.h node.h stack.h group.h wjunk.h
+acqhdl.o: vnmrsys.h errorcodes.h variables.h group.h tools.h locksys.h
+acqhdl.o: acqerrmsges.h shims.h whenmask.h acquisition.h pvars.h ACQ_HAL.h
+acqhdl.o: ACQ_SUN.h
+displayops.o: group.h
+foldj.o: vnmrsys.h data.h disp.h init2d.h tools.h variables.h group.h
+exec.o: vnmrsys.h group.h node.h params.h allocate.h variables.h magic.gram.h
+exec.o: pvars.h tools.h wjunk.h
+dli.o: data.h allocate.h disp.h group.h init2d.h tools.h pvars.h variables.h
+dli.o: wjunk.h vnmrsys.h
+lexjunk.o: vnmrsys.h node.h variables.h magic.gram.h
+lpz.o: vnmrsys.h group.h variables.h data.h process.h
+matrix.o: vnmrsys.h
+node.o: vnmrsys.h node.h magic.gram.h stack.h allocate.h
+downsample.o: allocate.h data.h ftpar.h group.h variables.h vnmrsys.h pvars.h
+downsample.o: wjunk.h
+lpqld.o: ftpar.h process.h variables.h group.h
+banner.o: vnmrsys.h graphics.h
+graphics_win.o: vnmrsys.h allocate.h pvars.h variables.h graphics.h
+graphics_win.o: aipGraphics.h aipCStructs.h aipCFuncs.h aipDataStruct.h
+graphics_win.o: iplan.h group.h data.h init2d.h iplan_graphics.h wjunk.h
+graphics_win.o: symtab.h
+master_win.o: acquisition.h
+smagic_win.o: vnmrsys.h locksys.h tools.h
+vnmrjNative.o: vjNative.h
+magic.gram.o: node.h stack.h wjunk.h
+magic.lex.o: node.h magic.gram.h stack.h
+magic.lex.o: node.h magic.gram.h stack.h
+ap_device.o: acodes.h oopc.h ap_device.p device.p common.p
+device.o: oopc.h device.p common.p
+ecc_setup.o: vnmrsys.h acodes.h group.h ecc.h
+ecc_worstCase.o: vnmrsys.h group.h ecc.h tools.h pvars.h variables.h wjunk.h
+freq_device.o: rfconst.h acodes.h oopc.h freq_device.p ap_device.p device.p
+freq_device.o: common.p
+freqfuncs.o: group.h variables.h params.h
+objerror.o: oopc.h objerror.h
+socket1.o: acquisition.h comm.h
+comm.o: comm.h acquisition.h errLogLib.h shrstatinfo.h hostAcqStructs.h
+socket.o: expQfuncs.h mfileObj.h acquisition.h comm.h variables.h
+socket.o: shrstatinfo.h hostAcqStructs.h
+sockets.o: errLogLib.h sockets.h
+mfileObj.o: errLogLib.h mfileObj.h
+hhashLib.o: errLogLib.h hhashLib.h
+ipcKeyDbm.o: errLogLib.h shrMLib.h mfileObj.h ipcKeyDbm.h
+ipcMsgQLib.o: errLogLib.h ipcMsgQLib.h
+semLib.o: errLogLib.h semLib.h mfileObj.h
+msgQLib.o: errLogLib.h hostMsgChannels.h chanLib.h mfileObj.h msgQLib.h
+msgQLib.o: ipcMsgQLib.h shrMLib.h
+asyncIo.o: eventHandler.h errLogLib.h
+eventHandler.o: errLogLib.h listObj.h eventQueue.h eventHandler.h
+eventQueue.o: eventQueueP.h eventQueue.h
+listObj.o: listObj.h
+sendAsync.o: errLogLib.h sockets.h
+shrMLib.o: errLogLib.h shrMLib.h mfileObj.h
+expQfuncs.o: errLogLib.h mfileObj.h shrMLib.h shrexpinfo.h expQfuncs.h
+statfuncs.o: errLogLib.h hostAcqStructs.h mfileObj.h shrMLib.h shrstatinfo.h
+msgqueue.o: acqInterface.h vnmrsys.h comm.h group.h
+lock3Dfiles.o: lock3D.h
+aipBox.o: aipUtils.h aipStructs.h aipCStructs.h aipVsInfo.h sharedPtr.h
+aipBox.o: aipMouse.h aipHistogram.h aipGraphicsWin.h aipGraphics.h
+aipBox.o: aipInterpolation.h aipGframe.h aipViewInfo.h aipImgInfo.h
+aipBox.o: aipDataInfo.h ddlSymbol.h ddlNode.h ddlList.h mfileObj.h
+aipBox.o: aipDataStruct.h aipRoi.h aipVnmrFuncs.h vjXdef.h vnmrsys.h
+aipBox.o: aipRoiStat.h aipReviewQueue.h aipRQstudy.h aipRQnode.h aipRQgroup.h
+aipBox.o: aipRQimage.h aipDataManager.h aipGframeManager.h aipRoiManager.h
+aipBox.o: aipBox.h aipOval.h
+aipCommands.o: aipCFuncs.h aipDataStruct.h aipCommands.h aipVnmrFuncs.h
+aipCommands.o: vjXdef.h vnmrsys.h aipDataManager.h aipDataInfo.h sharedPtr.h
+aipCommands.o: ddlSymbol.h ddlNode.h ddlList.h mfileObj.h aipStructs.h
+aipCommands.o: aipCStructs.h aipVsInfo.h aipMouse.h aipHistogram.h
+aipCommands.o: aipGframeManager.h aipGframe.h aipViewInfo.h aipImgInfo.h
+aipCommands.o: aipInterpolation.h aipRoi.h aipRoiStat.h aipReviewQueue.h
+aipCommands.o: aipRQstudy.h aipRQnode.h aipRQgroup.h aipRQimage.h
+aipCommands.o: aipInterface.h aipCInterface.h aipRoiManager.h aipStderr.h
+aipCommands.o: aipWinMath.h aipParmList.h aipWinRotation.h aipWinMovie.h
+aipCommands.o: aipWriteData.h aipVolData.h aipOrthoSlices.h aipMakeMovie.h
+aipDataInfo.o: aipStderr.h aipVnmrFuncs.h vjXdef.h vnmrsys.h aipUtils.h
+aipDataInfo.o: aipDataInfo.h sharedPtr.h ddlSymbol.h ddlNode.h ddlList.h
+aipDataInfo.o: mfileObj.h aipStructs.h aipCStructs.h aipVsInfo.h aipMouse.h
+aipDataInfo.o: aipHistogram.h aipDataStruct.h aipLine.h aipGframe.h
+aipDataInfo.o: aipViewInfo.h aipImgInfo.h aipInterpolation.h aipRoi.h
+aipDataInfo.o: aipRoiStat.h aipReviewQueue.h aipRQstudy.h aipRQnode.h
+aipDataInfo.o: aipRQgroup.h aipRQimage.h aipDataManager.h aipBox.h aipOval.h
+aipDataInfo.o: aipPolygon.h aipEdgelist.h aipPolyline.h
+aipDataManager.o: aipStderr.h aipVnmrFuncs.h vjXdef.h vnmrsys.h aipCommands.h
+aipDataManager.o: aipDataInfo.h sharedPtr.h ddlSymbol.h ddlNode.h ddlList.h
+aipDataManager.o: mfileObj.h aipStructs.h aipCStructs.h aipVsInfo.h
+aipDataManager.o: aipMouse.h aipHistogram.h aipDataStruct.h aipCFuncs.h
+aipDataManager.o: aipGframe.h aipViewInfo.h aipImgInfo.h aipInterpolation.h
+aipDataManager.o: aipRoi.h aipRoiStat.h aipReviewQueue.h aipRQstudy.h
+aipDataManager.o: aipRQnode.h aipRQgroup.h aipRQimage.h aipDataManager.h
+aipDataManager.o: aipGframeManager.h aipRoiManager.h aipVolData.h
+aipDataManager.o: aipOrthoSlices.h aipWinMovie.h aipWinRotation.h group.h
+aipDataManager.o: aipWinMath.h aipParmList.h
+aipEdgelist.o: aipRoi.h sharedPtr.h aipVnmrFuncs.h vjXdef.h vnmrsys.h
+aipEdgelist.o: aipStructs.h aipCStructs.h aipVsInfo.h aipMouse.h
+aipEdgelist.o: aipHistogram.h aipRoiStat.h aipImgInfo.h aipDataInfo.h
+aipEdgelist.o: ddlSymbol.h ddlNode.h ddlList.h mfileObj.h aipDataStruct.h
+aipEdgelist.o: aipReviewQueue.h aipRQstudy.h aipRQnode.h aipRQgroup.h
+aipEdgelist.o: aipRQimage.h aipDataManager.h aipEdgelist.h
+aipGframe.o: aipVnmrFuncs.h vjXdef.h vnmrsys.h aipStderr.h sharedPtr.h
+aipGframe.o: aipRoi.h aipStructs.h aipCStructs.h aipVsInfo.h aipMouse.h
+aipGframe.o: aipHistogram.h aipRoiStat.h aipImgInfo.h aipDataInfo.h
+aipGframe.o: ddlSymbol.h ddlNode.h ddlList.h mfileObj.h aipDataStruct.h
+aipGframe.o: aipReviewQueue.h aipRQstudy.h aipRQnode.h aipRQgroup.h
+aipGframe.o: aipRQimage.h aipDataManager.h aipRoiManager.h aipGframe.h
+aipGframe.o: aipViewInfo.h aipInterpolation.h aipGraphicsWin.h aipGraphics.h
+aipGframe.o: aipGframeManager.h aipInterface.h aipCInterface.h group.h
+aipGframe.o: aipWinMovie.h
+aipGframeManager.o: sharedPtr.h aipStderr.h aipCommands.h aipGraphicsWin.h
+aipGframeManager.o: aipGraphics.h aipCStructs.h aipStructs.h aipVsInfo.h
+aipGframeManager.o: aipMouse.h aipHistogram.h aipInterpolation.h aipGframe.h
+aipGframeManager.o: aipViewInfo.h aipImgInfo.h aipDataInfo.h ddlSymbol.h
+aipGframeManager.o: ddlNode.h ddlList.h mfileObj.h aipDataStruct.h aipRoi.h
+aipGframeManager.o: aipVnmrFuncs.h vjXdef.h vnmrsys.h aipRoiStat.h
+aipGframeManager.o: aipReviewQueue.h aipRQstudy.h aipRQnode.h aipRQgroup.h
+aipGframeManager.o: aipRQimage.h aipDataManager.h aipGframeManager.h
+aipGframeManager.o: aipWinMovie.h aipOrthoSlices.h group.h
+aipGraphicsWin.o: vjXdef.h aipUtils.h aipVnmrFuncs.h vnmrsys.h aipStderr.h
+aipGraphicsWin.o: aipStructs.h aipCStructs.h aipVsInfo.h sharedPtr.h
+aipGraphicsWin.o: aipMouse.h aipHistogram.h aipGraphics.h aipGraphicsWin.h
+aipGraphicsWin.o: aipInterpolation.h aipGframeManager.h aipGframe.h
+aipGraphicsWin.o: aipViewInfo.h aipImgInfo.h aipDataInfo.h ddlSymbol.h
+aipGraphicsWin.o: ddlNode.h ddlList.h mfileObj.h aipDataStruct.h aipRoi.h
+aipGraphicsWin.o: aipRoiStat.h aipReviewQueue.h aipRQstudy.h aipRQnode.h
+aipGraphicsWin.o: aipRQgroup.h aipRQimage.h aipDataManager.h aipJFuncs.h
+aipHistogram.o: aipHistogram.h
+aipImgInfo.o: aipVnmrFuncs.h vjXdef.h vnmrsys.h aipStderr.h aipVsInfo.h
+aipImgInfo.o: sharedPtr.h aipCStructs.h aipMouse.h aipHistogram.h
+aipImgInfo.o: aipImgInfo.h aipDataInfo.h ddlSymbol.h ddlNode.h ddlList.h
+aipImgInfo.o: mfileObj.h aipStructs.h aipDataStruct.h aipGraphics.h
+aipImgInfo.o: aipGraphicsWin.h aipInterpolation.h
+aipInitStart.o: aipStderr.h
+aipInterface.o: aipCommands.h aipDataInfo.h sharedPtr.h ddlSymbol.h ddlNode.h
+aipInterface.o: ddlList.h mfileObj.h aipStructs.h aipCStructs.h aipVsInfo.h
+aipInterface.o: aipMouse.h aipHistogram.h aipDataStruct.h aipDataManager.h
+aipInterface.o: aipImgInfo.h aipGframe.h aipViewInfo.h aipInterpolation.h
+aipInterface.o: aipRoi.h aipVnmrFuncs.h vjXdef.h vnmrsys.h aipRoiStat.h
+aipInterface.o: aipReviewQueue.h aipRQstudy.h aipRQnode.h aipRQgroup.h
+aipInterface.o: aipRQimage.h aipGframeManager.h aipInterface.h
+aipInterface.o: aipCInterface.h
+aipInterpolation.o: aipStderr.h aipInterpolation.h
+aipLine.o: aipUtils.h aipVnmrFuncs.h vjXdef.h vnmrsys.h aipStructs.h
+aipLine.o: aipCStructs.h aipVsInfo.h sharedPtr.h aipMouse.h aipHistogram.h
+aipLine.o: aipGraphicsWin.h aipGraphics.h aipInterpolation.h aipGframe.h
+aipLine.o: aipViewInfo.h aipImgInfo.h aipDataInfo.h ddlSymbol.h ddlNode.h
+aipLine.o: ddlList.h mfileObj.h aipDataStruct.h aipRoi.h aipRoiStat.h
+aipLine.o: aipReviewQueue.h aipRQstudy.h aipRQnode.h aipRQgroup.h
+aipLine.o: aipRQimage.h aipDataManager.h aipGframeManager.h aipRoiManager.h
+aipLine.o: aipLine.h
+aipMouse.o: aipOrthoSlices.h aipBox.h aipGframe.h sharedPtr.h aipViewInfo.h
+aipMouse.o: aipImgInfo.h aipDataInfo.h ddlSymbol.h ddlNode.h ddlList.h
+aipMouse.o: mfileObj.h aipStructs.h aipCStructs.h aipVsInfo.h aipMouse.h
+aipMouse.o: aipHistogram.h aipDataStruct.h aipInterpolation.h aipRoi.h
+aipMouse.o: aipVnmrFuncs.h vjXdef.h vnmrsys.h aipRoiStat.h aipReviewQueue.h
+aipMouse.o: aipRQstudy.h aipRQnode.h aipRQgroup.h aipRQimage.h
+aipMouse.o: aipDataManager.h aipCommands.h aipGframeManager.h
+aipMouse.o: aipGraphicsWin.h aipGraphics.h aipInterface.h aipCInterface.h
+aipMouse.o: aipLine.h aipOval.h aipPoint.h aipPolygon.h aipEdgelist.h
+aipMouse.o: aipPolyline.h aipRoiManager.h aipStderr.h aipWinMath.h
+aipMouse.o: aipParmList.h aipWinMovie.h aipVolData.h
+aipOrthoSlices.o: aipGframe.h sharedPtr.h aipViewInfo.h aipImgInfo.h
+aipOrthoSlices.o: aipDataInfo.h ddlSymbol.h ddlNode.h ddlList.h mfileObj.h
+aipOrthoSlices.o: aipStructs.h aipCStructs.h aipVsInfo.h aipMouse.h
+aipOrthoSlices.o: aipHistogram.h aipDataStruct.h aipInterpolation.h aipRoi.h
+aipOrthoSlices.o: aipVnmrFuncs.h vjXdef.h vnmrsys.h aipRoiStat.h
+aipOrthoSlices.o: aipReviewQueue.h aipRQstudy.h aipRQnode.h aipRQgroup.h
+aipOrthoSlices.o: aipRQimage.h aipDataManager.h aipGframeManager.h
+aipOrthoSlices.o: aipStderr.h aipVolData.h aipGraphicsWin.h aipGraphics.h
+aipOrthoSlices.o: aipOrthoSlices.h group.h graphics.h
+aipOval.o: aipUtils.h aipStructs.h aipCStructs.h aipVsInfo.h sharedPtr.h
+aipOval.o: aipMouse.h aipHistogram.h aipGraphicsWin.h aipGraphics.h
+aipOval.o: aipInterpolation.h aipGframe.h aipViewInfo.h aipImgInfo.h
+aipOval.o: aipDataInfo.h ddlSymbol.h ddlNode.h ddlList.h mfileObj.h
+aipOval.o: aipDataStruct.h aipRoi.h aipVnmrFuncs.h vjXdef.h vnmrsys.h
+aipOval.o: aipRoiStat.h aipReviewQueue.h aipRQstudy.h aipRQnode.h
+aipOval.o: aipRQgroup.h aipRQimage.h aipDataManager.h aipGframeManager.h
+aipOval.o: aipBox.h aipOval.h
+aipParmList.o: aipParmList.h
+aipPoint.o: aipVnmrFuncs.h vjXdef.h vnmrsys.h aipStructs.h aipCStructs.h
+aipPoint.o: aipVsInfo.h sharedPtr.h aipMouse.h aipHistogram.h
+aipPoint.o: aipGraphicsWin.h aipGraphics.h aipInterpolation.h aipGframe.h
+aipPoint.o: aipViewInfo.h aipImgInfo.h aipDataInfo.h ddlSymbol.h ddlNode.h
+aipPoint.o: ddlList.h mfileObj.h aipDataStruct.h aipRoi.h aipRoiStat.h
+aipPoint.o: aipReviewQueue.h aipRQstudy.h aipRQnode.h aipRQgroup.h
+aipPoint.o: aipRQimage.h aipDataManager.h aipGframeManager.h aipRoiManager.h
+aipPoint.o: aipPoint.h
+aipPolygon.o: aipStructs.h aipCStructs.h aipVsInfo.h sharedPtr.h aipMouse.h
+aipPolygon.o: aipHistogram.h aipGraphicsWin.h aipGraphics.h
+aipPolygon.o: aipInterpolation.h aipGframe.h aipViewInfo.h aipImgInfo.h
+aipPolygon.o: aipDataInfo.h ddlSymbol.h ddlNode.h ddlList.h mfileObj.h
+aipPolygon.o: aipDataStruct.h aipRoi.h aipVnmrFuncs.h vjXdef.h vnmrsys.h
+aipPolygon.o: aipRoiStat.h aipReviewQueue.h aipRQstudy.h aipRQnode.h
+aipPolygon.o: aipRQgroup.h aipRQimage.h aipDataManager.h aipGframeManager.h
+aipPolygon.o: aipRoiManager.h aipPolygon.h aipEdgelist.h aipPolyline.h
+aipPolyline.o: aipUtils.h aipVnmrFuncs.h vjXdef.h vnmrsys.h aipStructs.h
+aipPolyline.o: aipCStructs.h aipVsInfo.h sharedPtr.h aipMouse.h
+aipPolyline.o: aipHistogram.h aipGraphicsWin.h aipGraphics.h
+aipPolyline.o: aipInterpolation.h aipGframe.h aipViewInfo.h aipImgInfo.h
+aipPolyline.o: aipDataInfo.h ddlSymbol.h ddlNode.h ddlList.h mfileObj.h
+aipPolyline.o: aipDataStruct.h aipRoi.h aipRoiStat.h aipReviewQueue.h
+aipPolyline.o: aipRQstudy.h aipRQnode.h aipRQgroup.h aipRQimage.h
+aipPolyline.o: aipDataManager.h aipGframeManager.h aipRoiManager.h aipLine.h
+aipPolyline.o: aipPolygon.h aipEdgelist.h aipPolyline.h
+aipRoi.o: aipStderr.h aipVnmrFuncs.h vjXdef.h vnmrsys.h aipGraphicsWin.h
+aipRoi.o: aipGraphics.h aipCStructs.h aipStructs.h aipVsInfo.h sharedPtr.h
+aipRoi.o: aipMouse.h aipHistogram.h aipInterpolation.h aipDataInfo.h
+aipRoi.o: ddlSymbol.h ddlNode.h ddlList.h mfileObj.h aipDataStruct.h
+aipRoi.o: aipGframe.h aipViewInfo.h aipImgInfo.h aipRoi.h aipRoiStat.h
+aipRoi.o: aipReviewQueue.h aipRQstudy.h aipRQnode.h aipRQgroup.h aipRQimage.h
+aipRoi.o: aipDataManager.h aipGframeManager.h aipRoiManager.h aipPoint.h
+aipRoi.o: aipBox.h aipPolygon.h aipEdgelist.h aipPolyline.h aipLine.h
+aipRoi.o: aipOval.h
+aipRoiManager.o: aipRoi.h sharedPtr.h aipVnmrFuncs.h vjXdef.h vnmrsys.h
+aipRoiManager.o: aipStructs.h aipCStructs.h aipVsInfo.h aipMouse.h
+aipRoiManager.o: aipHistogram.h aipRoiStat.h aipImgInfo.h aipDataInfo.h
+aipRoiManager.o: ddlSymbol.h ddlNode.h ddlList.h mfileObj.h aipDataStruct.h
+aipRoiManager.o: aipReviewQueue.h aipRQstudy.h aipRQnode.h aipRQgroup.h
+aipRoiManager.o: aipRQimage.h aipDataManager.h aipPoint.h aipGframe.h
+aipRoiManager.o: aipViewInfo.h aipInterpolation.h aipLine.h aipRoiManager.h
+aipRoiManager.o: aipGframeManager.h aipCommands.h aipInitStart.h
+aipRoiStat.o: aipUtils.h aipGframe.h sharedPtr.h aipViewInfo.h aipImgInfo.h
+aipRoiStat.o: aipDataInfo.h ddlSymbol.h ddlNode.h ddlList.h mfileObj.h
+aipRoiStat.o: aipStructs.h aipCStructs.h aipVsInfo.h aipMouse.h
+aipRoiStat.o: aipHistogram.h aipDataStruct.h aipInterpolation.h aipRoi.h
+aipRoiStat.o: aipVnmrFuncs.h vjXdef.h vnmrsys.h aipRoiStat.h aipReviewQueue.h
+aipRoiStat.o: aipRQstudy.h aipRQnode.h aipRQgroup.h aipRQimage.h
+aipRoiStat.o: aipDataManager.h aipGframeManager.h aipRoiManager.h
+aipRoiStat.o: aipCommands.h
+aipStderr.o: aipStderr.h aipCommands.h
+aipViewInfo.o: aipVnmrFuncs.h vjXdef.h vnmrsys.h aipStderr.h sharedPtr.h
+aipViewInfo.o: aipGraphicsWin.h aipGraphics.h aipCStructs.h aipStructs.h
+aipViewInfo.o: aipVsInfo.h aipMouse.h aipHistogram.h aipInterpolation.h
+aipViewInfo.o: aipImgInfo.h aipDataInfo.h ddlSymbol.h ddlNode.h ddlList.h
+aipViewInfo.o: mfileObj.h aipDataStruct.h aipInterface.h aipCInterface.h
+aipViewInfo.o: aipWinRotation.h aipViewInfo.h
+aipVnmrFuncs.o: variables.h group.h aipVnmrFuncs.h vjXdef.h vnmrsys.h
+aipVnmrFuncs.o: aipMouse.h aipGframeManager.h aipGframe.h sharedPtr.h
+aipVnmrFuncs.o: aipViewInfo.h aipImgInfo.h aipDataInfo.h ddlSymbol.h
+aipVnmrFuncs.o: ddlNode.h ddlList.h mfileObj.h aipStructs.h aipCStructs.h
+aipVnmrFuncs.o: aipVsInfo.h aipHistogram.h aipDataStruct.h aipInterpolation.h
+aipVnmrFuncs.o: aipRoi.h aipRoiStat.h aipReviewQueue.h aipRQstudy.h
+aipVnmrFuncs.o: aipRQnode.h aipRQgroup.h aipRQimage.h aipDataManager.h
+aipVolData.o: aipVolData.h aipDataInfo.h sharedPtr.h ddlSymbol.h ddlNode.h
+aipVolData.o: ddlList.h mfileObj.h aipStructs.h aipCStructs.h aipVsInfo.h
+aipVolData.o: aipMouse.h aipHistogram.h aipDataStruct.h aipGframe.h
+aipVolData.o: aipViewInfo.h aipImgInfo.h aipInterpolation.h aipRoi.h
+aipVolData.o: aipVnmrFuncs.h vjXdef.h vnmrsys.h aipRoiStat.h aipReviewQueue.h
+aipVolData.o: aipRQstudy.h aipRQnode.h aipRQgroup.h aipRQimage.h
+aipVolData.o: aipDataManager.h aipGframeManager.h aipStderr.h aipCommands.h
+aipVolData.o: group.h aipCInterface.h aipOrthoSlices.h
+aipVsInfo.o: aipUtils.h aipVnmrFuncs.h vjXdef.h vnmrsys.h aipCommands.h
+aipVsInfo.o: aipStderr.h aipVsInfo.h sharedPtr.h aipCStructs.h aipMouse.h
+aipVsInfo.o: aipHistogram.h aipDataManager.h aipDataInfo.h ddlSymbol.h
+aipVsInfo.o: ddlNode.h ddlList.h mfileObj.h aipStructs.h aipDataStruct.h
+aipVsInfo.o: aipGframe.h aipViewInfo.h aipImgInfo.h aipInterpolation.h
+aipVsInfo.o: aipRoi.h aipRoiStat.h aipReviewQueue.h aipRQstudy.h aipRQnode.h
+aipVsInfo.o: aipRQgroup.h aipRQimage.h aipGframeManager.h
+aipWinMath.o: graphics.h params.h process.h aipGframe.h sharedPtr.h
+aipWinMath.o: aipViewInfo.h aipImgInfo.h aipDataInfo.h ddlSymbol.h ddlNode.h
+aipWinMath.o: ddlList.h mfileObj.h aipStructs.h aipCStructs.h aipVsInfo.h
+aipWinMath.o: aipMouse.h aipHistogram.h aipDataStruct.h aipInterpolation.h
+aipWinMath.o: aipRoi.h aipVnmrFuncs.h vjXdef.h vnmrsys.h aipRoiStat.h
+aipWinMath.o: aipReviewQueue.h aipRQstudy.h aipRQnode.h aipRQgroup.h
+aipWinMath.o: aipRQimage.h aipDataManager.h aipGframeManager.h aipWinMath.h
+aipWinMath.o: aipParmList.h aipStderr.h aipInitStart.h group.h
+aipWinMath.o: ddlCInterface.h
+aipWinMovie.o: vjXdef.h aipCommands.h aipDataInfo.h sharedPtr.h ddlSymbol.h
+aipWinMovie.o: ddlNode.h ddlList.h mfileObj.h aipStructs.h aipCStructs.h
+aipWinMovie.o: aipVsInfo.h aipMouse.h aipHistogram.h aipDataStruct.h
+aipWinMovie.o: aipCFuncs.h aipGframeManager.h aipGframe.h aipViewInfo.h
+aipWinMovie.o: aipImgInfo.h aipInterpolation.h aipRoi.h aipVnmrFuncs.h
+aipWinMovie.o: vnmrsys.h aipRoiStat.h aipReviewQueue.h aipRQstudy.h
+aipWinMovie.o: aipRQnode.h aipRQgroup.h aipRQimage.h aipDataManager.h
+aipWinMovie.o: aipWinMovie.h aipJFuncs.h
+aipMakeMovie.o: aipMakeMovie.h 
+aipWinRotation.o: aipCommands.h aipStderr.h aipWinRotation.h aipImgInfo.h
+aipWinRotation.o: sharedPtr.h aipDataInfo.h ddlSymbol.h ddlNode.h ddlList.h
+aipWinRotation.o: mfileObj.h aipStructs.h aipCStructs.h aipVsInfo.h
+aipWinRotation.o: aipMouse.h aipHistogram.h aipDataStruct.h
+aipWinRotation.o: aipGframeManager.h aipGframe.h aipViewInfo.h
+aipWinRotation.o: aipInterpolation.h aipRoi.h aipVnmrFuncs.h vjXdef.h
+aipWinRotation.o: vnmrsys.h aipRoiStat.h aipReviewQueue.h aipRQstudy.h
+aipWinRotation.o: aipRQnode.h aipRQgroup.h aipRQimage.h aipDataManager.h
+aipWinRotation.o: aipUtils.h
+aipWriteData.o: aipCommands.h aipVnmrFuncs.h vjXdef.h vnmrsys.h aipUtils.h
+aipWriteData.o: aipGframe.h sharedPtr.h aipViewInfo.h aipImgInfo.h
+aipWriteData.o: aipDataInfo.h ddlSymbol.h ddlNode.h ddlList.h mfileObj.h
+aipWriteData.o: aipStructs.h aipCStructs.h aipVsInfo.h aipMouse.h
+aipWriteData.o: aipHistogram.h aipDataStruct.h aipInterpolation.h aipRoi.h
+aipWriteData.o: aipRoiStat.h aipReviewQueue.h aipRQstudy.h aipRQnode.h
+aipWriteData.o: aipRQgroup.h aipRQimage.h aipDataManager.h aipGframeManager.h
+aipWriteData.o: aipWriteData.h
+aipReviewQueue.o: aipRQimage.h aipRQnode.h aipDataInfo.h sharedPtr.h
+aipReviewQueue.o: ddlSymbol.h ddlNode.h ddlList.h mfileObj.h aipStructs.h
+aipReviewQueue.o: aipCStructs.h aipVsInfo.h aipMouse.h aipHistogram.h
+aipReviewQueue.o: aipDataStruct.h aipRQgroup.h aipRQstudy.h aipReviewQueue.h
+aipReviewQueue.o: aipRQparser.h aipDataManager.h aipGframeManager.h
+aipReviewQueue.o: aipGframe.h aipViewInfo.h aipImgInfo.h aipInterpolation.h
+aipReviewQueue.o: aipRoi.h aipVnmrFuncs.h vjXdef.h vnmrsys.h aipRoiStat.h
+aipReviewQueue.o: aipCommands.h aipWinRotation.h aipWinMovie.h aipVolData.h
+aipRQparser.o: aipRQparser.h aipVnmrFuncs.h vjXdef.h vnmrsys.h
+aipRQnode.o: aipRQnode.h aipDataInfo.h sharedPtr.h ddlSymbol.h ddlNode.h
+aipRQnode.o: ddlList.h mfileObj.h aipStructs.h aipCStructs.h aipVsInfo.h
+aipRQnode.o: aipMouse.h aipHistogram.h aipDataStruct.h
+aipRQimage.o: aipRQimage.h aipRQnode.h aipDataInfo.h sharedPtr.h ddlSymbol.h
+aipRQimage.o: ddlNode.h ddlList.h mfileObj.h aipStructs.h aipCStructs.h
+aipRQimage.o: aipVsInfo.h aipMouse.h aipHistogram.h aipDataStruct.h
+aipRQimage.o: aipRQgroup.h aipReviewQueue.h aipRQstudy.h aipDataManager.h
+aipRQimage.o: aipVolData.h
+aipRQgroup.o: aipRQgroup.h aipRQnode.h aipDataInfo.h sharedPtr.h ddlSymbol.h
+aipRQgroup.o: ddlNode.h ddlList.h mfileObj.h aipStructs.h aipCStructs.h
+aipRQgroup.o: aipVsInfo.h aipMouse.h aipHistogram.h aipDataStruct.h
+aipRQgroup.o: aipRQimage.h aipReviewQueue.h aipRQstudy.h aipRQparser.h
+aipRQgroup.o: aipDataManager.h aipGframeManager.h aipGframe.h aipViewInfo.h
+aipRQgroup.o: aipImgInfo.h aipInterpolation.h aipRoi.h aipVnmrFuncs.h
+aipRQgroup.o: vjXdef.h vnmrsys.h aipRoiStat.h
+aipRQstudy.o: aipRQstudy.h aipRQnode.h aipDataInfo.h sharedPtr.h ddlSymbol.h
+aipRQstudy.o: ddlNode.h ddlList.h mfileObj.h aipStructs.h aipCStructs.h
+aipRQstudy.o: aipVsInfo.h aipMouse.h aipHistogram.h aipDataStruct.h
+aipRQstudy.o: aipRQgroup.h aipRQimage.h aipReviewQueue.h
+ddlCInterface.o: ddlSymbol.h ddlNode.h ddlList.h mfileObj.h ddlCInterface.h
+ddlAction.o: ddlParser.h ddlNode.h ddlList.h ddlGrammar.h
+ddlNode.o: ddlList.h ddlNode.h
+ddlParser.o: ddlParser.h ddlSymbol.h ddlNode.h ddlList.h mfileObj.h
+ddlParser.o: ddlGrammar.h ddlScanner.h
+ddlScanner.o: ddlScanner.h ddlParser.h ddlSymbol.h ddlNode.h ddlList.h
+ddlScanner.o: mfileObj.h ddlGrammar.h
+ddlSymbolTable.o: vnmrsys.h ddlNode.h ddlList.h ddlGrammar.h ddlSymbol.h
+ddlSymbolTable.o: mfileObj.h ddlParser.h
+ddlGrammar.o: ddlParser.h
+graphics3D.o: aipCommands.h aipDataInfo.h sharedPtr.h ddlSymbol.h ddlNode.h
+graphics3D.o: ddlList.h mfileObj.h aipStructs.h aipCStructs.h aipVsInfo.h
+graphics3D.o: aipMouse.h aipHistogram.h aipDataStruct.h aipDataManager.h
+graphics3D.o: aipVolData.h aipOrthoSlices.h group.h pvars.h variables.h
+graphics3D.o: params.h data.h vnmrsys.h symtab.h

@@ -1,0 +1,13 @@
+"@(#)rmpar 1.1 11/04/99 Copyright (c) 1991-1998 Agilent Technologies All Rights Reserved."
+
+if ($# < 1) then return endif
+if ($# < 2) then $2='current' endif
+
+substr($1,'wc'):$total
+$x=0
+$par=''
+while ($x < $total) do
+  $x=$x+1
+  substr($1,$x):$par
+  destroy($par,$2):$ok
+endwhile

@@ -1,0 +1,23 @@
+"Agilent"
+
+$wc=wc
+$ho=ho
+$sc=sc
+$vo=vo
+$vp=vp
+full
+ho=1 vo=0
+vp=12
+
+$plotoptions='logo','header','plarray','axis','comments_page1','miniplot','params'
+doplotoption($plotoptions)
+wc=$wc
+ho=$ho
+sc=$sc
+vo=$vo
+vp=$vp
+
+wexp:$e
+if ($e) then
+  page
+endif

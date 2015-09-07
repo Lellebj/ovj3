@@ -1,0 +1,4 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+" write dataid on the upper right corner of the plot "
+
+write('plotter',0, 0, dataid)

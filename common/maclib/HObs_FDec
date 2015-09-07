@@ -1,0 +1,3 @@
+if (tn<>'H1') then PROTON endif
+dn='F19'
+cpsetup($0)

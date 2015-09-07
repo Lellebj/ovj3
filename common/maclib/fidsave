@@ -1,0 +1,14 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+
+if (appmode<>'imaging') then
+  savefid
+  return
+endif
+
+$testacquire=testacquire
+testacquire='n'
+$autosave=autosave
+autosave=1
+save
+testacquire=$testacquire
+autosave=$autosave

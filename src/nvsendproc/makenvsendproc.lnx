@@ -1,0 +1,429 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makenvsendproc  make file
+#
+# make -f makenvsendproc creates Sendproc
+# make -f makenvsendproc dbx, creates Sendproc	DBX ver.
+#
+# ----->  dbx or profiling libraries are not a standard release item and are not to
+#         be given to customers....    1/29/88  Greg Brissey
+#
+
+MAKEFILE= makenvsendproc.lnx
+
+.PRECIOUS= libSendproc.a libSendproc_dbx.a
+
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+SCCSDIR=$(sccsdir)
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+# SRC_DIR=$(SRCDIR)/sysnvsendproc/
+SRC_DIR=./
+
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+# NDDSHOME = /sw/NDDS/ndds.3.1a
+NDDSHOME = $(nddsdir)
+
+syslibs_Linux = -ldl -lnsl -lm -lpthread -lstdc++
+ 
+#NDDSLIBS = -L$(NDDSHOME)/lib/i86Linux2.4gcc3.2 \
+#	-lndds -lnddsutils -lnddscdr -lutilsxx -lutilsip \
+#	$(syslibs_Linux)
+
+NDDSLIBS = -L$(NDDSHOME)/lib/LinuxLibs \
+	-lndds -lnddsutils -lnddscdr -lutilsxx -lutilsip \
+	$(syslibs_Linux)
+
+NDDS4xLIBS = -L$(NDDSHOME)/lib/i86Linux2.6gcc3.4.3 \
+        -lnddscz -lnddscorez \
+        $(syslibs_Linux)
+
+
+INCLUDES = -I$(NDDSHOME)/include/unix \
+	-I$(NDDSHOME)/include/share
+
+INCLUDES4X = -I$(NDDSHOME)/include \
+        -I$(NDDSHOME)/include/ndds
+
+
+# where the NDDS include and libraries are
+NDDS_HOME = $(NDDSHOME)
+
+# NDDSGEN = $(NDDS_HOME)/bin/i86Linux2.4gcc3.2/nddsgen
+NDDSGEN = $(NDDS_HOME)/bin/LinuxBin/nddsgen
+NDDSGEN4X = $(NDDS_HOME)/scripts/nddsgen -language C -notypecode -replace
+
+LIBS= $(NDDSLIBS)
+
+CC= gcc $(INCLUDES)
+CFLAGS = -m32 -O -DLINUX -DNODUMMY -DRTI_UNIX -DNIRVANA -DDEBUG
+CDEFINE = -DLINUX -DNODUMMY -DRTI_UNIX -DNIRVANA
+LDFLAGS= -m32 -Wl,-rpath /vnmr/lib
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(LDFLAGS) $(TARGET_ARCH)
+
+#--- SCCS Sources ----
+NVSENDPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvsendproc/SCCS/s.
+SENDPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)sendproc/SCCS/s.
+NVEXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvexpproc/SCCS/s.
+NVRECVPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvrecvproc/SCCS/s.
+EXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)expproc/SCCS/s.
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+ROBOPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)roboproc/SCCS/s.
+VWACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vwacq/SCCS/s.
+NVACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvacq/SCCS/s.
+NVPSG_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvpsg/SCCS/s.
+
+NVSENDPROC_SRC_DIR= $(NVSENDPROC_SCCS_SRC)
+SENDPROC_SRC_DIR= $(SENDPROC_SCCS_SRC)
+NVEXPPROC_SRC_DIR= $(NVEXPPROC_SCCS_SRC)
+NVRECVPROC_SRC_DIR= $(NVRECVPROC_SCCS_SRC)
+EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)
+NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)
+ROBOPROC_SRC_DIR= $(ROBOPROC_SCCS_SRC)
+VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)
+NVACQ_SRC_DIR= $(NVACQ_SCCS_SRC)
+NVPSG_SRC_DIR= $(NVPSG_SCCS_SRC)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+NVSENDPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvsendproc/SCCS get
+SENDPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)sendproc/SCCS get
+ROBOPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)roboproc/SCCS get
+NCOMM_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ncomm/SCCS get
+NVEXPPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvexpproc/SCCS get
+NVRECVPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvrecvproc/SCCS get
+EXPPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)expproc/SCCS get
+VWACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vwacq/SCCS get
+NVACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvacq/SCCS get
+NVPSG_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvpsg/SCCS get
+ 
+NVSENDPROC_GET= $(NVSENDPROC_SGET)
+SENDPROC_GET= $(SENDPROC_SGET)
+ROBOPROC_GET= $(ROBOPROC_SGET)
+NCOMM_GET= $(NCOMM_SGET)
+NVEXPPROC_GET= $(NVEXPPROC_SGET)
+NVRECVPROC_GET= $(NVRECVPROC_SGET)
+EXPPROC_GET= $(EXPPROC_SGET)
+VWACQ_GET= $(VWACQ_SGET)
+NVACQ_GET= $(NVACQ_SGET)
+NVPSG_GET= $(NVPSG_SGET)
+
+
+#------------------------------------------------------------------------
+#--- NCOMM Sources that are needed for Sendproc
+#------------------------------------------------------------------------
+# Communications libraries
+NCOMM_HDR_LIB=			\
+		errLogLib.h	\
+		hhashLib.h	\
+		ipcKeyDbm.h	\
+		ipcMsgQLib.h	\
+                listObj.h       \
+		mfileObj.h	\
+		msgQLib.h	\
+		semLib.h	\
+		shrMLib.h
+
+NCOMM_SRC_LIB=			\
+		errLogLib.c	\
+		hhashLib.c	\
+		ipcKeyDbm.c	\
+		ipcMsgQLib.c	\
+                listObj.c       \
+		mfileObj.c	\
+		semLib.c	\
+		msgQLib.c	\
+		shrMLib.c
+
+NCOMM_OBJ_LIB= $(NCOMM_SRC_LIB:.c=.o)
+
+CHANOBJ_HDR=			\
+		sockets.h
+
+
+CHANOBJ_SRC=			\
+		fdmask.c
+
+CHANOBJ_OBJ=$(CHANOBJ_SRC:.c=.o)
+
+#---- All Sources and headers required for compilation -----
+
+#----- Expproc header files that are needed
+EXPPROC_HDR=                    \
+		expentrystructs.h \
+		expQfuncs.h 	\
+                hostMsgChannels.h \
+		shrexpinfo.h      \
+                parser.h
+
+
+#		commfuncs.h	\
+
+EXPPROC_SRC=			\
+                parser.c 	\
+		daemon.c
+
+#                excepthandler.c \
+
+#		commfuncs.c	\
+
+EXPPROC_OBJ= $(EXPPROC_SRC:.c=.o)
+
+NVEXPPROC_SRC=			\
+		HBthread.c	\
+		exceptHandler.c
+
+NVEXPPROC_OBJ= $(NVEXPPROC_SRC:.c=.o)
+
+ROBOPROC_SRC=
+ROBOPROC_OBJ= $(ROBOPROC_SRC:.c=.o)
+
+VWACQ_HDR=			\
+		rngLLib.h	\
+		hostAcqStructs.h
+
+VWACQ_SRC=			\
+		rngLLib.c
+
+VWACQ_OBJ= $(VWACQ_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#-- sendproc Source  files 
+#------------------------------------------------------------------------
+NVSENDPROC_HDR=			\
+		barrier.h      \
+		nddsbufmngr.h      \
+		nddsfuncs.h      \
+		threadfuncs.h
+
+NVSENDPROC_SRC=			\
+		barrier.c      \
+		nddsbufmngr.c      \
+		nddsfuncs.c      \
+		sendfuncs.c	\
+		sendproc.c      \
+		threadfuncs.c
+
+NVSENDPROC_OBJ= $(NVSENDPROC_SRC:.c=.o)
+
+
+SENDPROC_HDR=
+
+SENDPROC_SRC=			\
+		sendcmds.c
+
+
+SENDPROC_OBJ= $(SENDPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#-- nvrecvproc Source  files 
+#------------------------------------------------------------------------
+NVRECVPROC_HDR=			\
+		rngBlkLib.h
+
+NVRECVPROC_SRC=			\
+		rngBlkLib.c
+
+NVRECVPROC_OBJ= $(NVRECVPROC_SRC:.c=.o)
+
+#----- Autoproc header files that are needed
+
+NVPSG_HDR=			\
+		lc.h		\
+		PSGFileHeader.h
+
+NDDS_TYPES = Codes_Downld.x App_HB.x
+NDDS4X_TYPES = Codes_Downld.idl App_HB.idl
+
+NDDS_C_SRC= $(NDDS_TYPES:.x=.c)
+NDDS_C_HDR= $(NDDS_TYPES:.x=.h)
+NDDS_OBJ= $(NDDS_TYPES:.x=.o)
+
+NDDS4x_C_SRCLIST = Codes_Downld.c Codes_DownldPlugin.c Codes_DownldSupport.c 
+NDDS4x_C_HDRLIST = Codes_Downld.h Codes_DownldPlugin.h Codes_DownldSupport.h App_HB.h
+NDDS4x_OBJ = Codes_Downld.o Codes_DownldPlugin.o Codes_DownldSupport.o
+
+NVACQ_HDR=			\
+		crc32.h		\
+		NDDS_Obj.h	\
+		NDDS_PubFuncs.h	\
+		NDDS_SubFuncs.h	
+
+NVACQ_SRC=			\
+		crc32.c         \
+		sysUtils.c      \
+		NDDS_Obj.c      \
+		NDDS_PubFuncs.c \
+		NDDS_SubFuncs.c	
+
+NVACQ_OBJ= $(NVACQ_SRC:.c=.o)
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(NVSENDPROC_SRC) $(NVSENDPROC_HDR)  \
+	$(SENDPROC_SRC) $(SENDPROC_HDR)  \
+	$(ROBOPROC_SRC) $(ROBOPROC_HDR)  \
+	$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) \
+	$(CHANOBJ_SRC) $(CHANOBJ_HDR) \
+	$(VWACQ_SRC) $(VWACQ_HDR)	\
+	$(NVACQ_SRC) $(NVACQ_HDR)	\
+	$(NVPSG_HDR)	\
+	$(NVEXPPROC_SRC) $(NVEXPPROC_HDR)  \
+	$(NVRECVPROC_SRC) $(NVRECVPROC_HDR)  \
+	$(EXPPROC_SRC) $(EXPPROC_HDR) $(NDDS_C_SRC) $(NDDS_HDR)
+ 
+ALL_C_SRC = $(NVSENDPROC_SRC) $(SENDPROC_SRC) $(VWACQ_SRC) \
+	    $(NVACQ_SRC)  $(EXPPROC_SRC)  $(NVEXPPROC_SRC) $(NDDS_SRC)  \
+	    $(NVRECVPROC_SRC) $(ROBOPROC_SRC)  $(NCOMM_SRC_LIB)  $(CHANOBJ_SRC)
+	    
+all std LINUX: Source Sendproc
+	@echo NMR_ID all Sendprocs complete
+
+ndds4x :
+	$(MAKE) -e -f $(MAKEFILE) \
+        "NDDSLIBS = $(NDDS4xLIBS)" \
+        "INCLUDES = $(INCLUDES4X)" \
+        "NDDSGEN = $(NDDSGEN4X)" \
+        "NDDS_TYPES = " \
+        "NDDS_C_SRC= " \
+        "NDDS_C_HDR= " \
+        "NDDS_OBJ= $(NDDS4x_OBJ)" \
+        "NDDS4x_C_SRC = $(NDDS4x_C_SRCLIST)" \
+        "NDDS4x_C_HDR = $(NDDS4x_C_HDRLIST)" \
+        "NDDSGEN_SRCTRG =  $(NDDSGEN4x_SRCTRG)" \
+        "NDDSGEN_HDRTRG =  $(NDDSGEN4x_HDRTRG)" \
+        "CFLAGS = $(CFLAGS) -DRTI_NDDS_4x"      \
+        Sendproc
+	@echo NDDS 4x version complete
+
+
+# link to ncomm library libncomm.a 
+# assume sun4, SunOS
+
+Sendproc_dbx : $(NVSENDPROC_OBJ) $(SENDPROC_OBJ) $(NVACQ_OBJ) $(NDDS_OBJ) $(NCOMM_OBJ_LIB) $(EXPPROC_OBJ) $(NVEXPPROC_OBJ)a $(NVRECVPROC_OBJ) $(VWACQ_OBJ)
+	(umask 2; $(LINK.c) -o $@  $(NVSENDPROC_OBJ) $(SENDPROC_OBJ) $(NVACQ_OBJ) $(NDDS_OBJ)  $(NCOMM_OBJ_LIB) $(EXPPROC_OBJ) $(NVEXPPROC_OBJ)  $(NVRECVPROC_OBJ) $(VWACQ_OBJ) $(LIBS))
+	( umask 2; cp $@ ..)
+	@echo Sendproc_dbx is complete
+
+
+Sendproc : $(NVSENDPROC_OBJ) $(SENDPROC_OBJ) $(NVACQ_OBJ) $(NDDS_OBJ) $(NCOMM_OBJ_LIB) $(EXPPROC_OBJ) $(NVEXPPROC_OBJ)  $(NVRECVPROC_OBJ) $(VWACQ_OBJ)
+	(umask 2; $(LINK.c) -o $@  $(NVSENDPROC_OBJ) $(SENDPROC_OBJ) $(NVACQ_OBJ) $(NDDS_OBJ)  $(NCOMM_OBJ_LIB) $(EXPPROC_OBJ) $(NVEXPPROC_OBJ)  $(NVRECVPROC_OBJ) $(VWACQ_OBJ) $(LIBS))
+	@echo Sendproc is complete
+
+Source src : $(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+depend: src
+	makedepend -f $(MAKEFILE) $(CDEFINE) -Y -I./ $(ALL_C_SRC) 2>/dev/null
+
+
+
+#--- Object Targets ----------------------------------------------
+
+$(NDDS_C_SRC) : $(NDDS_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN) -replace  $(@:.c=.x) )
+
+$(NDDS_C_HDR) : $(NDDS_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN) -replace  $(@:.h=.x) )
+
+$(NDDS4x_C_SRC) : $(NDDS4X_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN) $(NDDSGENOPT) $(@:.c=.idl) )
+
+$(NDDS4x_C_HDR) : $(NDDS4X_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDS_HOME); $(NDDSGEN) $(NDDSGENOPT)  $(@:.h=.idl) )
+
+
+$(ALLOBJS) : $(@:.o=.c)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(SENDPROC_MAN_LIB) : $(@:.nr=.c)
+	-(umask 2; mangen $(@:.nr=.c) ; nroff -man $@ > $(@:.nr=.man) )
+
+$(SENDPROC_INSTALLMAN_LIB) : $(@:.2=.c)
+	-(umask 2; mangen $(@:.2=.c) ; mv $(@:.2=.nr) $@ )
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(SENDPROC_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(NVSENDPROC_SRC) $(NVSENDPROC_HDR) : % :$(NVSENDPROC_SRC_DIR)%
+	$(NVSENDPROC_SGET) $@
+
+$(SENDPROC_SRC) $(SENDPROC_HDR) : % :$(SENDPROC_SRC_DIR)%
+	$(SENDPROC_SGET) $@
+
+$(ROBOPROC_SRC) $(ROBOPROC_HDR) : % :$(ROBOPROC_SRC_DIR)%
+	$(ROBOPROC_SGET) $@
+
+$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) $(CHANOBJ_SRC) $(CHANOBJ_HDR) : % :$(NCOMM_SRC_DIR)%
+	$(NCOMM_SGET) $@
+
+$(NVEXPPROC_SRC) $(NVEXPPROC_HDR) : % :$(NVEXPPROC_SRC_DIR)%
+	$(NVEXPPROC_SGET) $@
+
+$(NVRECVPROC_SRC) $(NVRECVPROC_HDR) : % :$(NVRECVPROC_SRC_DIR)%
+	$(NVRECVPROC_SGET) $@
+
+$(EXPPROC_SRC) $(EXPPROC_HDR) : % :$(EXPPROC_SRC_DIR)%
+	$(EXPPROC_SGET) $@
+
+$(VWACQ_SRC) $(VWACQ_HDR) : % :$(VWACQ_SRC_DIR)%
+	$(VWACQ_SGET) $@
+
+$(NVACQ_SRC) $(NVACQ_HDR) $(NDDS_TYPES) $(NDDS4X_TYPES): % :$(NVACQ_SRC_DIR)%
+	$(NVACQ_SGET) $@
+
+$(NVPSG_HDR) : % :$(NVPSG_SRC_DIR)%
+	$(NVPSG_SGET) $@
+
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+
+barrier.o: barrier.h errLogLib.h
+nddsbufmngr.o: rngBlkLib.h rngLLib.h nddsbufmngr.h
+nddsfuncs.o: errLogLib.h NDDS_Obj.h NDDS_SubFuncs.h NDDS_PubFuncs.h crc32.h
+nddsfuncs.o: Codes_Downld.h App_HB.h threadfuncs.h
+sendfuncs.o: shrMLib.h mfileObj.h expentrystructs.h expQfuncs.h shrexpinfo.h
+sendfuncs.o: hostAcqStructs.h errLogLib.h lc.h PSGFileHeader.h NDDS_Obj.h
+sendfuncs.o: threadfuncs.h nddsfuncs.h
+sendproc.o: hostMsgChannels.h msgQLib.h ipcMsgQLib.h shrMLib.h mfileObj.h
+sendproc.o: errLogLib.h threadfuncs.h
+# threadfuncs.o: NDDS_Obj.h Codes_Downld.h App_HB.h errLogLib.h threadfuncs.h
+threadfuncs.o: NDDS_Obj.h Codes_Downld.h errLogLib.h threadfuncs.h
+sendcmds.o: parser.h
+crc32.o: crc32.h
+sysUtils.o: errLogLib.h
+NDDS_Obj.o: errLogLib.h NDDS_Obj.h
+NDDS_PubFuncs.o: errLogLib.h NDDS_Obj.h
+NDDS_SubFuncs.o: errLogLib.h NDDS_Obj.h
+parser.o: errLogLib.h hhashLib.h parser.h
+# HBthread.o: NDDS_Obj.h NDDS_PubFuncs.h App_HB.h errLogLib.h
+HBthread.o: NDDS_Obj.h NDDS_PubFuncs.h errLogLib.h
+exceptHandler.o: errLogLib.h
+hhashLib.o: errLogLib.h hhashLib.h
+ipcKeyDbm.o: errLogLib.h shrMLib.h mfileObj.h ipcKeyDbm.h
+ipcMsgQLib.o: errLogLib.h ipcMsgQLib.h
+listObj.o: listObj.h
+mfileObj.o: errLogLib.h mfileObj.h
+semLib.o: errLogLib.h semLib.h mfileObj.h
+msgQLib.o: errLogLib.h hostMsgChannels.h mfileObj.h msgQLib.h ipcMsgQLib.h
+msgQLib.o: shrMLib.h
+shrMLib.o: errLogLib.h shrMLib.h mfileObj.h

@@ -1,0 +1,5 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"**************************************"
+" _dof4 - update dfrq4 when dof4 is changed"
+"**************************************"
+setfrq(5)

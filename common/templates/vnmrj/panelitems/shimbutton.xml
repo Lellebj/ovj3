@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template type="advanced" element="elements">
+  <shimbutton size="104 32" font="Heading3"
+    style="Heading3"
+    point="Heading3"
+    fg="Heading3"
+    value="X1"
+    vc="setshim('x1',$VALUE)"
+    vq=""
+    set=""
+    min="-2047"
+    max="2047"
+    incr1="1"
+    incr2="10"
+    statpar="x1"
+    />
+</template>

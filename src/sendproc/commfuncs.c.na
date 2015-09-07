@@ -1,0 +1,293 @@
+/* commfuncs.c.na 12.1 03/21/08 - Communications functions for Sendproc Process */
+#ifndef LINT
+static char SCCSid[] = "commfuncs.c.na Copyright (c) 1994-1996 Varian Assoc.,Inc. All Rights Reserved";
+#endif
+/*
+ * Varian Assoc.,Inc. All Rights Reserved.
+ * This software contains proprietary and confidential
+ * information of Varian Assoc., Inc. and its contributors.
+ * Use, disclosure and reproduction is prohibited without
+ * prior consent.
+ */
+
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <signal.h>
+
+
+#include <errno.h>
+
+#include "hostMsgChannels.h"
+#include "ipcKeyDbm.h"
+#include "msgQLib.h"
+#include "chanLib.h"
+#include "errLogLib.h"
+
+#define TRUE 1
+#define FALSE 0
+#define FOR_EVER 1
+
+static int Chan_Num = 0;
+
+extern int chanId;
+
+static MSG_Q_ID msgId;
+static IPC_KEY_DBM_ID keyId;
+static IPC_KEY_DBM_DATA sendEntry;
+static IPC_KEY_DBM_DATA expEntry;
+
+/**************************************************************
+*
+*  setupMsgQ - Initialize the Message Q & DataBase for the give key.
+*
+* This routine initializes an Async. message Q and DataBase
+* on the give key.
+*  
+* RETURNS:
+* MSG_Q_ID , or NULL on error. 
+*
+*       Author Greg Brissey 8/4/94
+*/
+MSG_Q_ID setupMsgQ(int keyindex,int msgSize)
+{
+   static void setupMsgSig();
+
+   /* Create/Open  MSG Q Database */
+   keyId = ipcKeyDbmCreate(MSG_Q_DBM_PATH, MSG_Q_DBM_SIZE);
+   if (keyId == NULL)
+     errLogQuit(LOGOPT,debugInfo,"setupMsgQ: ipcKeyDbmCreate() failed.\n");
+
+   /* Update present Process Key,pid,etc. in database   */
+   ipcKeySet(keyId, "Sendproc", getpid(), keyindex, NULL);
+
+   ipcKeyGet(keyId, "Sendproc",&sendEntry);  
+
+   /* create message queue with returned key_t key */
+   msgId = msgQCreate(sendEntry.ipcKey, msgSize);
+   if (msgId == NULL)
+     errLogQuit(LOGOPT,debugInfo,"setupMsgQ: msgQCreate() failed.\n");
+
+   /* 
+      Setup the SIGUSR1 signal handler that is used to signal
+      that there is a message in the Message Q.
+   */
+   setupMsgSig();
+
+#ifdef DEBUG
+   ipcKeyDbmShow(keyId);     /* display entries    */
+   msgQShow(msgId);
+#endif
+
+   return(msgId);
+}
+
+/* SIGUSR1, to signal  Message Queue I/O*/
+/**************************************************************
+*
+*  setupMsgSig - Setup Signal to to be Used for Async. Message Q 
+*
+* This routine initializes the  Async. Message Q Signal
+*  
+* RETURNS:
+* void 
+*
+*       Author Greg Brissey 8/4/94
+*/
+static void
+setupMsgSig()
+{
+    static void msgQitrp(int);
+    extern void processMsge();
+
+    /* --- set up signal handler --- */
+
+    /* here we register both the signal handler to be called
+       and the non-interrupt function to handle the I/O */
+    registerAsyncHandlers(
+                          SIGUSR1,      /* message Q Signal */
+                          msgQitrp,     /* this puts the event on the eventQ */
+                          processMsge   /* act on message in non-interrupt time */
+                         );
+
+    return;
+}
+
+/**************************************************************
+*
+*  msgQitrp - Routine envoked on receiving the Message Q Signal
+*
+*  This catches the Message Q Signal
+*  
+* RETURNS:
+* void 
+*
+*       Author Greg Brissey 8/4/94
+*/
+static void
+msgQitrp(int signal)
+{
+  /* Place the SIGUSR1 interrupt & msgID onto the eventQ, the non-
+    interrupt function (processMsge) will be called with msgId as an argument */
+    processNonInterrupt( SIGUSR1, (void*) msgId );
+    return;
+}
+
+/**************************************************************
+*
+*  shutdownComm - Close the Message Q , DataBase & Channel 
+*
+* This routine closes the message Q , DataBase and Channel
+*  
+* RETURNS:
+* MSG_Q_ID , or NULL on error. 
+*
+*       Author Greg Brissey 8/4/94
+*/
+int shutdownComm(void)
+{
+     msgQDelete(msgId);
+     ipcKeyDbmClose(keyId);
+     closeChannel(chanId);
+}
+
+/**************************************************************
+*
+*  chanConItrp - SIGALRM interrupt routine, re-attempts connect
+*
+*  
+* RETURNS:
+* void 
+*
+*       Author Greg Brissey 9/14/94
+*/
+static void
+chanConItrp(int signal)
+{
+
+  /* Place the SIGUSR1 interrupt & msgID onto the eventQ, the non-
+    interrupt function (processMsge) will be called with msgId as an argument */
+  processNonInterrupt( SIGALRM, (void*) Chan_Num );
+  return;
+}
+
+/**************************************************************
+*
+*  chanConRetry - Routine retry connecting to channel 
+*  In responce to SIGALRM this routine continues to attempt
+*  to connect to a channel. When connection is achieved
+*  the SIGALRM is turned off and unregistered with the eventHandler
+*
+*  
+* RETURNS:
+* void 
+*
+*       Author Greg Brissey 9/14/94
+*/
+static void
+chanConRetry(int chan_no)
+{
+  int result;
+  result = connectChannel( chan_no );
+  if (result != -1)
+  {
+    setRtimer(0.0,0.0);
+    unregisterAsyncHandlers(SIGALRM);      /* timer signal */
+    chanId = chan_no;			   /* update chanId */
+  }
+  return;
+}
+
+/**************************************************************
+*
+*  initiateChan - Initialize a Channel to the Console
+*
+* This routine initializes a Channel to the Console.
+* If no reponce from console, keep trying several times before
+* giving up.
+*  
+* RETURNS:
+* MSG_Q_ID , or NULL on error. 
+*
+*/
+initiateChan(int chan_no,int maxRetry)
+/* int chan_no - channel to open */
+/* int maxRetry - number of trys before returning failure */
+{
+  int retry, ival;
+  retry = 0;
+  closeChannel( chan_no );   /* just to be sure */
+  Chan_Num = chan_no;
+  while (retry < maxRetry)
+  {
+    ival = openChannel( chan_no, 0, 0 );
+    if (ival != chan_no)
+    {
+       DPRINT2(1,"initiateChan :openChannel() on channel %d returned %d\n",chan_no,ival);
+       retry++;
+       closeChannel(chan_no);
+       sleep(10);
+    }
+    else
+    {   
+       retry = 0;
+       break;
+    }
+  }
+  if (retry >= maxRetry)
+    return(-1);
+
+  ival = connectChannel( chan_no );
+  if (ival != 0)
+  {
+    DPRINT1(1,"initiateChan :initial connect failed, backgrounding connect for chan %d\n",
+	chan_no);
+    /* here we register both the signal handler to be called
+       and the non-interrupt function to handle re-establishing 
+       connection */
+    registerAsyncHandlers(
+                          SIGALRM,      /* timer signal */
+			  chanConItrp,
+			  chanConRetry
+                         );
+    setRtimer(5.0,5.0);
+    chan_no = -1;
+  }
+  return(chan_no);
+}  
+
+consoleConn()
+{
+   return( ((chanId > 0) ? 1 : 0) );
+}
+
+
+/*-------------------------------------------------------------------------
+|
+|   Setup the timer interval alarm
+|
++--------------------------------------------------------------------------*/
+static setRtimer(timsec,interval)
+double timsec;
+double interval;
+{
+    long sec,frac;
+    struct itimerval timeval,oldtime;
+
+    sec = (long) timsec;
+    frac = (long) ( (timsec - (double)sec) * 1.0e6 ); /* usecs */
+    DPRINT2(3,"setRtimer(): sec = %ld, frac = %ld\n",sec,frac);
+    timeval.it_value.tv_sec = sec;
+    timeval.it_value.tv_usec = frac;
+    sec = (long) interval;
+    frac = (long) ( (interval - (double)sec) * 1.0e6 ); /* usecs */
+    DPRINT2(3,"setRtimer(): sec = %ld, frac = %ld\n",sec,frac);
+    timeval.it_interval.tv_sec = sec;
+    timeval.it_interval.tv_usec = frac;
+    if (setitimer(ITIMER_REAL,&timeval,&oldtime) == -1)
+    {
+         perror("setitimer error");
+         return(-1);
+    }
+    return(0);
+}

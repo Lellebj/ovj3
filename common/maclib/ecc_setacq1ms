@@ -1,0 +1,9 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"ecc_setacq10ms"
+
+tcl('stopUpdate')
+gt1=.001 ecc_d2exp(.001)
+wexp='wft dssh dssl' au
+shell('sleep 1')
+tcl('invokeTab Sequence; startUpdate')
+

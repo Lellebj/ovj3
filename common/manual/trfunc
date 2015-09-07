@@ -1,0 +1,5 @@
+Copyright (c) Agilent Technologies  All Rights Reserved.
+trfunc - trfunc translates screen co-ordinates to hertz or centimeters
+         depending upon the axis parameter.
+         call trfunc($x,$y):$xincm,$yincm 
+          

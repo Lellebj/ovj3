@@ -1,0 +1,7 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"*********************************************************"
+" showprintq  -  displays all current print jobs for the  "
+"                active printer	 			  "
+"*********************************************************"
+
+shell('vnmrlp lpshow ' + printer )

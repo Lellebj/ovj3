@@ -1,0 +1,7 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"****************************************************************"
+"   prevpl  -  displays the previous 3D plane                    "
+"****************************************************************"
+
+select('prev')
+dconi

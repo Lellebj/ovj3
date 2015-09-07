@@ -1,0 +1,325 @@
+# 
+# Copyright (c) Varian Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+#
+# makeinfoproc  make file
+#
+# make -f makeinfoproc, creates Infoproc and it's library
+# make -f makeinfoproc static, creates static version of Infoproc 
+#
+#
+
+MAKEFILE= makeinfoproc
+
+.PRECIOUS= libInfoproc.a
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory 
+
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+
+SRC_DIR=$(SRCDIR)/sysinfoproc/
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+PROJCAT=
+
+CFLAGS= -O -DSUN
+CPPFLAGS=
+LDFLAGS=
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+
+
+INFOPROC_SRC_DIR= $(SRC_DIR)
+ACQPROC_SRC_DIR= $(SRC_DIR)
+EXPPROC_SRC_DIR= $(SRC_DIR)
+XRACQ_SRC_DIR= $(SRC_DIR)
+VWACQ_SRC_DIR= $(SRC_DIR)
+STAT_SRC_DIR= $(SRC_DIR)
+
+#---- Infoproc library being updated. -----
+WORKLIB= libInfoproc.a
+
+#--- SCCS Sources ----
+INFOPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)infoproc/SCCS/s.
+ACQPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)acqproc/SCCS/s.
+EXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)expproc/SCCS/s.
+XRACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)xracq/SCCS/s.
+VWACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vwacq/SCCS/s.
+STAT_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)stat/SCCS/s.
+
+
+#--- Link Commands for Sources Needed in the Working Directory. -------
+INFOPROC_LN = ln -s $(INFOPROC_SRC_DIR)$(@)
+ACQPROC_LN = ln -s $(ACQPROC_SRC_DIR)$(@)
+EXPPROC_LN = ln -s $(EXPPROC_SRC_DIR)$(@)
+XRACQ_LN = ln -s $(XRACQ_SRC_DIR)$(@)
+VWACQ_LN = ln -s $(VWACQ_SRC_DIR)$(@)
+STAT_LN = ln -s $(STAT_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed In True Source Dir.  -------
+INFOPROC_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)infoproc get
+ACQPROC_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)acqproc get
+EXPPROC_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)expproc get
+XRACQ_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)xracq get
+VWACQ_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)vwacq get
+STAT_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)stat get
+
+#----  default source extraction to links -------
+INFOPROC_GET= $(INFOPROC_LN)
+ACQPROC_GET= $(ACQPROC_LN)
+EXPPROC_GET= $(EXPPROC_LN)
+XRACQ_GET= $(XRACQ_LN)
+VWACQ_GET= $(VWACQ_LN)
+STAT_GET= $(STAT_LN)
+
+
+#------------------------------------------------------------------------
+#-- common Infoproc sources files 
+#------------------------------------------------------------------------
+INFOPROC_SRC=			\
+		infoproc.c	\
+		infoqueu.c	\
+		info_svc.c	\
+		infosockets.c
+
+INFOPROC_OBJ= $(INFOPROC_SRC:.c=.o)
+
+#----- Infoproc header files that are needed
+ACQPROC_HDR=			\
+		ACQPROC_strucs.h
+
+#----- Expproc header files that are needed
+EXPPROC_HDR=			\
+		shrstatinfo.h
+
+#----- xracq header files that are needed
+XRACQ_HDR=			\
+		ACQ_HALstruc.h	\
+		STAT_DEFS.h	\
+		SUN_HAL.h
+
+#----- vwacq header files that are needed
+VWACQ_HDR=			\
+		hostAcqStructs.h
+
+#----- stat header files that are needed
+STAT_HDR=			\
+		acqinfo.h
+
+#---- All Sources and headers required for compilation -----
+
+ALLSRC= $(INFOPROC_SRC) $(EXPPROC_HDR) $(ACQPROC_HDR)  \
+	 $(XRACQ_HDR) $(VWACQ_HDR) $(STAT_HDR)
+
+ALLSRC_PP = $(ALLSRC:=.pp)
+
+LIBS= -lm
+
+#--- PAID Targets ------------------------------------------
+
+sparc: std
+
+std : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE) "WORKLIB= libInfoproc.a" \
+	  "TARGET_ARCH=-D`arch` -D`mach`" \
+	  Infoproc
+	@echo "NMR_ID Infoproc complete --------------------------------------"
+
+static : $$(MAKEFILE) Source 
+	$(MAKE) -e -f $(MAKEFILE) "WORKLIB= libInfoproc.a" \
+	  "TARGET_ARCH=-D`arch` -D`mach`" \
+	  "LDFLAGS=-Bstatic" \
+	  Infoproc_static
+	@echo "NMR_ID static Infoproc complete -------------------------------"
+
+
+lib :	Source 
+	$(MAKE) -e -f $(MAKEFILE) "WORKLIB= libInfoproc.a" \
+	  "TARGET_ARCH=-D`arch` -D`mach`" \
+	  libInfoproc.a
+	@echo "NMR_ID Infoproc library complete ------------------------------"
+
+dbx : Source
+	$(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g"	\
+	"TARGET_ARCH=-D`arch` -D`mach`"		\
+	"WORKLIB= libInfoproc_dbx.a" 		\
+	Infoproc_dbx
+	@echo "NMR_ID dbx Infoproc complete ----------------------------------"
+
+prof: Source
+	$(MAKE) -e -f $(MAKEFILE) "CFLAGS= -O -pg" \
+	"TARGET_ARCH=-D`arch` -D`mach`" \
+	"WORKLIB= libInfoproc_p.a" 	\
+	Infoproc_p
+	@echo "NMR_ID profiling Infoproc complete ----------------------------"
+
+SOLARIS : $$(MAKEFILE) Source 
+	( SOLARIS="y"; export SOLARIS; $(MAKE) -e -f $(MAKEFILE)	\
+	  "CPPFLAGS= -DSOLARIS"						\
+	  "LIBS= -lm -lsocket -lnsl"					\
+	  "WORKLIB=libInfoproc.a"					\
+	   Infoproc; )
+
+WINDOWS : getsrc
+	( $(MAKE) -e -f $(MAKEFILE) \
+        "CC = gcc"                  \
+	"CFLAGS = -DLINUX -D_ALL_SOURCE "		\
+	"LDFLAGS = " \
+        "LIBS= -lm -lsocket -lrpclib" \
+	Infoproc)
+	@echo "NMR_ID Infoproc complete -------------------------------------"
+
+#-----------  generate dependency list of targets ------------------------
+
+depend:	$$(MAKEFILE) Source src
+	@ echo making dependencies...
+	@ rm -f makedepd
+	-@( for i in $(ALLCSRC) ; do \
+	     echo "file: $$i" ;		\
+	     rm -f $${i}.pp	;	\
+	     unifdef -DSUN -DUNIX -UDSP $$i > $${i}.pp ; \
+	   done; )
+	   grep '^#include' $(ALLSRC_PP) \
+		| sed 's/<\([^>]*\)>/"\/usr\/include\/\1"/' \
+		| sed 's/:[^"]*"\([^"]*\)".*/: \1/' \
+		| sed 's/\.p\.pp/.p/' \
+		| sed 's/\.h\.pp/.h/' \
+		| sed 's/\.c\.pp/.o/' \
+                | sed 's/\.y\.pp/.o/' \
+                | sed 's/\.l\.pp/.o/' >>makedepd ;
+	@ awk "{ if ( \$$2 !~ /\/usr\// ) { print \$$0; } }" makedepd | sort > makedep
+	@ echo '/^# DO NOT DELETE THIS LINE/+2,$$d' >eddep
+	@ echo '$$r makedep' >>eddep
+	@ echo 'w' >>eddep
+	@ cp $(MAKEFILE) $(MAKEFILE).bak
+	@ ed - $(MAKEFILE) < eddep
+	@ rm eddep makedep makedepd
+	@ echo '# DEPENDENCIES MUST END AT END OF FILE' >> $(MAKEFILE)
+	@ echo '# IF YOU PUT STUFF HERE IT WILL GO AWAY' >> $(MAKEFILE)
+	@ echo '# see make depend above' >> $(MAKEFILE)
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+	     "INFOPROC_SRC_DIR= $(INFOPROC_SCCS_SRC)" \
+	     "ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)" \
+	     "EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)" \
+	     "XRACQ_SRC_DIR= $(XRACQ_SCCS_SRC)"  \
+	     "VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)"  \
+	     "STAT_SRC_DIR= $(STAT_SCCS_SRC)"	\
+	     "INFOPROC_GET= $(INFOPROC_SGET)" 	\
+	     "ACQPROC_GET= $(ACQPROC_SGET)" 	\
+	     "XRACQ_GET= $(XRACQ_SGET)" 	\
+	     "VWACQ_GET= $(VWACQ_SGET)" 	\
+	     "EXPPROC_GET= $(EXPPROC_SGET)" 	\
+	     "STAT_GET= $(STAT_SGET)"  src ) 
+
+getsrc :
+	( $(MAKE) -e -f $(MAKEFILE) \
+	     "INFOPROC_SRC_DIR= $(INFOPROC_SCCS_SRC)" \
+	     "ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)" \
+	     "EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)" \
+	     "XRACQ_SRC_DIR= $(XRACQ_SCCS_SRC)"  \
+	     "VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)"  \
+	     "STAT_SRC_DIR= $(STAT_SCCS_SRC)"	\
+	     "INFOPROC_GET= $(INFOPROC_SGET)" 	\
+	     "ACQPROC_GET= $(ACQPROC_SGET)" 	\
+	     "XRACQ_GET= $(XRACQ_SGET)" 	\
+	     "VWACQ_GET= $(VWACQ_SGET)" 	\
+	     "EXPPROC_GET= $(EXPPROC_SGET)" 	\
+	     "STAT_GET= $(STAT_SGET)"  src ) 
+
+#---- Recursive Targets ------------------------------------------------
+
+src : $$(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+libInfoproc.a libInfoproc_dbx.a   \
+	     libInfoproc_p.a  :	getobj $(INFOPROC_OBJ)
+	@echo Making $@...
+	- (umask 2; rm -f $@)
+	(umask 2; ar rv $@ `lorder $(INFOPROC_OBJ) | tsort` )
+	@(umask 2; if [ x$$SOLARIS != "xy" ]; then	\
+		 echo ranlib $@; 			\
+		 ranlib $@; 				\
+	 fi)
+	-@ (umask 2; if [ x$$SOLARIS != "xy" ]; then		\
+		echo remove objects;				\
+		rm -f $(INFOPROC_OBJ); \
+	 fi)
+
+ 
+Infoproc Infoproc_dbx Infoproc_p Infoproc_static : $$(INFOPROC_OBJ)
+	@echo Making $@...
+	( umask 2;					\
+	 $(LINK.c) -o $@ $(INFOPROC_OBJ) $(LIBS)  )
+
+getobj :
+	-@(umask 2; if [ x$$SOLARIS != "xy" ]; then		\
+		echo extract $(WORKLIB) objects from library;	\
+		ar xo $(WORKLIB) $(INFOPROC_OBJ);		\
+	 fi)
+
+
+#--- Object Targets ------------------------------------------------------
+
+
+$(INFOPROC_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) -DDATASEG $(@:.o=.c))
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(INFOPROC_SGET) $@
+	( cd $(SRC_DIR); $(INFOPROC_SGET) $@ )
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(INFOPROC_SRC) : $$(INFOPROC_SRC_DIR)$$(@)
+	$(INFOPROC_GET) $@
+
+$(ACQPROC_HDR) : $$(ACQPROC_SRC_DIR)$$(@)
+	$(ACQPROC_GET) $@
+
+$(EXPPROC_HDR) : $$(EXPPROC_SRC_DIR)$$(@)
+	$(EXPPROC_GET) $@
+
+$(XRACQ_HDR) : $$(XRACQ_SRC_DIR)$$(@)
+	$(XRACQ_GET) $@
+
+$(VWACQ_HDR): $$(VWACQ_SRC_DIR)$$(@)
+	$(VWACQ_GET) $@
+
+$(STAT_HDR): $$(STAT_SRC_DIR)$$(@)
+	$(STAT_GET) $@
+
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+# DEPENDENCIES MUST END AT END OF FILE
+infoproc.o: infoproc.c
+infoqueu.o: infoqueu.c
+infoqueu.o: ACQPROC_strucs.h
+infoqueu.o: STAT_DEFS.h
+infoqueu.o: shrstatinfo.h
+infoqueu.o: hostAcqStructs.h
+infosockets.o: infosockets.c
+infosockets.o: SUN_HAL.h
+infosockets.o: ACQ_HALstruc.h
+infosockets.o: ACQPROC_strucs.h
+info_svc.o: info_svc.c
+info_svc.o: acqinfo.h
+# DEPENDENCIES MUST END AT END OF FILE
+# IF YOU PUT STUFF HERE IT WILL GO AWAY
+# see make depend above

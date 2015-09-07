@@ -1,0 +1,4 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"split"
+delta=delta/2
+cr=cr-delta

@@ -1,0 +1,9 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"******************************************"
+" _solvent - sets frequencies              "
+"******************************************"
+$sfrq=sfrq
+setfrq
+if($sfrq<>sfrq) then
+  setfrqCmd('setref_nuc')
+endif

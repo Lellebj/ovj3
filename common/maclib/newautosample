@@ -1,0 +1,7 @@
+showtray('close')
+checkautodir:$ret 
+if ($ret>0) then 
+   walkupQ('new','auto') 
+else
+   walkupQ('logout')
+endif

@@ -1,0 +1,228 @@
+# 
+#	Makefile for ddl file stuff (libddl.a)
+#	make -f makeddl.lnx -- decides which system it is on and makes the library
+#			accordingly
+#	make -f makeddl.lnx  -- makes .a .so libraries for sunos or solaris
+#	make -f makeddl.lnx dbx -- makes dbx library for sunos solaris
+#	make -f makeddl.lnx install -- installs library
+#
+
+
+#
+# sourcedir, sccsdir & vnmrdir are environment variables
+#
+ifndef sccsdir
+sccsdir = /vsccs/sccs
+endif
+ifndef lnxobjdir
+lnxobjdir = /vobj/lnx
+endif
+
+DDL_REV=
+MAKEFILE=makeddl.lnx
+
+SCCSDIR= $(sccsdir)
+
+# Shared Library version number   E.G.  3.2 -> libncomm.so.3.2
+SHAREDLIB_VER=0.1
+
+OSTYPE=`uname -r | awk '{ print substr($$0,1,1) }'`
+
+PIC = -fPIC
+
+LDSOFLAGS = -shared -W1 -m32
+
+OBJDIR =
+
+# use echo where we don't perform action
+SLINK = echo
+
+LIB_DIR= $({$(OBJDIR)}objdir)/lib
+
+#--- SCCS Sources ----
+DDL_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ddl/SCCS/s.
+IB_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ib/SCCS/s.
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+DDL_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ddl/SCCS get
+IB_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ib/SCCS get
+
+C_SRCS=		ddlnode.c ddlsymtab.c scanner.c parser.c misc.c \
+		action.c crc.c ddl_c_interface.c
+Y_SRCS=		ddl.y
+SRCS=		$(C_SRCS) $(Y_SRCS)
+
+INCS=		crc.h ddl_c_interface.h ddl-parser.h ddllib.h ddlnode.h \
+		macrolist.h parser.h scanner.h symbol.h
+
+DEBUG_SRCS=	
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(SRCS) $(INCS) generic.h
+
+C_OBJS= $(C_SRCS:.c=.o)
+
+OBJS= $(C_OBJS) $(Y_SRCS:.y=.o)
+
+DEBUG_OBJS=$(DEBUG_SRCS:.c=.o)
+
+.INIT:
+
+OPENWINHOME = /usr/openwin
+
+INCDIRS = -I./ -I$(OPENWINHOME)/include 
+#INCDIRS = -I..
+#CPLUSPLUS_INCDIRS = -I/usr/local/CenterLine/c++_1.1.0-r1.0/sun4-40/include
+LIBS =   -L$(LIB_DIR) -lm
+
+#COMPAT= -compat=4 -DOWTOOLKIT_WARNING_DISABLED
+COMPAT= -Wno-deprecated -DLINUX -DSOLARIS
+CDEFINE= -DLINUX -DSOLARIS
+YOBJS=  y.tab.o
+YFLAGS= -dv
+#CFLAGS= -g $(COMPAT)
+CFLAGS= -m32 -O -Wno-deprecated
+#CC= /usr/local/CC/sun4/CC
+CC=g++ -DLINUX -DSOLARIS
+
+std: 	
+		@echo $(OSTYPE)
+		 ( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -m32 $(PIC)" \
+		   libddl ) ;
+
+dbx:  
+		@echo $(OSTYPE)
+		 ( $(MAKE) -e -f $(MAKEFILE) "CFLAGS= -g -m32 $(PIC)" \
+		   libddldbx ) ; 
+
+libddl:		libddl.a libddl.so
+
+libddldbx:	libddldbx.a libddldbx.so
+
+libddl_sol:	libddl_sol.a libddl_sol.so
+
+libddl_soldbx:	libddl_soldbx.a libddl_soldbx.so
+
+libddl.a libddldbx.a:	ddl.c ddl-tab.h $(OBJS) $(DEBUG_OBJS)
+		-rm -f $@
+		ar cvlq $@ $(OBJS) $(DEBUG_OBJS)
+		(umask 2; /usr/bin/ranlib $@)
+
+libddl_sol.a libddl_soldbx.a:	ddl.c ddl-tab.h $(OBJS) $(DEBUG_OBJS)
+		-rm -f $@
+		#(umask 2; ar rv $@ `lorder $(OBJS) $(DEBUG_OBJS) | tsort`)
+		(umask 2; ar rv $@ $(OBJS) $(DEBUG_OBJS))
+
+libddl.so libddldbx.so:	ddl.c ddl-tab.h $(OBJS) $(DEBUG_OBJS)
+	- (umask 2; rm -f $@*)
+	(umask 2; $(CC) $(LDSOFLAGS) -o $@.$(SHAREDLIB_VER)  \
+		$(OBJS) $(DEBUG_OBJS))
+	(umask 2; $(SLINK) $@.$(SHAREDLIB_VER) $@)
+	@echo libddl.so.x is complete
+
+libddl_sol.so libddl_soldbx.so:	ddl.c ddl-tab.h $(OBJS) $(DEBUG_OBJS)
+	- (umask 2; rm -f $@*)
+	(umask 2; $(CC) $(LDSOFLAGS) -o $@.$(SHAREDLIB_VER)  \
+		$(OBJS) $(DEBUG_OBJS))
+	(umask 2; $(SLINK) $@.$(SHAREDLIB_VER) $@)
+	@echo libddl_sol.so.x is complete
+
+ddl.c ddl-tab.h:	
+	(umask 2; \
+	echo *************************************************** ;\
+	/bin/cp $(solobjdir)/proglib/ddl/ddl.c .         ;      \
+	/bin/cp $(solobjdir)/proglib/ddl/ddl-tab.h .         ;      \
+	echo *************************************************** ;\
+	)
+#ddl.c ddl-tab.h:      ddl.y parser.h 
+#		yacc $(YFLAGS) ddl.y
+#		mv y.tab.c ddl.c
+#		umask 2; mv y.tab.h ddl-tab.h
+
+ddl.o:		ddl.c
+		(umask 2; $(CC) -c $(CFLAGS) $(INCDIRS) ddl.c )
+
+# ddl_c_interface.o : $$(@:.o=.c) $$(INCS)
+# 		$(COMPILE.cc) $<
+
+$(C_OBJS):  %.o:%.c $(SRCS) $(INCS) generic.h
+		(umask 2; $(CC) -c $(CFLAGS) $(INCDIRS) $< )
+
+#ddl.y:		parser.h
+
+octalign:	octalign.c
+		-@rm -f octalignAAA*
+		CC -o octalign octalign.c
+
+install:	std
+		/bin/rm -f $(LIB_DIR)/libddl*
+		/bin/cp libddl*.a $(LIB_DIR)
+		/usr/bin/ranlib -t $(LIB_DIR)/libddl*.a
+		/bin/cp libddl*.so.$(SHAREDLIB_VER) $(LIB_DIR)
+		$(SLINK) $(LIB_DIR)/libddl*.so.$(SHAREDLIB_VER) libddl.so
+
+clean:
+		/bin/rm -f *.o *~  a.out libddl.a ddl.c 
+
+depend:  
+	@ echo making dependencies...
+	makedepend -f $(MAKEFILE) -Y $(CFLAGS) $(SRCS) 2>/dev/null
+
+#--------------------
+# SCCS extraction.
+#--------------------
+
+#$(MAKEFILE) : %:$(DDL_SCCS_SRC)%
+#	$(DDL_SGET) $@
+
+$(SRCS) $(INCS): %:$(IB_SCCS_SRC)%
+	$(IB_SGET) $(DDL_REV) $@
+
+generic.h:  
+	sccs -p$(SCCSDIR)/aip/SCCS get $@
+	
+# DO NOT DELETE THIS LINE
+
+action.o:  action.c
+action.o: ddl-tab.h
+action.o: ddllib.h
+crc.o:  crc.c
+crc.o:  crc.h
+crc.o: crc.h
+ddl-parser.h: macrolist.h
+ddl-parser.o:  ddl-parser.h
+ddl.o:  ddl.y
+ddl.o: parser.h
+ddl_c_interface.o:  ddl_c_interface.c
+ddl_c_interface.o:  ddl_c_interface.h
+ddl_c_interface.o: ddl_c_interface.h
+ddl_c_interface.o: ddllib.h
+ddllib.h: ddlnode.h
+ddllib.h: parser.h
+ddllib.h: scanner.h
+ddllib.h: symbol.h
+ddllib.o:  ddllib.h
+ddlnode.h: macrolist.h
+ddlnode.o:  ddlnode.c
+ddlnode.o:  ddlnode.h
+ddlnode.o: ddlnode.h
+ddlsymtab.o:  ddlsymtab.c
+ddlsymtab.o: crc.h
+ddlsymtab.o: ddl-tab.h
+ddlsymtab.o: ddllib.h
+macrolist.o:  macrolist.h
+misc.o:  misc.c
+misc.o: ddllib.h
+parser.o:  parser.c
+parser.o:  parser.h
+parser.o: ddl-tab.h
+parser.o: ddllib.h
+scanner.o:  scanner.c
+scanner.o:  scanner.h
+scanner.o: ddl-tab.h
+scanner.o: ddllib.h
+symbol.h: ddlnode.h
+symbol.o:  symbol.h
+# DEPENDENCIES MUST END AT END OF FILE
+# IF YOU PUT STUFF HERE IT WILL GO AWAY
+# see make depend above

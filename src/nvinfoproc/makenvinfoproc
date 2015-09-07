@@ -1,0 +1,444 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makenvinfoproc  make file
+#
+# make -f makeinfoproc, creates Infoproc and it's library
+# make -f makeinfoproc static, creates static version of Infoproc 
+#
+#
+
+MAKEFILE= makenvinfoproc
+
+.PRECIOUS= libInfoproc.a
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory 
+
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+
+## SRC_DIR=$(SRCDIR)/sysinfoproc/
+SRC_DIR=./
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+PROJCAT=
+
+# NDDSHOME = /sw/NDDS/ndds.3.0m
+# NDDSHOME = /sw/NDDS/ndds.3.1a
+# NDDSLIBPATH = lib/sparcSol2.9cc5.4
+# NDDSHOME = /sw/NDDS/build_ndds_ver
+NDDSHOME = $(nddsdir)
+NDDSHOME_GEN = $(nddsgendir)
+NDDSLIBPATH = lib/SolLibs
+
+STDLIBS = -lnsl -lgenIO -lsocket -lgen -lposix4 -lpthread -lm -lc
+ 
+NDDSLIBS = -L$(NDDSHOME)/$(NDDSLIBPATH) \
+	-lnddsdiag -lnddsz -lnddsutilsz -lnddscdrz -lutilsipz -lutilsxxz -lperftimez -lwavesurf \
+	$(STDLIBS)
+
+
+NDDSLIBS_SFU = -L$(nddsdir)/$(NDDSLIBPATH) \
+	$(nddsdir)/$(NDDSLIBPATH)/libnddsdiagz.a \
+	$(nddsdir)/$(NDDSLIBPATH)/libnddsz.a  \
+	$(nddsdir)/$(NDDSLIBPATH)/libnddsutilsz.a \
+	$(nddsdir)/$(NDDSLIBPATH)/libnddscdrz.a \
+	$(nddsdir)/$(NDDSLIBPATH)/libutilsxxz.a \
+	$(nddsdir)/$(NDDSLIBPATH)/libutilsipz.a \
+	$(nddsdir)/$(NDDSLIBPATH)/libperftimez.a \
+	-static-libgcc -ldl -lm -lpthread -lsocket -lport -lbind
+
+
+# NDDSLIBS = $(STDLIBS)  for testing 
+
+# RLIBDIR = -R /vnmr/lib:$(NDDSHOME)/lib/sparcSol2.8cc5.2
+RLIBDIR = -R /vnmr/lib:$(NDDSHOME)/$(NDDSLIBPATH)
+ 
+INCLUDES = -I$(NDDSHOME)/include/unix \
+	-I$(NDDSHOME)/include/share
+
+# where the NDDS include and libraries are
+# NDDS_HOME = /sw/NDDS/ndds.3.0m
+# NDDS_HOME = /sw/NDDS/ndds.3.1a
+NDDS_HOME = /sw/NDDS/build_ndds_ver
+
+# NDDSGEN = $(NDDS_HOME)/bin/sparcSol2.8cc5.2/nddsgen
+# NDDSGEN = $(NDDS_HOME)/bin/sparcSol2.9cc5.3/nddsgen
+NDDSGEN = $(NDDS_HOME)/bin/SolBin/nddsgen
+ 
+
+CFLAGS= -O
+CPPFLAGS=
+LDFLAGS=
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+# LINK.c= $(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+LINK.c= $(CCC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH)
+
+
+#---- Infoproc library being updated. -----
+WORKLIB= libInfoproc.a
+
+#--- SCCS Sources ----
+NVINFOPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvinfoproc/SCCS/s.
+INFOPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)infoproc/SCCS/s.
+NVRECVPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvrecvproc/SCCS/s.
+ACQPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)acqproc/SCCS/s.
+EXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)expproc/SCCS/s.
+XRACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)xracq/SCCS/s.
+VWACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vwacq/SCCS/s.
+STAT_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)stat/SCCS/s.
+NVEXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvexpproc/SCCS/s.
+NVACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)nvacq/SCCS/s.
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+
+NVINFOPROC_SRC_DIR= $(NVINFOPROC_SCCS_SRC)
+INFOPROC_SRC_DIR= $(INFOPROC_SCCS_SRC)
+NVRECVPROC_SRC_DIR= $(NVRECVPROC_SCCS_SRC)
+ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)
+EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)
+XRACQ_SRC_DIR= $(XRACQ_SCCS_SRC)
+VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)
+STAT_SRC_DIR= $(STAT_SCCS_SRC)
+NVEXPPROC_SRC_DIR= $(NVEXPPROC_SCCS_SRC)
+NVACQ_SRC_DIR= $(NVACQ_SCCS_SRC)
+NCOMM_SRC_DIR= $(NCOMM_SCCS_SRC)
+
+#--- Link Commands for Sources Needed in the Working Directory. -------
+# INFOPROC_LN = ln -s $(INFOPROC_SRC_DIR)$(@)
+# ACQPROC_LN = ln -s $(ACQPROC_SRC_DIR)$(@)
+# EXPPROC_LN = ln -s $(EXPPROC_SRC_DIR)$(@)
+# XRACQ_LN = ln -s $(XRACQ_SRC_DIR)$(@)
+# VWACQ_LN = ln -s $(VWACQ_SRC_DIR)$(@)
+# STAT_LN = ln -s $(STAT_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed In True Source Dir.  -------
+NVEXPPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvexpproc/SCCS get
+NVINFOPROC_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)nvinfoproc get
+NVRECVPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvrecvproc/SCCS get
+INFOPROC_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)infoproc get
+ACQPROC_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)acqproc get
+EXPPROC_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)expproc get
+XRACQ_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)xracq get
+VWACQ_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)vwacq get
+STAT_SGET = sccs -d$(SCCSDIR)/$(PROJCAT)stat get
+NVACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)nvacq/SCCS get
+NCOMM_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ncomm/SCCS get
+
+#----  default source extraction to links -------
+NVINFOPROC_GET= $(NVINFOPROC_SGET)
+INFOPROC_GET= $(INFOPROC_SGET)
+NVRECVPROC_GET= $(NVRECVPROC_SGET)
+ACQPROC_GET= $(ACQPROC_SGET)
+EXPPROC_GET= $(EXPPROC_SGET)
+XRACQ_GET= $(XRACQ_SGET)
+VWACQ_GET= $(VWACQ_SGET)
+STAT_GET= $(STAT_SGET)
+NVEXPPROC_GET= $(NVEXPPROC_SGET)
+NVACQ_GET= $(NVACQ_SGET)
+NCOMM_GET= $(NCOMM_SGET)
+
+#------------------------------------------------------------------------
+#-- NDDS Types Source  files
+#------------------------------------------------------------------------
+
+NDDS_TYPES = Console_Stat.x App_HB.x
+
+NDDS_C_SRC= $(NDDS_TYPES:.x=.c)
+NDDS_C_HDR= $(NDDS_TYPES:.x=.h)
+NDDS_OBJ= $(NDDS_TYPES:.x=.o)
+
+#------------------------------------------------------------------------
+#-- Nirvana Infoproc sources files 
+#------------------------------------------------------------------------
+NVINFOPROC_HDR=			\
+		acqinfo.h
+
+NVINFOPROC_SRC=			\
+		infoproc.c	\
+		nddsinfofuncs.c	\
+		info_svc.c	\
+		info_svc_funcs.c
+
+NVINFOPROC_OBJ= $(NVINFOPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#-- common Infoproc sources files 
+#------------------------------------------------------------------------
+INFOPROC_SRC=			\
+		infoqueu.c	\
+		infosockets.c
+
+INFOPROC_OBJ= $(INFOPROC_SRC:.c=.o)
+
+#----- Infoproc header files that are needed
+ACQPROC_HDR=			\
+		ACQPROC_strucs.h
+
+#----- Expproc header files that are needed
+EXPPROC_HDR=			\
+		shrstatinfo.h
+
+EXPPROC_SRC=			\
+		statfuncs.c
+
+EXPPROC_OBJ= $(EXPPROC_SRC:.c=.o)
+
+#----- xracq header files that are needed
+XRACQ_HDR=			\
+		ACQ_HALstruc.h	\
+		STAT_DEFS.h	\
+		SUN_HAL.h
+
+#----- vwacq header files that are needed
+VWACQ_HDR=			\
+		hostAcqStructs.h
+
+#----- stat header files that are needed
+STAT_HDR=
+
+# STAT_HDR=			\
+# 		acqinfo.h
+
+
+#------------------------------------------------------------------------
+NVRECVPROC_HDR=         \
+		rngBlkLib.h
+
+NVRECVPROC_SRC=         \
+		rngBlkLib.c
+
+NVRECVPROC_OBJ= $(NVRECVPROC_SRC:.c=.o)
+
+
+
+#------------------------------------------------------------------------
+#--- NCOMM Sources that are needed
+#------------------------------------------------------------------------
+# Communications libraries
+
+NCOMM_HDR_LIB=                  \
+		sockets.h	\
+		errLogLib.h	\
+		ipcKeyDbm.h     \
+		mfileObj.h      \
+		semLib.h        \
+		shrMLib.h
+
+NCOMM_SRC_LIB=                  \
+		sockets.c	\
+		errLogLib.c	\
+		semLib.c	\
+		mfileObj.c      \
+		shrMLib.c
+
+NCOMM_OBJ_LIB= $(NCOMM_SRC_LIB:.c=.o)
+
+
+#------------------------------------------------------------------------
+#-- NDDS comm Source  files
+#------------------------------------------------------------------------
+
+NVACQ_HDR=			\
+		crc32.h		\
+		sysUtils.h	\
+		NDDS_Obj.h	\
+		NDDS_PubFuncs.h	\
+		NDDS_SubFuncs.h	
+
+NVACQ_SRC=			\
+		crc32.c         \
+		sysUtils.c      \
+		NDDS_Obj.c      \
+		NDDS_PubFuncs.c \
+		NDDS_SubFuncs.c	
+
+NVACQ_OBJ= $(NVACQ_SRC:.c=.o)
+
+#---- All Sources and headers required for compilation -----
+
+ALL_C_SRC=  $(INFOPROC_SRC) $(NVACQ_SRC) $(NCOMM_SRC_LIB) $(NVINFOPROC_SRC) $(NDDS_C_SRC) $(EXPPROC_SRC)
+
+ALL_C_OBJ= $(ALL_C_SRC:.c=.o)
+
+ALLSRC= $(INFOPROC_SRC) $(EXPPROC_HDR) $(EXPPROC_SRC) $(ACQPROC_HDR)  \
+	 $(XRACQ_HDR) $(VWACQ_HDR) $(STAT_HDR) $(NVACQ_SRC) $(NVACQ_HDR)  \
+	$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) $(NVINFOPROC_SRC) $(NVINFOPROC_HDR) $(NDDS_C_SRC)
+
+# LIBS= -lm -lsocket -lnsl
+LIBS= $(NDDSLIBS)
+
+#--- PAID Targets ------------------------------------------
+
+std SOLARIS all : $$(MAKEFILE) Source 
+	@( if [ ! -d $(OBJDIR)sol ]; then       \
+	   mkdir $(OBJDIR)sol;                  \
+	fi)
+	( cd sol;                      \
+	$(MAKE) -e -f ../$(MAKEFILE) \
+	"CFLAGS = -DSOLARIS -DRTI_UNIX -DNIRVANA -DNOASYNC $(INCLUDES)" \
+	Infoproc )
+	@echo "NMR_ID Infoproc complete ----------------------------------"
+
+# for debug link all  objects into recvproc
+dbx : doit
+	@( if [ ! -d $(OBJDIR)soldbx ]; then       \
+	   mkdir $(OBJDIR)soldbx;                  \
+	fi)
+	( cd soldbx;                      \
+	$(MAKE) -e -f ../$(MAKEFILE) \
+	"CFLAGS = $(DEBUGOPT) -DSOLARIS -DDEBUG -DRTI_UNIX -DNIRVANA -DNOASYNC $(INCLUDES)" \
+	Infoproc_dbx )
+	@echo "NMR_ID Infoproc_dbx complete ----------------------------------"
+
+WINDOWS :
+	@( if [ ! -d win_sfu ]; then    \
+	mkdir win_sfu;                       \
+	fi)
+	( cd win_sfu;                   \
+	$(MAKE) -e -f ../$(MAKEFILE) \
+	"CC = gcc"                      \
+	"CCC = g++"                     \
+	"DEBUGOPT = -g"                 \
+	"NDDSLIBPATH = lib/WinSFULibs"     \
+	"NDDSGEN = $(NDDSHOME)/bin/WinBin/nddsgen.exe"  \
+	"STDLIBS = -lsocket -lm -lpthread" \
+	"RLIBDIR = -rpath /vnmr/lib:$(NDDSHOME)/lib/WinSFULibs" \
+	"CFLAGS = -g -DDEBUG -D_ALL_SOURCE -D_USE_LIBPORT -D_REENTRANT -DNO_MULTICAST -DUSE_HTONS -DLINUX -DRTI_UNIX -DNIRVANA -DNOASYNC $(INCLUDES)" \
+	Infoproc_win )
+	( umask 2; cp win_sfu/Infoproc .)
+	@echo "Windows Infoproc complete ----------------------------------"
+
+
+
+$(NDDS_C_SRC) : $(NDDS_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDSHOME_GEN); $(NDDSGEN) -replace  $(@:.c=.x) )
+
+$(NDDS_C_HDR) : $(NDDS_TYPES)
+	( umask 2; export NDDSHOME; NDDSHOME=$(NDDSHOME_GEN); $(NDDSGEN) -replace  $(@:.h=.x) )
+
+
+#-----------  generate dependency list of targets ------------------------
+
+depend: src
+	makedepend -f $(MAKEFILE) $(DEBUGOPT) -DDEBUG -DRTI_UNIX -DNIRVANA -Y  -I./ $(ALL_C_SRC) 2>/dev/null
+
+doit: 
+	@echo just do it
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+	     "INFOPROC_SRC_DIR= $(INFOPROC_SCCS_SRC)" \
+	     "ACQPROC_SRC_DIR= $(ACQPROC_SCCS_SRC)" \
+	     "EXPPROC_SRC_DIR= $(EXPPROC_SCCS_SRC)" \
+	     "XRACQ_SRC_DIR= $(XRACQ_SCCS_SRC)"  \
+	     "VWACQ_SRC_DIR= $(VWACQ_SCCS_SRC)"  \
+	     "STAT_SRC_DIR= $(STAT_SCCS_SRC)"	\
+	     "INFOPROC_GET= $(INFOPROC_SGET)" 	\
+	     "ACQPROC_GET= $(ACQPROC_SGET)" 	\
+	     "XRACQ_GET= $(XRACQ_SGET)" 	\
+	     "VWACQ_GET= $(VWACQ_SGET)" 	\
+	     "EXPPROC_GET= $(EXPPROC_SGET)" 	\
+	     "STAT_GET= $(STAT_SGET)"  src ) 
+
+#---- Recursive Targets ------------------------------------------------
+
+src : $$(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+ 
+## Infoproc Infoproc_dbx : $$(INFOPROC_OBJ) $$(NVACQ_OBJ) $$(NCOMM_OBJ_LIB) $$(NVINFOPROC_OBJ)
+## 	@echo Making $@...
+## 	( umask 2;					\
+## 	 $(LINK.c) -o $@ $(INFOPROC_OBJ) $(NVACQ_OBJ) $(NCOMM_OBJ_LIB) $$(NVINFOPROC_OBJ) $(LIBS)  )
+
+Infoproc Infoproc_dbx : $$(ALL_C_OBJ)
+	@echo Making $@...
+	( umask 2;					\
+	 $(LINK.c) -o $@ $(ALL_C_OBJ) $(RLIBDIR) $(NDDSLIBS) $(LIBS)  )
+
+Infoproc_win : $$(ALL_C_OBJ) $$(NVRECVPROC_OBJ)
+	( umask 2;					\
+	 $(LINK.c) -o Infoproc $(ALL_C_OBJ) $(NVRECVPROC_OBJ) $(RLIBDIR) $(NDDSLIBS_SFU) )
+
+#	 $(LINK.c) -o $@ $(ALL_C_OBJ) -R $(NDDSHOME)/lib/sparcSol2.8cc5.2 $(NDDSLIBS) $(LIBS)  )
+
+
+#--- Object Targets ------------------------------------------------------
+
+
+$(INFOPROC_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) -DSUN -DDATASEG $(@:.o=.c))
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(INFOPROC_SGET) $@
+	( cd $(SRC_DIR); $(INFOPROC_SGET) $@ )
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(NVINFOPROC_SRC) $(NVINFOPROC_HDR) : $$(NVINFOPROC_SRC_DIR)$$(@)
+	$(NVINFOPROC_GET) $@
+
+$(NVRECVPROC_SRC) $(NVRECVPROC_HDR) : $$(NVRECVPROC_SRC_DIR)$$(@)
+	$(NVRECVPROC_GET) $@
+
+$(INFOPROC_SRC) : $$(INFOPROC_SRC_DIR)$$(@)
+	$(INFOPROC_GET) $@
+
+$(ACQPROC_HDR) : $$(ACQPROC_SRC_DIR)$$(@)
+	$(ACQPROC_GET) $@
+
+$(EXPPROC_SRC) $(EXPPROC_HDR) : $$(EXPPROC_SRC_DIR)$$(@)
+	$(EXPPROC_GET) $@
+
+$(XRACQ_HDR) : $$(XRACQ_SRC_DIR)$$(@)
+	$(XRACQ_GET) $@
+
+$(VWACQ_HDR): $$(VWACQ_SRC_DIR)$$(@)
+	$(VWACQ_GET) $@
+
+$(NVACQ_SRC) $(NVACQ_HDR) $(NDDS_TYPES): $$(NVACQ_SRC_DIR)$$(@)
+	$(NVACQ_GET) $@
+
+$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) $(CHANOBJ_SRC) $(CHANOBJ_HDR) : $$(NCOMM_SRC_DIR)$$(@)
+	$(NCOMM_GET) $@
+
+$(STAT_HDR): $$(STAT_SRC_DIR)$$(@)
+	$(STAT_GET) $@
+
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+
+infoqueu.o: ACQPROC_strucs.h hostAcqStructs.h shrstatinfo.h
+infosockets.o: SUN_HAL.h ACQ_HALstruc.h ACQPROC_strucs.h rngBlkLib.h sockets.h
+infosockets.o: errLogLib.h
+crc32.o: crc32.h
+sysUtils.o: errLogLib.h
+NDDS_Obj.o: errLogLib.h NDDS_Obj.h
+NDDS_PubFuncs.o: errLogLib.h NDDS_Obj.h
+NDDS_SubFuncs.o: errLogLib.h NDDS_Obj.h
+semLib.o: errLogLib.h semLib.h mfileObj.h
+mfileObj.o: errLogLib.h mfileObj.h
+shrMLib.o: errLogLib.h shrMLib.h mfileObj.h
+infoproc.o: errLogLib.h sockets.h
+nddsinfofuncs.o: errLogLib.h NDDS_Obj.h NDDS_SubFuncs.h NDDS_PubFuncs.h
+nddsinfofuncs.o: Console_Stat.h hostAcqStructs.h App_HB.h
+info_svc.o: acqinfo.h
+info_svc_funcs.o: acqinfo.h
+Console_Stat.o: Console_Stat.h NDDS_Obj.h
+statfuncs.o: errLogLib.h hostAcqStructs.h mfileObj.h shrMLib.h shrstatinfo.h
+sockets.o: sockets.h sockets.c
+rngBlkLib.o: rngBlkLib.h 

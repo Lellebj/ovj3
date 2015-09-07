@@ -1,0 +1,372 @@
+# 
+#
+# makeroboproc  make file
+#
+# make -f makeroboproc creates Roboproc
+#
+
+MAKEFILE= makeroboproc.lnx
+
+# sccsdir -> SCCS directory
+SCCSDIR=$(sccsdir)
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+
+LIBS = -lm -lnsl -ldl -ltcl
+LIBS = -lm -lnsl -ltcl8.4
+NCOMMDIR = $(lnxobjdir)/proglib/ncomm
+CFLAGS= -O2 -DLINUX -m32 -I$(vcommondir)/tcl/srcTcl
+CPPFLAGS=
+LDFLAGS= -m32 -Wl,-rpath /vnmr/lib -L$(NCOMMDIR)
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(LDFLAGS) $(TARGET_ARCH)
+
+#--- SCCS Sources ----
+RECVPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)recvproc/SCCS/s.
+SENDPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)sendproc/SCCS/s.
+EXPPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)expproc/SCCS/s.
+NCOMM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)ncomm/SCCS/s.
+ROBOPROC_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)roboproc/SCCS/s.
+VWACQ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vwacq/SCCS/s.
+VNMR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmr/SCCS/s.
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+RECVPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)recvproc/SCCS get
+SENDPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)sendproc/SCCS get
+ROBOPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)roboproc/SCCS get
+NCOMM_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)ncomm/SCCS get
+EXPPROC_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)expproc/SCCS get
+VWACQ_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vwacq/SCCS get
+VNMR_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vnmr/SCCS get
+
+#------------------------------------------------------------------------
+#--- NCOMM Sources that are needed for Recvproc
+#------------------------------------------------------------------------
+# Communications libraries
+NCOMM_HDR_LIB=			\
+		errLogLib.h	\
+		eventHandler.h	\
+		eventQueue.h	\
+		eventQueueP.h	\
+		hhashLib.h	\
+		ipcKeyDbm.h	\
+		ipcMsgQLib.h	\
+		listObj.h	\
+		mfileObj.h	\
+		msgQLib.h	\
+		semLib.h	\
+		shrMLib.h
+
+NCOMM_SRC_LIB=			\
+		errLogLib.c	\
+		eventHandler.c	\
+		eventQueue.c	\
+		hhashLib.c	\
+		ipcKeyDbm.c	\
+		ipcMsgQLib.c	\
+		listObj.c	\
+		mfileObj.c	\
+		msgQLib.c	\
+		semLib.c	\
+		shrMLib.c
+
+NCOMM_OBJ_LIB= $(NCOMM_SRC_LIB:.c=.o)
+
+#------------------------------------------------------------------------
+#--- Channel Sources that are needed for Recvproc
+#------------------------------------------------------------------------
+CHANOBJ_HDR=			\
+		chanLib.h	\
+		chanLibP.h	\
+		sockets.h
+
+CHANOBJ_SRC=			\
+		chanLib.c	\
+		sockets.c	\
+		signals.c	\
+		fdmask.c
+
+CHANOBJ_OBJ=$(CHANOBJ_SRC:.c=.o)
+
+
+#------------------------------------------------------------------------
+#--- Expproc Sources & Headers that are needed for Recvproc
+#------------------------------------------------------------------------
+EXPPROC_HDR=                    \
+                parser.h 	\
+                hostMsgChannels.h \
+		shrstatinfo.h	\
+		shrexpinfo.h
+
+EXPPROC_SRC=			\
+		excepthandler.c	\
+		statfuncs.c	\
+		parser.c	\
+		daemon.c
+
+EXPPROC_OBJ= $(EXPPROC_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+
+#------------------------------------------------------------------------
+#-- roboproc Source  files 
+#------------------------------------------------------------------------
+ROBOPROC_HDR=			\
+		termhandler.h	\
+		rackObj.h	\
+		gilfuncs.h	\
+		gilsonObj.h	\
+		timerfuncs.h	\
+		iofuncs.h	\
+		hrm_errors.h
+
+ROBOPROC_SRC=			\
+		robocmds.c	\
+		roboproc.c	\
+		robofuncs.c	\
+		rackObj.c	\
+		gilsonObj.c	\
+		gilfuncs.c	\
+		tclfuncs.c	\
+		termhandler.c	\
+		timerfuncs.c	\
+		iofuncs.c	\
+		hrm_scheduler.c	\
+		crc16.c
+
+ROBOPROC_OBJ= $(ROBOPROC_SRC:.c=.o)
+
+ROBOPROC_STDALONE_HDR=		\
+		errLogLib.h	\
+		termhandler.h	\
+		gilfuncs.h	\
+		rackObj.h	\
+		gilsonObj.h	\
+		timerfuncs.h	\
+		iofuncs.h	\
+		hrm_errors.h
+
+ROBOPROC_STDALONE_SRC=		\
+		errLogLib.c	\
+		gilalign.c	\
+		rackObj.c	\
+		gilsonObj.c	\
+		gilfuncs.c	\
+		termhandler.c	\
+		timerfuncs.c	\
+		iofuncs.c
+
+GILSCRIPT_HDR=			\
+		errLogLib.h	\
+		termhandler.h	\
+		gilfuncs.h	\
+		rackObj.h	\
+		gilsonObj.h	\
+		timerfuncs.h	\
+		iofuncs.h
+
+GILSCRIPT_SRC=		\
+		errLogLib.c	\
+		gilscript.c	\
+		rackObj.c	\
+		gilsonObj.c	\
+		gilfuncs.c	\
+		tclfuncs.c	\
+		termhandler.c	\
+		timerfuncs.c	\
+		iofuncs.c
+
+NMS_STDALONE_HDR=		\
+		errLogLib.h	\
+		termhandler.h
+
+NMS_STDALONE_SRC=		\
+		errLogLib.c	\
+		nmsalign.c	\
+		termhandler.c
+
+PT_STDALONE_HDR=		\
+		errLogLib.h	\
+		termhandler.h
+
+PT_STDALONE_SRC=		\
+		errLogLib.c	\
+		ptalign.c	\
+		termhandler.c
+
+ROBOPROC_STDALONE_OBJ= $(ROBOPROC_STDALONE_SRC:.c=.o)
+NMS_STDALONE_OBJ= $(NMS_STDALONE_SRC:.c=.o)
+PT_STDALONE_OBJ= $(PT_STDALONE_SRC:.c=.o)
+GILSCRIPT_OBJ= $(GILSCRIPT_SRC:.c=.o)
+		
+
+#------------------------------------------------------------------------
+#--- Vnmr Sources & Headers that are needed for Recvproc
+#------------------------------------------------------------------------
+VNMR_HDR=			\
+		acqerrmsges.h	\
+		errorcodes.h	\
+		acquisition.h
+VNMR_SRC=
+VNMR_OBJ= $(VNMR_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#--- Acquisition Sources & Headers that are needed for Recvproc
+#------------------------------------------------------------------------
+VWACQ_HDR=			\
+		hostAcqStructs.h \
+		acqcmds.h
+VWACQ_SRC=
+VWACQ_OBJ= $(VWACQ_SRC:.c=.o)
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= 				\
+	$(CHANOBJ_SRC) $(CHANOBJ_HDR) 	\
+	$(EXPPROC_SRC) $(EXPPROC_HDR)	\
+	$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) \
+	$(RECVPROC_SRC) $(RECVPROC_HDR)  \
+	$(ROBOPROC_SRC) $(ROBOPROC_HDR) \
+        $(ROBOPROC_STDALONE_SRC) \
+        $(NMS_STDALONE_SRC)	\
+        $(PT_STDALONE_SRC)	\
+	gilscript.c gilalign.c nmsalign.c ptalign.c	\
+	$(SENDPROC_SRC) $(SENDPROC_HDR)  \
+	$(VNMR_SRC) $(VNMR_HDR)		\
+	$(VWACQ_SRC) $(VWACQ_HDR)
+ 
+ALL_C_SRC = $(ALLSRC)
+
+ALLOBJS= \
+	$(CHANOBJ_OBJ) \
+	$(EXPPROC_OBJ) \
+	$(RECVPROC_OBJ) \
+	$(ROBOPROC_OBJ) \
+        $(NMS_STDALONE_OBJ)	\
+        $(PT_STDALONE_OBJ)	\
+	gilscript.o gilalign.o nmsalign.o ptalign.o	\
+	$(SENDPROC_OBJ) \
+	$(VNMR_OBJ) \
+	$(VWACQ_OBJ)
+
+#LINTFILES= $(ALLSRC:.c=.ln)
+ 
+# link to ncomm library libncomm.a 
+
+LINUX : std
+
+std : stdrobo align nalign palign gilscript
+	@ echo "NMR_ID Roboproc programs Complete"
+
+stdrobo : Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"CPPFLAGS = -DDEBUG "  \
+	Roboproc )
+	(rm *.o)
+	@echo "NMR_ID Roboproc complete -------------------------------------"
+
+# standalone program to run tcl scripts on the gilson
+gilscript : Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"CPPFLAGS = -DGILALIGN -DGILSCRIPT "  \
+	Gilscript )
+	(rm *.o)
+	@echo "NMR_ID Gilscript complete ------------------------------------"
+
+
+# for gilson alignment standalone program used with a TK front end
+align : Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"CPPFLAGS = -DDEBUG -DGILALIGN "  \
+	gilalign )
+	(rm *.o)
+	@echo "NMR_ID gilalign complete -------------------------------------"
+
+# for nms alignment standalone program
+nalign : Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"CPPFLAGS = -DDEBUG "  \
+	nmsalign )
+	(rm *.o)
+	@echo "NMR_ID nmsalign complete -------------------------------------"
+
+# for patient table control standalone program
+palign : Source
+	( $(MAKE) -e -f $(MAKEFILE) \
+	"CPPFLAGS = -DDEBUG "  \
+	ptalign )
+	(rm *.o)
+	@echo "NMR_ID ptalign complete -------------------------------------"
+
+# ---- Be sure True Source that we link to are upto date.
+src Source : $(ALLSRC)
+	@echo Sources up to date...
+
+Roboproc : $(ROBOPROC_OBJ) $(EXPPROC_OBJ)
+	(umask 2; $(LINK.c) -o $@  $(ROBOPROC_OBJ) $(EXPPROC_OBJ) -lacqcomm $(LIBS))
+	@echo Roboproc is complete
+
+Gilscript : $(GILSCRIPT_OBJ)
+	(umask 2; $(LINK.c) -o $@  $(GILSCRIPT_OBJ) $(LIBS))
+	@echo Gilscript is complete
+
+gilalign : $(ROBOPROC_STDALONE_OBJ)
+	(umask 2; $(CC) -m32 -o $@  $(ROBOPROC_STDALONE_OBJ) -lm)
+	@echo gilalign is complete
+
+nmsalign : $(NMS_STDALONE_OBJ)
+	(umask 2; $(LINK.c) -o $@ $(NMS_STDALONE_OBJ) -lacqcomm $(LIBS))
+	@echo nmsalign is complete
+
+ptalign : $(PT_STDALONE_OBJ)
+	(umask 2; $(LINK.c) -o $@ $(PT_STDALONE_OBJ) -lacqcomm $(LIBS))
+	@echo ptalign is complete
+
+depend:	src
+	makedepend -f $(MAKEFILE) -Y $(CDEFINE) $(ALLSRC) 2>/dev/null
+
+#--- Object Targets ----------------------------------------------
+
+$(ALLOBJS) : $(@:.o=.c)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(ROBOPROC_MAN_LIB) : $(@:.nr=.c)
+	-(umask 2; mangen $(@:.nr=.c) ; nroff -man $@ > $(@:.nr=.man) )
+
+$(ROBOPROC_INSTALLMAN_LIB) : $(@:.2=.c)
+	-(umask 2; mangen $(@:.2=.c) ; mv $(@:.2=.nr) $@ )
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) : 
+	$(ROBOPROC_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(ROBOPROC_SRC) $(ROBOPROC_HDR) : % :$(ROBOPROC_SCCS_SRC)%
+	$(ROBOPROC_SGET) $@
+
+gilscript.c gilalign.c nmsalign.c ptalign.c : % :$(ROBOPROC_SCCS_SRC)%
+	$(ROBOPROC_SGET) $@
+
+$(NCOMM_SRC_LIB) $(NCOMM_HDR_LIB) : % :$(NCOMM_SCCS_SRC)%
+	$(NCOMM_SGET) $@
+
+$(CHANOBJ_SRC) $(CHANOBJ_HDR) : % :$(NCOMM_SCCS_SRC)%
+	$(NCOMM_SGET) $@
+
+$(EXPPROC_SRC) $(EXPPROC_HDR) : % :$(EXPPROC_SCCS_SRC)%
+	$(EXPPROC_SGET) $@
+
+$(VNMR_SRC) $(VNMR_HDR) : % :$(VNMR_SCCS_SRC)%
+	$(VNMR_SGET) $@
+
+$(VWACQ_SRC) $(VWACQ_HDR) : % :$(VWACQ_SCCS_SRC)%
+	$(VWACQ_SGET) $@
+
+# DO NOT DELETE THIS LINE -- make depend uses it
+# DEPENDENCIES MUST END AT END OF FILE

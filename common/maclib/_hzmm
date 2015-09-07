@@ -1,0 +1,4 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+wc = wp / hzmm
+hzmm = wp / wc
+

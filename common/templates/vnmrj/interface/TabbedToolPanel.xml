@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! xml/TabbedToolPanel.xml
+ !
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+<!-- Testing the SAXParserFactory and SAXParser classes -->
+<!-- Available tools are: ToolPanel, Display -->
+<toolDoc>
+    <tool name="Locator" viewport="all"/>
+    <tool name="XMLToolPanel" label="QuickSubmit" file="VertQuickSubmit.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="CRAFT" file="VertCraft.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="Frame" file="Display.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="Viewport" file="VpLayout.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="ProcessPlot" file="VertPanPP.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="Cryo" file="VertPanCryo.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="Glue" file="Glue.xml" viewport="all"/>
+    <tool name="XMLToolPanel" label="ArrayedSpectra" file="VertPanArray.xml" viewport="all"/>
+</toolDoc>

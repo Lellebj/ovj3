@@ -1,0 +1,12 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+
+if ($#<2) then
+   return
+endif
+
+if ($1 = 'molecule') then
+   "shell('file ' + $2 + ' | awk \'{print $2}\'; cat'):$type"
+   vnmrjcmd('mol', 'display', '"'+$2+'"')
+elseif ($1 = 'icon') then
+   imagefile('display', $2)
+endif

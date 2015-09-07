@@ -1,0 +1,5 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+setlimit('sb',1000,-1000,0.000001)
+setlimit('sbs',1000,-1000,0.000001)
+sb=-at/4 sbs=-sb
+ai

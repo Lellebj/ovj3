@@ -1,0 +1,5 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"**********************************************************************"
+" centersw1 - move cr1 to center of spectrum in first indirect dimension
+"**********************************************************************"
+cr1 = (sw1/2)-rfl1+rfp1

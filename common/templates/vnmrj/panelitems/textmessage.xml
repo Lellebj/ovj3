@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template type="basic" element="elements">
+  <textmessage size="64 24" font="PlainText"
+    style="PlainText"
+    point="PlainText"
+    fg="PlainText"
+    vq=""
+    set=""
+    show=""
+    />
+</template>

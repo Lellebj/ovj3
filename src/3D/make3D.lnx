@@ -1,0 +1,164 @@
+#
+# make -f make3D.lnx LINUX	-  generic make command
+#
+
+MAKEFILE= make3D.lnx
+
+# sccsdir -> SCCS directory
+SCCSDIR=$(sccsdir)
+PROJCAT=
+
+#-- Normal operational compile flags
+TARGET_ARCH=
+LARGEFILE_FLAGS = -DHAVE_LARGEFILE_SUPPORT -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
+CFLAGS= -O2 -m32 -DLINUX $(LARGEFILE_FLAGS)
+LPCFLAGS= -O4 -m32 -dalign $(LARGEFILE_FLAGS)
+CPPFLAGS=
+LDFLAGS= -m32 -DLINUX $(LARGEFILE_FLAGS)
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LPCOMPILE.c= $(CC) $(LPCFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(LDFLAGS) $(TARGET_ARCH)
+ 
+#---- ft3d library being updated. -----
+WORKLIB= unmr3Dlib.a
+
+#--- SCCS Sources ----  
+FT3D_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)3D/SCCS/s.
+VNMR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmr/SCCS/s.
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+FT3D_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)3D/SCCS get
+VNMR_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vnmr/SCCS get
+ 
+LIBS = -ll -lm
+LIBS = -lm
+
+
+#------------------------------------------------------------------------
+#--- ft3d source files that are needed for unmr3Dlib
+#------------------------------------------------------------------------
+UNMR3DLIB_SRC= 			\
+		combine.c 	\
+		comline.c 	\
+		errorlog.c	\
+		fft3d.c 	\
+		fileinfo.c 	\
+		fmap.c		\
+		ft3d.c 		\
+		ft3dio.c	\
+		ftutil.c	\
+		lock3Dfiles.c
+
+UNMR3DLIB_OBJ= $(UNMR3DLIB_SRC:.c=.o)
+
+
+#------------------------------------------------------------------------
+#---  ft3d header files needed for unmr3Dlib
+#------------------------------------------------------------------------
+UNMR3DLIB_HDR=			\
+		coef3d.h	\
+		command.h	\
+		constant.h	\
+		datac.h		\
+		fileio.h	\
+		lock3D.h	\
+		struct3d.h
+
+
+#------------------------------------------------------------------------
+#--- VNMR header files that are needed for unmr3Dlib
+#------------------------------------------------------------------------
+VNMR_HDR=			\
+		data.h		\
+		ftpar.h		\
+		process.h
+
+
+# ------------------------------------------------------------------------
+#--- VNMR source files that are needed for unmr3Dlib
+#------------------------------------------------------------------------
+VNMR_SRC=			\
+		lpqld.c		\
+		lpz.c
+
+VNMR_OBJ= $(VNMR_SRC:.c=.o)
+
+
+#------------------------------------------------------------------------
+#--- getplane source files
+#------------------------------------------------------------------------
+GETPL_SRC= 			\
+		plextract.c
+
+
+GETPL_OBJ= $(GETPL_SRC:.c=.o)
+
+
+#------------------------------------------------------------------------
+#--- compressfid source files
+#------------------------------------------------------------------------
+CMPRSFID_SRC=			\
+		compressfid.c
+
+CMPRSFID_OBJ= $(CMPRSFID_SRC:.c=.o)
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= $(UNMR3DLIB_SRC) $(UNMR3DLIB_HDR) $(VNMR_SRC) $(VNMR_HDR)	\
+	$(GETPL_SRC) $(CMPRSFID_SRC)
+
+
+#--- make Targets ----------------------------------------------
+
+std LINUX:  $(MAKEFILE) Source getplane compressfid ft3d
+	@echo "NMRI:  Standard FT3D library complete ---------------------"
+
+# ---- Be sure True Source that we link to are upto date.
+Source src : $(ALLSRC)
+ 
+$(UNMR3DLIB_OBJ) : %.o : %.c
+	-(umask 2; $(COMPILE.c) -DFT3D $<  )
+
+$(VNMR_OBJ) : %.o : %.c
+	-(umask 2; $(LPCOMPILE.c) -DFT3D $<  )
+
+ft3d : $(UNMR3DLIB_OBJ) $(VNMR_OBJ)
+	(umask 2; \
+	$(LINK.c) -o $@ $(UNMR3DLIB_OBJ) $(VNMR_OBJ) $(LIBS)  )
+
+$(GETPL_OBJ) : %.o : %.c
+	-(umask 2; $(COMPILE.c) $<  )
+
+getplane : $(GETPL_OBJ)
+	(umask 2; \
+	$(LINK.c) -o $@ $(GETPL_OBJ) $(LIBS) )
+
+$(CMPRSFID_OBJ) : %.o : %.c
+	-(umask 2; $(COMPILE.c) $<  )
+
+compressfid :  $(CMPRSFID_OBJ)
+	(umask 2; \
+	$(LINK.c) -o $@ $(CMPRSFID_OBJ) $(LIBS) )
+
+
+depend: depend_src ddlGrammar.h
+	makedepend -f $(MAKEFILE) -Y $(CDEFINE) $(ALL_C_SRC) 2>/dev/null
+
+
+#------ makefile extraction via SCCS allways. -------
+$(MAKEFILE) :
+	$(FT3D_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(VNMR_SRC): % :$(VNMR_SCCS_SRC)%
+	$(VNMR_SGET) $@
+
+$(VNMR_HDR): % :$(VNMR_SCCS_SRC)%
+	$(VNMR_SGET) $@
+
+$(UNMR3DLIB_SRC) $(UNMR3DLIB_HDR) $(GETPL_SRC) $(CMPRSFID_SRC): % :$(FT3D_SCCS_SRC)%
+	$(FT3D_SGET) $@
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+

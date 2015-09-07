@@ -1,0 +1,830 @@
+# 
+#
+#makevnmrbg.linux
+
+#
+#  Note: vnmr yacc must be in /vobj/'arch'/yacc which is unique to architecture 
+#
+
+SHELL		=  /bin/sh
+MAKEFILE	=  makevnmrbg.test
+
+.PRECIOUS	=  magiclib.bg.a 
+
+
+REV_DATE	=  $(VNMR_REV_DATE)
+COMPDATE:sh	=  date '+Compiled: %m/%d/%y %H:%M'
+#"COMPDATE         = Compiled: `date '+%m/%d/%y %H:%M'`" 
+
+SCCSDIR		=  $(sccsdir)
+SRC_DIR		=  ./
+
+OPENWINHOME	=  /usr/openwin
+YACCDIR		=  /vobj/sol
+STD_YACC	=  /usr/bin/yacc
+
+
+# -- ibm motif libraries ---
+RLIBDIR  =  -R /usr/openwin/lib:/usr/dt/lib:/vnmr/lib
+MLIBDIR  =  -L/usr/dt/lib -L/vobj/sol/proglib/ncomm -L/vobj/sol/lib
+
+
+LIBS        =  -lXm -lXt -lX11 -ll -lm -lsocket -ldl -lnsl
+
+UNMR_LIB    =  unmrlib.bg.a
+MAGIC_LIB   =  magiclib.bg.a
+
+
+#-- Normal operational compile flags
+# Default values are for inova (used for make depend)
+
+COPTIONS:sh =   /usr/bin/which cc | awk ' \
+               /SUNWs/ { print sun; match=1 } \
+               /gnu\/local\/bin\// { print gnu; match=1 } \
+               match == 0 { print dflt } ' \
+               sun='-O' gnu='-O -Wno-deprecated' dflt='-O'
+
+#CPPOPTIONS  = -Wno-deprecated -v -fsingle-precision-constant
+CPPOPTIONS:sh = /usr/bin/which cc | awk ' \
+               /SUNWs/ { print sun; match=1 } \
+               /gnu\/local\/bin\// { print gnu; match=1 } \
+               match == 0 { print dflt } ' \
+               sun='-O' gnu='-O -Wno-deprecated' dflt='-O'
+
+LPCFLAGS:sh =  /usr/bin/which cc | awk ' \
+               /SUNWs/ { print sun; match=1 } \
+               /gnu\/local\/bin\// { print gnu; match=1 } \
+               match == 0 { print dflt } ' \
+               sun='-O -fsingle' gnu='-O' dflt='-O'
+
+CINCLDIR:sh =  /usr/bin/which cc | awk ' \
+               /SUNWs/ { print sun; match=1 } \
+               /gnu\/local\/bin\// { print gnu; match=1 } \
+               match == 0 { print dflt } ' \
+               sun='-I/usr/dt/include -I$(OPENWINHOME)/include' \
+               gnu='-I./ -I/usr/dt/include -I$(OPENWINHOME)/include' \
+	       dflt='-I/usr/dt/include -I$(OPENWINHOME)/include'
+
+CDEFINE     = -DVNMRJ -DBSDACQ -DSUN -DX11 -DMOTIF -DNESSIE
+
+LDOPTIONS   = -O
+LDFLAGS     = $(LDOPTIONS) -L$(OPENWINHOME)/lib -L. $(MLIBDIR) $(RLIBDIR)
+
+COMPILE.c   = $(CC)  $(COPTIONS) $(CINCLDIR) $(CDEFINE) -c
+COMPILE.cc  = $(CCC) $(CPPOPTIONS) $(CINCLDIR) -c
+
+LPCOMPILE.c = $(CC)  $(LPCFLAGS) $(CDEFINE) -c
+LINK.c      = $(CCC) $(LDFLAGS) 
+
+COMPILE.unmrlib:sh =  /usr/bin/which cc | awk ' \
+                      /SUNWs/ { print sun; match=1 } \
+                      /gnu\/local\/bin\// { print gnu; match=1 } \
+                      match == 0 { print dflt } ' \
+                      sun='CC -xar  -o' gnu='ar rv' dflt='CC -xar  -o'
+
+
+#--- SCCS Sources ----  
+ACQI_SCCS_SRC      =$(SCCSDIR)/acqi/SCCS/s.
+ACQPROC_SCCS_SRC   =$(SCCSDIR)/acqproc/SCCS/s.
+VNMR_SCCS_SRC      =$(SCCSDIR)/vnmr/SCCS/s.
+VNMRBG_SCCS_SRC    =$(SCCSDIR)/vnmrbg/SCCS/s.
+XRACQ_SCCS_SRC     =$(SCCSDIR)/xracq/SCCS/s.
+PSG_SCCS_SRC       =$(SCCSDIR)/psg/SCCS/s.
+FT3D_SCCS_SRC      =$(SCCSDIR)/3D/SCCS/s.
+NCOMM_SCCS_SRC     =$(SCCSDIR)/ncomm/SCCS/s.
+EXPPROC_SCCS_SRC   =$(SCCSDIR)/expproc/SCCS/s.
+VWACQ_SCCS_SRC     =$(SCCSDIR)/vwacq/SCCS/s.
+NACQI_SCCS_SRC     =$(SCCSDIR)/nacqi/SCCS/s.
+XWIN_SCCS_SRC	   =$(SCCSDIR)/xwin/SCCS/s.
+SV_GUI_SCCS_SRC	   =$(SCCSDIR)/sunview/SCCS/s.
+AIP_SCCS_SRC       =$(SCCSDIR)/aip/SCCS/s.
+DDL_SCCS_SRC       =$(SCCSDIR)/ddl/SCCS/s.
+
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+ACQI_SGET      = sccs -p$(SCCSDIR)/acqi/SCCS get
+ACQPROC_SGET   = sccs -p$(SCCSDIR)/acqproc/SCCS get
+VNMR_SGET      = sccs -p$(SCCSDIR)/vnmr/SCCS get
+VNMRBG_SGET    = sccs -p$(SCCSDIR)/vnmrbg/SCCS get
+XRACQ_SGET     = sccs -p$(SCCSDIR)/xracq/SCCS get
+PSG_SGET       = sccs -p$(SCCSDIR)/psg/SCCS get
+FT3D_SGET      = sccs -p$(SCCSDIR)/3D/SCCS get
+NCOMM_SGET     = sccs -p$(SCCSDIR)/ncomm/SCCS get
+EXPPROC_SGET   = sccs -p$(SCCSDIR)/expproc/SCCS get
+VWACQ_SGET     = sccs -p$(SCCSDIR)/vwacq/SCCS get
+NACQI_SGET     = sccs -p$(SCCSDIR)/nacqi/SCCS get
+
+SVIEW_SGET	= sccs -p$(SCCSDIR)/sunview/SCCS get
+XWIN_SGET	= sccs -p$(SCCSDIR)/xwin/SCCS get
+
+AIP_SGET       = sccs -p$(SCCSDIR)/aip/SCCS get
+DDL_SGET       = sccs -p$(SCCSDIR)/ddl/SCCS get
+
+
+#------------------------------------------------------------------------
+#--- VNMRBG objects that are needed for unmrlib 
+#------------------------------------------------------------------------
+BG_UNMR_SRC  = \
+		dcon.c 		\
+		dconi.c 	\
+		dfid.c		\
+		dpcon.c 	\
+		iplan.c		\
+		iplan_graphics.c	\
+		locki.c		\
+		main.c		\
+		master.c	\
+		smagic.c 	\
+		wjunk.c
+
+# -- vnmrbg specials from xwin
+BG_WIN_SRC  =	\
+		graphics_win.c	\
+		master_win.c    \
+		smagic_win.c
+
+BG_ALL_SRC  = $(BG_UNMR_SRC)  $(BG_WIN_SRC)
+
+#------------------------------------------------------------------------
+#-- Expproc source files
+#------------------------------------------------------------------------
+EXPPROC_SRC  =	\
+		expQfuncs.c	\
+		statfuncs.c
+
+EXPPROC_OBJ  = $(EXPPROC_SRC:.c=.o)
+
+EXPPROC_HDR  =	\
+		expQfuncs.h	\
+		shrexpinfo.h	\
+		shrstatinfo.h
+
+#------------------------------------------------------------------------
+#-- vwacq files
+#------------------------------------------------------------------------
+#--- vwacq (New Digital Console) header files that are needed for iadisplay
+VWACQ_HDR  = \
+	acqcmds.h	\
+	hostAcqStructs.h
+
+#------------------------------------------------------------------------
+#--- iadisplay source files for the New Digital Console version only
+#------------------------------------------------------------------------
+NACQI_SRC  =   msgqueue.c
+NACQI_OBJ  =   $(NACQI_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#--- VNMR objects that are needed for unmrlib 
+#------------------------------------------------------------------------
+UNMRLIB_COM_SRC=\
+		acqfuncs.c 	\
+		acqhwcmd.c 	\
+		addsub.c 	\
+		ai.c 		\
+		allocate.c 	\
+		asm.c		\
+		asmfuncs.c	\
+		assign.c	\
+		bgvars.c 	\
+		bootup.c 	\
+		builtin.c 	\
+		builtin1.c 	\
+		buttons.c	\
+		createparams.c	\
+		data.c 		\
+		ddf.c 		\
+		ddif.c 		\
+		ddph.c 		\
+		debug.c 	\
+		df2d.c		\
+		dfww.c 		\
+		dg.c 		\
+		dll.c		\
+		dosyfit.c	\
+		dpf.c		\
+		dps.c		\
+		ds.c		\
+		dscale.c	\
+		dsn.c		\
+		dsp.c		\
+		dsww.c 		\
+		element.c 	\
+		emouse.c 	\
+		exec.c 		\
+		fiddle.c	\
+		files.c 	\
+		flashc.c	\
+		ft.c		\
+		ft2d.c 		\
+		ftinit.c	\
+		full.c 		\
+		gdevsw.c	\
+		glide.c 	\
+		go.c 		\
+		graphics.c 	\
+		gzfit.c 	\
+		handler.c 	\
+		help.c 		\
+		history.c 	\
+		hpa.c 		\
+		init2d.c 	\
+		init_display.c 	\
+		init_proc.c 	\
+		integ.c 	\
+		io.c 		\
+		jexp.c 		\
+		ll2d.c 		\
+		lockfreqfunc.c	\
+		locksys.c	\
+		lookup.c 	\
+		lstring.c 	\
+		macro.c 	\
+		magnetom.c	\
+		md5c.c		\
+		mfdata.c	\
+		ops.c 		\
+		p11Tools.c	\
+		part11.c	\
+		pcmap.c		\
+		plot_handlers.c	\
+		plot_construct.c \
+		proc2d.c 	\
+		pvars.c		\
+		recon_all.c	\
+		readlk.c 	\
+		rtvarcmds.c	\
+		savretphf.c	\
+		set3dproc.c	\
+		shellcmds.c	\
+		shims.c		\
+		sky.c		\
+		specfreq.c	\
+		sread.c 	\
+		swrite.c 	\
+		symtab.c 	\
+		table.c 	\
+		tempstuff.c 	\
+		terminal.c 	\
+		text.c 		\
+		tools.c 	\
+		variables1.c 	\
+		vcolor.c 	\
+		vdialog.c 	\
+		vfilesys.c 	\
+		vfontselect.c 	\
+		weight.c	\
+		wti.c
+
+# -- special compile options required
+UNMRLIB_SPC_SRC  =  \
+                acqhdl.c        \
+                displayops.c    \
+                foldj.c
+
+UNMRLIB_SRC  =  $(UNMRLIB_COM_SRC) $(UNMRLIB_SPC_SRC)
+
+UNMRLIB_COM_OBJ= $(UNMRLIB_COM_SRC:.c=.o) $(BG_UNMR_SRC:.c=.o)
+
+UNMRLIB_ALL_OBJ  = $(UNMRLIB_COM_SRC:.c=.o) $(UNMRLIB_SPC_SRC:.c=.o) $(BG_UNMR_SRC:.c=.o)
+
+UNMRLIB_HDR= \
+                acqerrmsges.h   \
+                acquisition.h   \
+                allocate.h      \
+                asm.h           \
+                data.h          \
+                disp.h          \
+                dps_menu.icon   \
+                dpsdef.h        \
+                element.h       \
+                epi_recon.h     \
+                errorcodes.h    \
+                md5global.h     \
+                md5.h           \
+                part11.h        \
+                ftpar.h         \
+                graphics.h      \
+                group.h         \
+                init.h          \
+                init2d.h        \
+                iplan.h         \
+                iplan_graphics.h        \
+                locksys.h       \
+                node.h          \
+                params.h        \
+                phase_correct.h \
+                process.h       \
+                shims.h         \
+                stack.h         \
+                symtab.h        \
+                tools.h         \
+                variables.h     \
+                vfilesys.h      \
+                vglide.h        \
+                vnmrsys.h       \
+                whenmask.h
+
+
+
+
+DDLLIB_HDR  = \
+		ddlMacros.h		\
+		ddlNode.h		\
+		ddlParser.h		\
+		ddlScanner.h		\
+		ddlSymbol.h
+
+DDLLIB_SRC  = \
+		ddlAction.C		\
+		ddlNode.C		\
+		ddlParser.C		\
+		ddlScanner.C		\
+		ddlSymbolTable.C
+
+DDLLIB_OBJ  = $(DDLLIB_SRC:.C=.o)
+
+DDL_YACC_SRC  =	ddlGrammar.y
+
+DDL_YACC_OBJ  =	ddlGrammar.o
+
+AIPLIB_GNU_HDR:sh  =  /usr/bin/which cc | awk ' \
+                      /SUNWs/ { print sun; match=1 } \
+                      /gnu\/local\/bin\// { print gnu; match=1 } \
+                      match == 0 { print dflt } ' \
+                      sun='' gnu='generic.h' dflt=''
+
+AIPLIB_HDR  =	\
+		aipBox.h		\
+		aipCFuncs.h		\
+		aipCInterface.h		\
+		aipCommands.h		\
+		aipCStructs.h		\
+		aipDataInfo.h		\
+		aipDataManager.h	\
+		aipDataStruct.h		\
+		aipEdgelist.h		\
+		aipGframe.h		\
+		aipGframeManager.h	\
+		aipGraphics.h		\
+		aipGraphicsWin.h	\
+		aipHistogram.h		\
+		aipImgInfo.h		\
+		aipInitStart.h		\
+		aipInterface.h		\
+		aipInterpolation.h	\
+		aipLine.h		\
+		aipMouse.h		\
+		aipOval.h		\
+		aipParmList.h		\
+		aipPoint.h		\
+		aipPolygon.h		\
+		aipPolyline.h		\
+		aipRoi.h		\
+		aipRoiManager.h		\
+		aipRoiStat.h		\
+		aipStderr.h		\
+		aipStructs.h		\
+		aipUtils.h		\
+		aipViewInfo.h		\
+		aipVnmrFuncs.h		\
+		aipVolData.h		\
+		aipVsInfo.h		\
+		aipWinMath.h		\
+		aipWinMovie.h		\
+		aipWinRotation.h	\
+		aipWriteData.h		\
+		ddlCInterface.h		\
+		sharedPtr.h
+
+#		aipGframeInfo.h
+
+AIPLIB_SRC_test= 	\
+		aipstub.C
+
+AIPLIB_SRC=		\
+		aipBox.C		\
+		aipCommands.C		\
+		aipDataInfo.C		\
+		aipDataManager.C	\
+		aipEdgelist.C		\
+		aipGframe.C		\
+		aipGframeManager.C	\
+		aipGraphicsWin.C	\
+		aipHistogram.C		\
+		aipImgInfo.C		\
+		aipInitStart.C		\
+		aipInterface.C		\
+		aipInterpolation.C	\
+		aipLine.C		\
+		aipMouse.C		\
+		aipOval.C		\
+		aipParmList.C		\
+		aipPoint.C		\
+		aipPolygon.C		\
+		aipPolyline.C		\
+		aipRoi.C		\
+		aipRoiManager.C		\
+		aipRoiStat.C		\
+		aipStderr.C		\
+		aipUtils.C		\
+		aipViewInfo.C		\
+		aipVnmrFuncs.C		\
+		aipVolData.C		\
+		aipVsInfo.C		\
+		aipWinMath.C		\
+		aipWinMovie.C		\
+		aipWinRotation.C	\
+		aipWriteData.C		\
+		ddlCInterface.C
+
+
+FORCE_DOT_O =	ddlCInterface.o
+
+AIPLIB_OBJ  =   $(AIPLIB_SRC:.C=.o)
+
+
+# ---- Common GUI source for OpenWindows & Motif ----
+XWIN_COM_ICON  = \
+		master.icon	\
+		vnmr_text.icon  \
+                vnmr.icon
+
+XWIN_C_SRC  =	banner.c \
+		ras_dump.c
+
+WIN_OBJ  = $(XWIN_C_SRC:.c=.o) $(BG_WIN_SRC:.c=.o)
+
+XWIN_SRC      = $(XWIN_COM_ICON) $(XWIN_C_SRC)
+
+
+
+
+ACQPROC_HDR  =	ACQPROC_strucs.h
+
+XRACQ_HDR  =	\
+		ACQ_HAL.h	\
+		ACQ_SUN.h	\
+		STAT_DEFS.h	\
+		acodes.h	\
+		lc.h
+
+#--- PSG files that are needed for unmrlib 
+
+PSG_SRC  = \
+	   ap_device.c 	\
+	   device.c 	\
+	   freq_device.c\
+	   freqfuncs.c	\
+	   objerror.c
+
+PSG_OBJ  =$(PSG_SRC:.c=.o)
+
+PSG_HDR  = \
+	   REV_NUMS.h	\
+	   ap_device.p	\
+	   common.p	\
+	   device.p	\
+	   freq_device.p\
+	   objerror.h	\
+	   oopc.h	\
+	   rfconst.h
+
+
+#---  FT3D files needed by Vnmr -------
+
+FT3D_SRC  = lock3Dfiles.c
+
+FT3D_OBJ  = $(FT3D_SRC:.c=.o)
+
+FT3D_HDR  = lock3D.h	\
+	    struct3d.h
+
+#------------------------------------------------------------------------
+#--- VNMR objects that are needed for magiclib 
+#    don't move magic.gram.o , creates magic.gram.h needed by others
+
+MAGICLIB_COM_SRC  = \
+		    Exec.c	\
+		    dli.c	\
+		    fft.c 	\
+		    lexjunk.c	\
+		    lpz.c	\
+		    matrix.c 	\
+		    node.c
+
+MAGICLIB_COM_OBJ  = $(MAGICLIB_COM_SRC:.c=.o)
+
+MAGICLIB_SPC_SRC  = downsample.c	\
+		    lpqld.c
+
+MAGICLIB_SPC_OBJ= $(MAGICLIB_SPC_SRC:.c=.o)
+
+MAGICLIB_ALL_SRC= $(MAGICLIB_COM_SRC) $(MAGICLIB_SPC_SRC)
+
+#MAGICLIB_OBJ= $(MAGICLIB_SRC:.c=.o)
+
+#------------------------------------------------------------------------
+#--- VNMR objects that are needed for unmrlib 
+#------------------------------------------------------------------------
+ACQCOMLIB_HDR=	comm.h
+
+ACQCOMLIB_SRC=	socket1.c
+
+ACQCOMLIB_OBJ=  $(ACQCOMLIB_SRC:.c=.o)
+
+NCOMM_HDR= \
+		sockets.h	\
+		mfileObj.h	\
+		errLogLib.h	\
+		shrMLib.h
+
+NCOMM_SRC= \
+		mfileObj.c	\
+		errLogLib.c
+
+NCOMM_OBJ= 	$(NCOMM_SRC:.c=.o) 
+
+NACQI_HDR=	 acqInterface.h
+
+#---- The yacc and lex sources for Vnmr -----
+YACC_SRC= \
+		magic.gram.y	\
+		magic.parser
+
+YACC_OBJ=	magic.gram.o
+
+LEX_SRC=	magic.lex.l
+
+LEX_OBJ=	magic.lex.o
+
+
+
+#------------------------------------------------------------------------
+#---- All Sources and headers required for compilation -----
+#------------------------------------------------------------------------
+ALL_C_SRC= $(BG_ALL_SRC) $(UNMRLIB_SRC) $(MAGICLIB_ALL_SRC) $(XWIN_C_SRC)\
+           $(YACC_SRC) $(LEX_SRC) \
+	   $(PSG_SRC) $(FT3D_SRC) \
+	   $(ACQCOMLIB_SRC) $(NCOMM_SRC) $(EXPPROC_SRC) $(NACQI_SRC) \
+	   $(AIPLIB_SRC) $(DDLLIB_SRC) $(DDL_YACC_SRC)
+
+ALL_H_SRC= $(UNMRLIB_HDR) $(XRACQ_HDR)  \
+	$(PSG_HDR) $(ACQPROC_HDR) $(FT3D_HDR) $(ACQCOMLIB_HDR) $(NCOMM_HDR) \
+	$(EXPPROC_HDR) $(VWACQ_HDR) $(NACQI_HDR) $(AIPLIB_HDR) $(AIPLIB_GNU_HDR) $(DDLLIB_HDR)
+
+COMMON_OBJ= $(UNMRLIB_COM_OBJ) $(MAGICLIB_COM_OBJ) $(FT3D_OBJ) $(PSG_OBJ)
+
+#--- make Targets ----------------------------------------------
+
+all std : $(MAKEFILE) depend magic.gram.c
+	(  \
+	  gnustr=`which cc | sed 's@.*/sw/gnu/local.*@gnu@'` ; export gnustr; \
+          if [ x"$$gnustr" = xgnu ]  ; then        \
+	     coptions="-g -Wno-deprecated"; export coptions;	\
+          else	\
+	     coptions="-g"; export coptions;	\
+          fi;	\
+	  $(MAKE) -f $(MAKEFILE)	\
+          "COPTIONS=$$coptions" \
+          "CPPOPTIONS=$$coptions" \
+          "LDOPTIONS=-g" \
+		$(MAGIC_LIB) $(UNMR_LIB) Vnmrbg )
+	@echo "---- $CC -- $CCC -- target $@ --------------------------"
+	@echo "DONE target $@ --------------------------"
+
+
+gnu_specific :
+	( gnustr=`which cc | sed 's@.*/sw/gnu/local.*@gnu@'` ; export gnustr; \
+	  if [ x"$$gnustr" = xgnu ]  ; then        \
+               Sget aip generic.h.gnu ; 	\
+               mv -f generic.h.gnu generic.h ; 	\
+          fi)
+	@echo "DONE target $@ --------------------------"
+
+nessie : $(MAKEFILE) depend magic.gram.c
+	( \
+	  $(MAKE) -f $(MAKEFILE) 	\
+	  	$(MAGIC_LIB) $(UNMR_LIB) Vnmrbg )
+	@echo "DONE target $@ --------------------------"
+
+
+src: $(MAKEFILE) $(ALL_C_SRC) $(ALL_H_SRC) yytoddl revdate.c
+	@echo target src :  is up  to date.........
+	@echo ""
+
+
+win_dumb : $(MAKEFILE) $(XWIN_SRC)
+	@echo ---  $< --- target win_src :  is up to date.........
+	@echo ---  $@ ---
+
+win_src: $(MAKEFILE) $(XWIN_SRC)
+	@echo target win_src :  is up to date.........
+	@echo ""
+
+
+# For the makedepend we define a bunch of stuff at once to get the
+# "worst case" dependency list.
+# The -Y for makedepend keeps it from looking for include files in the
+# standard system places, so we will not get any dependencies on
+# system header files.  However, this results in warnings about not
+# being able to find any system header files.  So we send complaints
+# to /dev/null.
+#
+# NB: This target depends on "makedepend" being in your PATH.
+#
+depend: depend_src ddlGrammar.h
+	makedepend -f$(MAKEFILE) -Y  -DSUN -DAIX -DUNIX -DX11 \
+                $(ALL_C_SRC) $(XWIN_C_SRC) \
+                2>/dev/null
+
+depend_src :
+	(  $(MAKE) -e -f $(MAKEFILE)   src ;  \
+           $(MAKE) -e -f $(MAKEFILE)   win_src)
+
+# Note: It is necessary to use CC to make the Vnmr library in order
+# to get template instances included in the library.  Otherwise,
+# we will get "undefined symbol" errors when we try to link.
+# See Sun doc for Forte C++ 6.
+#( http://docs.sun.com/htmlcoll/coll.32.8/iso-8859-1/CPPPUG/Templates.html )
+
+#(umask 2; ar rv $@ `lorder $(UNMRLIB_ALL_OBJ) \
+
+$(UNMR_LIB) : $(UNMRLIB_ALL_OBJ) $(WIN_OBJ) $(PSG_OBJ) $(FT3D_OBJ) $(EXPPROC_OBJ) $(NACQI_OBJ) \
+$(AIPLIB_OBJ) $(DDLLIB_OBJ) $(DDL_YACC_OBJ) revdate.o
+	- (umask 2; rm -f $@ )
+	@echo Remake Library $@
+	@(umask 2; $(COMPILE.unmrlib) $@ `lorder $(UNMRLIB_ALL_OBJ) \
+			revdate.o $(WIN_OBJ) \
+			$(PSG_OBJ) $(EXPPROC_OBJ) $(NACQI_OBJ) \
+			$(AIPLIB_OBJ) $(DDLLIB_OBJ) $(DDL_YACC_OBJ) \
+			$(FT3D_OBJ) \
+			| tsort 2>/dev/null` 1>/dev/null)
+
+
+$(MAGIC_LIB) : $(YACC_OBJ) $(LEX_OBJ) $(MAGICLIB_COM_OBJ)  $(MAGICLIB_SPC_OBJ)
+	- (umask 2; rm -f $@ )
+	@echo Remake Library $@ 
+	@(umask 2; ar rv $@ `lorder $(YACC_OBJ) $(LEX_OBJ) $(MAGICLIB_COM_OBJ) $(MAGICLIB_SPC_OBJ)\
+			 | tsort 2>/dev/null` 1>/dev/null)
+
+
+Vnmrbg: $(MAGIC_LIB) $(UNMR_LIB)
+	(umask 2; $(LINK.c) -o $@ $(FORCE_DOT_O) $(UNMR_LIB) $(MAGIC_LIB) $(UNMR_LIB) -lacqcomm $(LIBS))
+
+#--- Object Targets ---------------------------
+$(COMMON_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(WIN_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(ACQCOMLIB_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(NCOMM_OBJ) : $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+$(AIPLIB_OBJ) : $(@:.o=.C)
+	(umask 2; $(COMPILE.cc) $(@:.o=.C))
+
+$(DDLLIB_OBJ) $(DDL_YACC_OBJ) : $(@:.o=.C)
+	(umask 2; $(COMPILE.cc) $(@:.o=.C) )
+
+
+#--- Special Object Targets ----------------------
+
+# This object is always compiled, VNMRBG_REV_ID & VNMR_REV_DATE are envirionment
+# variables and COMPDATE is a makefile define passed to the makefile via a recusive
+# make call or from vmake itself.
+# REVISION_ID typically - "VERSION 4.2 REVISION A"
+# REVISION_DATE typically - "Aug. 17, 1993"
+# COMPDATE typically - "Compiled: 8/17/92 15:45"
+#
+revdate.o       : revdate.c doit
+	(umask 2; $(COMPILE.c) -DREVISION_ID='"$(VNMRBG_REV_ID)"' -DREVISION_DATE='"$(REV_DATE)"' -DCOMPDATE='"$(COMPDATE)"' $(@:.o=.c) )
+
+revdate.c	:
+		$(VNMR_SGET) $@
+doit :
+
+acqhdl.o	: $(@:.o=.c)
+		(umask 2; $(COMPILE.c) -DACQPROC_LC $(@:.o=.c) )
+
+displayops.o	: $(@:.o=.c)
+		(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+foldj.o		: $(@:.o=.c)
+		(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+lpqld.o		: $(@:.o=.c)
+		(umask 2; $(LPCOMPILE.c) $(@:.o=.c) )
+
+
+# The sed script "yytoddl" renames a bunch a global symbols produced
+# by yacc.  Otherwise they will collide with the same symbols from
+# other invocations of yacc (e.g., the MAGICAL yacc parser).
+ddlGrammar.C ddlGrammar.h : ddlGrammar.y yytoddl
+	(umask 2; \
+		$(STD_YACC)/ -dv ddlGrammar.y;			\
+		sed -f yytoddl y.tab.c > ddlGrammar.C ;			\
+		sed -f yytoddl y.tab.h > ddlGrammar.h ;			\
+	)
+
+magic.gram.c : magic.gram.y magic.parser
+	(umask 2; \
+		echo *************************************************** ;\
+		/bin/cp /vobj/sol/proglib/vnmr/magic.gram.h . 	 ;	\
+		/bin/cp /vobj/sol/proglib/vnmr/magic.gram.c . 	 ;	\
+		echo *************************************************** ;\
+	)
+
+# stub for vmake, magic.gram.o is compiled first to be sure magic.gram.h is present
+# otherwise will always attempt to compile magic.gram.o
+magic.gram.h	: 
+
+magic.gram.o	: magic.lex.c
+	(umask 2; 	\
+		echo --- $(COMPILE.c) ------------gram------------- ;\
+		/bin/cp /vobj/sol/proglib/vnmr/magic.gram.o . ;		\
+	 )
+
+magic.lex.c     : magic.lex.l
+	(umask 2; \
+		echo +++++++++++++++++++++++++++++++++++++++++++++++ ;\
+		/bin/cp /vobj/sol/proglib/vnmr/magic.lex.c . ;		\
+		/bin/cp /vobj/sol/proglib/vnmr/magic.lex.h . ;		\
+		echo +++++++++++++++++++++++++++++++++++++++++++++++ ;\
+	)
+
+magic.lex.o	:
+	(umask 2; 	\
+		echo --- $(COMPILE.c) ----------lex--------------- ;\
+		/bin/cp /vobj/sol/proglib/vnmr/magic.lex.o . ;		\
+	 )
+
+
+
+#------------   SCCS source extraction ---------------
+
+#$(MAKEFILE) : ($(VNMRBG_SCCS_SRC)% :)
+
+$(MAKEFILE) :
+	@echo "GETTING makefile"
+	$(VNMRBG_SGET) $@
+
+
+#----- Source ------
+
+$(UNMRLIB_SRC) $(UNMRLIB_HDR) \
+$(MAGICLIB_ALL_SRC) \
+$(ACQCOMLIB_SRC) $(ACQCOMLIB_HDR) \
+$(YACC_SRC) $(LEX_SRC): 
+	$(VNMR_SGET) $@
+
+$(BG_ALL_SRC): 
+	$(VNMRBG_SGET) $@
+
+
+#$(XWIN_SRC) : ($(XWIN_SCCS_SRC)$@)
+$(XWIN_SRC) :
+	@echo
+	@echo
+	@echo ---  $< -------------------------------
+	@echo ---  $@ -------------------------------
+	$(XWIN_SGET) $@
+	@echo
+
+$(AIPLIB_SRC) $(AIPLIB_HDR) $(AIPLIB_GNU_HDR) : 
+	$(AIP_SGET) $@
+
+$(DDLLIB_SRC) $(DDLLIB_HDR) ddlGrammar.y yytoddl : 
+	$(DDL_SGET) $@
+
+
+#-------------------------------------
+
+$(XRACQ_HDR): 
+	$(XRACQ_SGET) $@
+
+$(ACQPROC_HDR): 
+	$(ACQPROC_SGET) $@
+
+$(PSG_SRC) $(PSG_HDR): 
+	$(PSG_SGET) $@
+
+$(FT3D_SRC) $(FT3D_HDR): 
+	$(FT3D_SGET) $@
+
+$(NCOMM_SRC) $(NCOMM_HDR): 
+	$(NCOMM_SGET) $@
+
+$(EXPPROC_SRC) $(EXPPROC_HDR): 
+	$(EXPPROC_SGET) $@
+
+$(VWACQ_HDR): 
+	$(VWACQ_SGET) $@
+
+$(NACQI_SRC) $(NACQI_HDR): 
+	$(NACQI_SGET) $@
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.

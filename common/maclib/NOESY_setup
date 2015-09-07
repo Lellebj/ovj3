@@ -1,0 +1,6 @@
+if (wet='y') then
+  wet='ny'
+endif
+if (satmode ='y') then
+  satmode='yy'
+endif

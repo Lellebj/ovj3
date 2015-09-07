@@ -1,0 +1,11 @@
+Copyright (c) Agilent Technologies  All Rights Reserved.
+**************************************************************************
+ACbackup	makes a backup of the current probe file(M)
+**************************************************************************
+
+Description:	This macro is called by the autocalibration macros 
+		to backup the probe file before beginning a new 
+		autocalibration run.  
+		The macro is not usually called by the user.
+
+

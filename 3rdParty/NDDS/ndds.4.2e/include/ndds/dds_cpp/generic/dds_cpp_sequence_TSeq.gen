@@ -1,0 +1,347 @@
+/* $Id: TSeq.cxx,v 1.15 2007/10/05 04:09:09 elaine Exp $
+
+ (c) Copyright, Real-Time Innovations, $Date: 2007/10/05 04:09:09 $. 
+ All rights reserved.
+ No duplications, whole or partial, manual or electronic, may be made
+ without express written permission.  Any such copies, or
+ revisions thereof, must display this notice unaltered.
+ This code contains trade secrets of Real-Time Innovations, Inc.
+
+modification history
+--------------------
+1.0 ,04oct07,eys Added #define for NDDS_NO_OVERLOADED_OPERATORS_IN_CPP for
+                 C# implementation
+1.0h,21apr06,kaj replace long with DDS_Long
+1.0i,21apr06,jml Added to_array
+1.0g,14jul05,rj  Added ensure_length() and from_array().
+1.0e,23mar05,eys renamed copy_no_alloc() to be copy_no_alloc()
+1.0f,01jun05,fcs Added set_elements_pointers_allocation and get_elements_pointers_allocation
+                 methods to the sequence API. These methods allow getting/setting the pointer
+                 allocation policy for the elements of the sequence.                 
+1.0e,23mar05,eys renamed copy_no_alloc() to be copy_no_allocX()
+1.0e,09dec04,rw  Renamed copy_from() -> copy_no_alloc() for clarity relative
+                 to copy() (which may alloc memory)
+1.0e,11oct04,rj  Added TSeq::copy_from() that does not resize the 
+                 sequence, to complement the resizable copy operator=().
+1.0d,07oct04,rj  Modified operator[]() const to handle T=char* (string)
+1.0d,16jun04,rw  Fixed boolean coercion warnings on Windows
+1.0d,07jun04,rw  Fixed incorrect initialization of sequence magic number
+1.0d,21may04,rw  Bug #8906: added support for read/take tokens
+1.0d,13may04,eys Fixed = operator to allocate memory if needed.
+                 See bug # 8511, bug # 8815
+1.0c,09dec03,eys More test on sequence
+1.0c,19nov03,eys Added sequence support.
+1.0c,05nov03,rw  Bug #8144: logging is handled in dds_c
+1.0c,04nov03,rw  Bug #8143: copied here from dds/psm-cpp
+===================================================================== */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "dds_c/dds_c_log_impl.h"
+
+/* ================================================================== */
+/*i
+   \st_impl \st_generic
+
+   Defines:   TSeq, T
+*/
+
+#if defined(TSeq) && defined(T)
+
+#define concatenate(A, B)   A ## B
+
+#define get_element_pointers_allocation_c(TSeq) concatenate(TSeq, _get_element_pointers_allocation)
+#define TSeq_get_element_pointers_allocation get_element_pointers_allocation_c(TSeq)
+
+#define set_element_pointers_allocation_c(TSeq) concatenate(TSeq, _set_element_pointers_allocation)
+#define TSeq_set_element_pointers_allocation set_element_pointers_allocation_c(TSeq)
+
+#define get_maximum_c(TSeq) concatenate(TSeq, _get_maximum)
+#define TSeq_get_maximum get_maximum_c(TSeq)
+
+#define set_maximum_c(TSeq) concatenate(TSeq, _set_maximum)
+#define TSeq_set_maximum set_maximum_c(TSeq)
+
+#define get_length_c(TSeq) concatenate(TSeq, _get_length)
+#define TSeq_get_length get_length_c(TSeq)
+
+#define set_length_c(TSeq) concatenate(TSeq, _set_length)
+#define TSeq_set_length set_length_c(TSeq)
+
+#define ensure_length_c(TSeq) concatenate(TSeq, _ensure_length)
+#define TSeq_ensure_length ensure_length_c(TSeq)
+
+#define get_c(TSeq) concatenate(TSeq, _get)
+#define TSeq_get get_c(TSeq)
+
+#define get_address_c(TSeq) concatenate(TSeq, _get_reference)
+#define TSeq_get_reference get_address_c(TSeq)
+
+#define copy_no_alloc_c(TSeq) concatenate(TSeq, _copy_no_alloc)
+#define TSeq_copy_no_alloc copy_no_alloc_c(TSeq)
+
+#define copy_c(TSeq) concatenate(TSeq, _copy)
+#define TSeq_copy copy_c(TSeq)
+
+#define from_array_c(TSeq) concatenate(TSeq, _from_array)
+#define TSeq_from_array from_array_c(TSeq)
+
+#define to_array_c(TSeq) concatenate(TSeq, _to_array)
+#define TSeq_to_array to_array_c(TSeq)
+
+#define loan_contiguousC(TSeq) concatenate(TSeq, _loan_contiguous)
+#define TSeq_loan_contiguous loan_contiguousC(TSeq)
+
+#define loan_discontiguous_c(TSeq) concatenate(TSeq, _loan_discontiguous)
+#define TSeq_loan_discontiguous loan_discontiguous_c(TSeq)
+
+#define unloan_c(TSeq) concatenate(TSeq, _unloan)
+#define TSeq_unloan unloan_c(TSeq)
+
+#define get_contiguous_bufferIC(TSeq) concatenate(TSeq, _get_contiguous_bufferI)
+#define TSeq_get_contiguous_bufferI get_contiguous_bufferIC(TSeq)
+
+#define get_discontiguous_bufferI_c(TSeq) concatenate(TSeq, _get_discontiguous_bufferI)
+#define TSeq_get_discontiguous_bufferI get_discontiguous_bufferI_c(TSeq)
+
+#define has_ownership_c(TSeq) concatenate(TSeq, _has_ownership)
+#define TSeq_has_ownership has_ownership_c(TSeq)
+
+#define get_read_tokenI_c(TSeq) concatenate(TSeq, _get_read_tokenI)
+#define TSeq_get_read_tokenI get_read_tokenI_c(TSeq)
+
+#define set_read_tokenI_c(TSeq) concatenate(TSeq, _set_read_tokenI)
+#define TSeq_set_read_tokenI set_read_tokenI_c(TSeq)
+
+#define get_at_c(TSeq) concatenate(TSeq, _get_at)
+#define TSeq_get_at get_at_c(TSeq)
+
+#define set_at_c(TSeq) concatenate(TSeq, _set_at)
+#define TSeq_set_at set_at_c(TSeq)
+
+#ifndef T_copy /* Typically defined for C version only */
+   #define T_copy(to, from)        *(to) = *((T *)from)    /* default */
+                           /* Note: In C++, this invokes the operator=() */
+   #define undef_T_copy    /* So we can remove the above #define later */
+#endif /* T_copy */
+
+/* ----------------------------------------------------------------- */
+/* Defines submodule for logging purposes
+ */
+#define DDS_CURRENT_SUBMODULE  DDS_SUBMODULE_MASK_SEQUENCE
+
+/* ----------------------------------------------------------------- */
+/*i
+   TSeq
+*/
+TSeq::TSeq(DDS_Long new_max)
+        : _owned(RTI_TRUE), _contiguous_buffer(NULL),
+          _discontiguous_buffer(NULL), _maximum(0),
+          _length(0), _sequence_init(DDS_SEQUENCE_MAGIC_NUMBER),
+          _read_token1(NULL), _read_token2(NULL) , _elementPointersAllocation(DDS_BOOLEAN_TRUE)
+{
+    maximum(new_max);
+}
+
+TSeq::TSeq(const struct TSeq& seq)
+        : _owned(RTI_TRUE), _contiguous_buffer(NULL),
+          _discontiguous_buffer(NULL), _maximum(0),
+          _length(0), _sequence_init(DDS_SEQUENCE_MAGIC_NUMBER),
+          _read_token1(NULL), _read_token2(NULL), _elementPointersAllocation(DDS_BOOLEAN_TRUE)
+{
+    DDS_Long new_max = seq.maximum();
+
+    maximum(new_max);
+    TSeq_copy_no_alloc(this, &seq);
+}
+
+TSeq::~TSeq() {
+    maximum(0);
+}
+                                                 
+bool TSeq::element_pointers_allocation(bool allocatePointers) {
+    return TSeq_set_element_pointers_allocation(this,allocatePointers) ? true : false;
+}
+
+bool TSeq::element_pointers_allocation() {
+    return _elementPointersAllocation ? true:false;
+}
+
+DDS_Long TSeq::maximum() const {
+    return _maximum;
+}                                      
+
+bool TSeq::maximum(DDS_Long new_max) {
+    return TSeq_set_maximum(this, new_max) ? true : false;
+}
+                                                                     
+DDS_Long TSeq::length() const {
+    return _length;
+}                                       
+
+bool TSeq::length(DDS_Long new_length) {
+    return TSeq_set_length(this, new_length) ? true : false;
+}
+
+bool TSeq::ensure_length(DDS_Long length, DDS_Long max) {
+    return TSeq_ensure_length(this, length, max) ? true : false;
+}
+
+#ifndef NDDS_NO_OVERLOADED_OPERATORS_IN_CPP
+const T& TSeq::operator[] (DDS_Long i) const {
+    return *(const T*)TSeq_get_reference(this, i);
+}
+
+T& TSeq::operator[] (DDS_Long i) {
+    return *TSeq_get_reference(this, i);
+}
+
+TSeq& TSeq::operator=(const struct TSeq& src) {
+    TSeq_copy(this, &src);
+    return *this;
+}
+#endif /* #ifndef NDDS_NO_OVERLOADED_OPERATORS_IN_CPP */
+
+/* equivalent to operator overloaded method const T& operator[] */
+const T& TSeq::get_at(DDS_Long i) const {
+    return *(const T*)TSeq_get_reference(this, i);
+}
+
+/* equivalent to operator overloaded method T& operator[] */
+T& TSeq::set_at(DDS_Long i, const T& val) {
+    T_copy(TSeq_get_reference(this, i), &val);
+    return *TSeq_get_reference(this, i);
+}
+
+/* equivalent to operator overloaded method TSeq& operator= */
+bool TSeq::copy(const struct TSeq& src) {
+    return TSeq_copy(this, &src) ? true : false;
+}
+
+bool TSeq::has_ownership()
+{
+    return _owned ? true : false;
+}
+
+bool TSeq::copy_no_alloc(const struct TSeq& src) {
+    return TSeq_copy_no_alloc(this, &src) ? true : false;
+}
+
+bool TSeq::from_array(const T array[], DDS_Long length) {
+    return TSeq_from_array(this, array, length) ? true : false;    
+}
+
+bool TSeq::to_array(T array[], DDS_Long length) {
+    return TSeq_to_array(this, array, length) ? true : false;    
+}
+
+bool TSeq::loan_contiguous(T* buffer, DDS_Long new_length, DDS_Long new_max)
+{
+    return TSeq_loan_contiguous(this, buffer, new_length, new_max)
+        ? true : false;
+}
+
+bool TSeq::loan_discontiguous(T** buffer, DDS_Long new_length, DDS_Long new_max)
+{
+    return TSeq_loan_discontiguous(this, buffer, new_length, new_max)
+        ? true : false;
+}
+
+bool TSeq::unloan()
+{
+    return TSeq_unloan(this) ? true : false;
+}
+
+T* TSeq::get_contiguous_bufferI() const
+{
+    return _contiguous_buffer;
+}
+
+T** TSeq::get_discontiguous_bufferI() const
+{
+    return _discontiguous_buffer;
+}
+
+
+void TSeq::get_read_tokenI(void** token1,
+                           void** token2) const {
+    TSeq_get_read_tokenI(this, token1, token2);
+}
+
+
+void TSeq::set_read_tokenI(void* token1, void* token2) {
+    TSeq_set_read_tokenI(this, token1, token2);
+}
+
+#undef concatenate
+
+#undef get_read_tokenI_c
+#undef TSeq_get_read_tokenI
+
+#undef set_read_tokenI_c
+#undef TSeq_set_read_tokenI
+
+#undef get_element_pointers_allocation_c
+#undef TSeq_get_element_pointers_allocation
+
+#undef set_element_pointers_allocation_c
+#undef TSeq_set_element_pointers_allocation
+
+#undef get_maximum_c
+#undef TSeq_get_maximum
+
+#undef set_maximum_c
+#undef TSeq_set_maximum
+
+#undef get_length_c
+#undef TSeq_get_length 
+
+#undef set_length_c
+#undef TSeq_set_length 
+
+#undef get_c
+#undef TSeq_get 
+
+#undef get_address_c
+#undef TSeq_get_reference
+
+#undef copy_no_alloc_c
+#undef TSeq_copy_no_alloc
+
+#undef copy_c
+#undef TSeq_copy
+
+#undef loan_contiguous_c
+#undef TSeq_loan_contiguous
+
+#undef loan_discontiguous_c
+#undef TSeq_loan_discontiguous
+
+#undef unloan_c
+#undef TSeq_unloan 
+
+#undef get_contiguous_bufferI_c
+#undef TSeq_get_contiguous_bufferI
+
+#undef get_discontiguous_bufferI_c
+#undef TSeq_get_discontiguous_bufferI
+
+#undef has_ownership_c
+#undef TSeq_has_ownership
+
+#undef get_at_c
+#undef TSeq_get_at
+
+#undef set_at_c
+#undef TSeq_set_at
+
+#ifdef undef_T_copy
+  /*If we defined T_copy ourselves, clean it up to avoid compiler warnings.*/
+  #undef T_copy
+  #undef undef_T_copy
+#endif
+
+#undef DDS_CURRENT_SUBMODULE
+#endif /* defined(TSeq) && defined(T) */
+/* ----------------------------------------------------------------- */
+/* End $Id: TSeq.cxx,v 1.15 2007/10/05 04:09:09 elaine Exp $ */

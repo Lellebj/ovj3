@@ -1,0 +1,3 @@
+setvalue('auto','y','global')
+nextgo
+setvalue('auto','n','global')

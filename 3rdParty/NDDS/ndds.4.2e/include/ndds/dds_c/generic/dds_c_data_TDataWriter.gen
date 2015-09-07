@@ -1,0 +1,286 @@
+/* $Id: TDataWriter.c,v 1.9 2007/07/20 16:28:57 edward Exp $
+
+ (c) Copyright, Real-Time Innovations, $Date: 2007/07/20 16:28:57 $.
+ All rights reserved.
+ No duplications, whole or partial, manual or electronic, may be made
+ without express written permission.  Any such copies, or
+ revisions thereof, must display this notice unaltered.
+ This code contains trade secrets of Real-Time Innovations, Inc.
+
+modification history
+--------------------
+1.0q,19jul07,eh  Add as_reader/writer() that "widen" TDataReader/Writers
+1.0h,12jan06,fcs Changed the implementation of the narrow
+                 function in order to support data writers
+                 defined inside a C++ namespace.
+1.0g,26jul05,kaj Added API for FooDataWriter lookup_instance.
+1.0g,14jul05,jml Bug #9595: provide type safety TDataWriter and 
+                 and TDataReader narrow methods 
+1.0e,01apr05,eys Fixed bug 9595. Added narrow method.
+1.0d,27apr04,eys Added struct keyword
+1.0d,14apr04,eys Added w_timestamp API
+1.0d,05apr04,eys Bug #8143: copied here from dds/psm-cpp
+===================================================================== */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "dds_c/dds_c_common.h"
+#include "dds_c/dds_c_topic.h"
+#include "dds_c/dds_c_log_impl.h"
+
+#ifndef dds_c_publication_implh
+  #include "dds_c/dds_c_publication_impl.h"
+#endif
+
+/* ================================================================== */
+/*i
+   <<INTERFACE>> 
+
+   Defines:   TDataWriter_impl, TDataWriter, TData
+
+   Organized using the well-documented "Generics Pattern" for
+   implementing generics in C and C++.
+*/
+
+/* ================================================================== */
+/*i
+   <<IMPLEMENTATION>> 
+
+   Defines:   TDataWriter_impl TData
+*/
+#if defined(TDataWriter) && defined(TData)
+
+/* ----------------------------------------------------------------- */
+/* Defines submodule for logging purposes
+ */
+#define DDS_CURRENT_SUBMODULE  DDS_SUBMODULE_MASK_DATA
+
+struct TDataWriter {
+    DDS_DataWriter* _parent;
+};
+
+/*
+ * Two step procedure needed for stringize the value of a macro 
+ */
+#define _QUOTE(x) # x
+#define QUOTE(x) _QUOTE(x)
+
+#define concatenate(A, B)  A ## B
+
+#define TDataWriter_narrow_c(TDataWriter) concatenate(TDataWriter, _narrow)
+#define TDataWriter_narrow TDataWriter_narrow_c(TDataWriter)
+
+#define TDataWriter_as_datawriter_c(TDataWriter) concatenate(TDataWriter, _as_datawriter)
+#define TDataWriter_as_datawriter TDataWriter_as_datawriter_c(TDataWriter)
+
+#define TDataWriter_register_instance_c(TDataWriter) concatenate(TDataWriter, _register_instance)
+#define TDataWriter_register_instance TDataWriter_register_instance_c(TDataWriter)
+
+#define TDataWriter_register_instance_w_timestamp_c(TDataWriter) concatenate(TDataWriter, _register_instance_w_timestamp)
+#define TDataWriter_register_instance_w_timestamp TDataWriter_register_instance_w_timestamp_c(TDataWriter)
+
+#define TDataWriter_unregister_instance_c(TDataWriter) concatenate(TDataWriter, _unregister_instance)
+#define TDataWriter_unregister_instance TDataWriter_unregister_instance_c(TDataWriter)
+
+#define TDataWriter_unregister_instance_w_timestamp_c(TDataWriter) concatenate(TDataWriter, _unregister_instance_w_timestamp)
+#define TDataWriter_unregister_instance_w_timestamp TDataWriter_unregister_instance_w_timestamp_c(TDataWriter)
+
+#define TDataWriter_write_c(TDataWriter) concatenate(TDataWriter, _write)
+#define TDataWriter_write TDataWriter_write_c(TDataWriter)
+
+#define TDataWriter_write_w_timestamp_c(TDataWriter) concatenate(TDataWriter, _write_w_timestamp)
+#define TDataWriter_write_w_timestamp TDataWriter_write_w_timestamp_c(TDataWriter)
+
+#define TDataWriter_dispose_c(TDataWriter) concatenate(TDataWriter, _dispose)
+#define TDataWriter_dispose TDataWriter_dispose_c(TDataWriter)
+
+#define TDataWriter_dispose_w_timestamp_c(TDataWriter) concatenate(TDataWriter, _dispose_w_timestamp)
+#define TDataWriter_dispose_w_timestamp TDataWriter_dispose_w_timestamp_c(TDataWriter)
+
+#define TDataWriter_get_key_value_c(TDataWriter) concatenate(TDataWriter, _get_key_value)
+#define TDataWriter_get_key_value TDataWriter_get_key_value_c(TDataWriter)
+
+#define TDataWriter_lookup_instance_c(TDataWriter) concatenate(TDataWriter, _lookup_instance)
+#define TDataWriter_lookup_instance TDataWriter_lookup_instance_c(TDataWriter)
+
+/* ---------------------------------------------------------------------
+   Public Methods
+   --------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------- */
+
+TDataWriter* TDataWriter_narrow(DDS_DataWriter* writer) {
+    const char *METHOD_NAME = "TDataWriter_narrow";        
+
+    if (writer == NULL) {
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,"null writer");
+        return NULL;
+    }
+
+#ifndef TTYPENAME
+    /* Compatibility with ndds.4.0g where TTYPENAME is not defined 
+       for the data writer */
+    if (!DDS_DataWriter_compare_typeI(writer,QUOTE(TData))) {
+#else
+    /* This solution allows to work with DataWriters defined inside C++ namespaces 
+       where TData doesn't match with the TYPENAME asssigned by nddsgen */
+    if (!DDS_DataWriter_compare_typeI(writer,TTYPENAME)) {
+#endif
+
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,
+                         "wrong type writer");
+        return NULL; 
+    }
+        
+    return (TDataWriter *)writer;
+}
+
+DDS_DataWriter* TDataWriter_as_datawriter(TDataWriter* writer) {
+    const char *METHOD_NAME = "TDataWriter_as_datawriter"; 
+
+    if (writer == NULL) {
+        DDSLog_exception(METHOD_NAME, &DDS_LOG_BAD_PARAMETER_s,"null writer");
+        return NULL;
+    }
+
+    return (DDS_DataWriter *)writer;
+}
+
+
+DDS_InstanceHandle_t TDataWriter_register_instance(
+    TDataWriter* self,
+    const struct TData* instance_data) {
+
+    return DDS_DataWriter_register_instance_untypedI(
+	(DDS_DataWriter *)self,
+	instance_data);
+}
+
+DDS_InstanceHandle_t TDataWriter_register_instance_w_timestamp(
+    TDataWriter* self,
+    const struct TData* instance_data,
+    const struct DDS_Time_t* source_timestamp) {
+
+    return DDS_DataWriter_register_instance_w_timestamp_untypedI(
+	(DDS_DataWriter *)self,
+	instance_data,
+	source_timestamp);
+}
+
+DDS_ReturnCode_t TDataWriter_unregister_instance(
+    TDataWriter*  self,
+    const struct TData* instance_data, const DDS_InstanceHandle_t* handle) { 
+
+    return DDS_DataWriter_unregister_instance_untypedI(
+	(DDS_DataWriter *)self, instance_data, handle);
+}                                                             
+
+DDS_ReturnCode_t TDataWriter_unregister_instance_w_timestamp(
+    TDataWriter* self,
+    const struct TData* instance_data, const DDS_InstanceHandle_t* handle,
+    const struct DDS_Time_t* source_timestamp) { 
+
+    return DDS_DataWriter_unregister_instance_w_timestamp_untypedI(
+	(DDS_DataWriter *)self, instance_data, handle, source_timestamp);
+}                                                             
+                                                                     
+DDS_ReturnCode_t TDataWriter_write(
+    TDataWriter* self,
+    const struct TData* instance_data, 
+    const DDS_InstanceHandle_t* handle) {  
+
+    return DDS_DataWriter_write_untypedI((DDS_DataWriter *)self,
+					 instance_data, handle);
+}                                                             
+
+DDS_ReturnCode_t TDataWriter_write_w_timestamp(
+    TDataWriter* self,
+    const struct TData* instance_data, const DDS_InstanceHandle_t* handle,   
+    const struct DDS_Time_t* source_timestamp) {
+
+    return DDS_DataWriter_write_w_timestamp_untypedI(
+	(DDS_DataWriter *)self,
+	instance_data, handle, source_timestamp);
+}                                                             
+                                                                   
+DDS_ReturnCode_t TDataWriter_dispose(
+    TDataWriter* self,
+    const struct TData* instance_data,          
+    const DDS_InstanceHandle_t* instance_handle) {
+
+    return DDS_DataWriter_dispose_untypedI((DDS_DataWriter *)self,
+					   instance_data, instance_handle);
+}                                                             
+
+DDS_ReturnCode_t TDataWriter_dispose_w_timestamp(
+    TDataWriter* self,
+    const struct TData* instance_data, const DDS_InstanceHandle_t* instance_handle,
+    const struct DDS_Time_t* source_timestamp) {
+
+    return DDS_DataWriter_dispose_w_timestamp_untypedI(
+	(DDS_DataWriter *)self,
+	instance_data, instance_handle, source_timestamp);
+}                                                             
+      
+                                                                   
+DDS_ReturnCode_t TDataWriter_get_key_value(
+    TDataWriter* self,
+    struct TData* key_holder,
+    const DDS_InstanceHandle_t* handle)  {
+
+    return DDS_DataWriter_get_key_value_untypedI((DDS_DataWriter *)self,
+						 key_holder, handle);
+}                     
+
+DDS_InstanceHandle_t TDataWriter_lookup_instance(
+    TDataWriter* self,
+    const struct TData* key_holder) { 
+
+    return DDS_DataWriter_lookup_instance_untypedI(
+        (DDS_DataWriter *)self, key_holder);
+}                                                             
+                                                                     
+#undef concatenate
+
+#undef TDataWriter_narrow_c
+#undef TDataWriter_narrow
+
+#undef TDataWriter_as_datawriter_c
+#undef TDataWriter_as_datawriter
+
+#undef TDataWriter_register_instance_c
+#undef TDataWriter_register_instance
+
+#undef TDataWriter_register_instance_w_timestamp_c
+#undef TDataWriter_register_instance_w_timestamp
+
+#undef TDataWriter_unregister_instance_c
+#undef TDataWriter_unregister_instance
+
+#undef TDataWriter_unregister_instance_w_timestamp_c
+#undef TDataWriter_unregister_instance_w_timestamp
+
+#undef TDataWriter_write_c
+#undef TDataWriter_write
+
+#undef TDataWriter_write_w_timestamp_c
+#undef TDataWriter_write_w_timestamp
+
+#undef TDataWriter_dispose_c
+#undef TDataWriter_dispose
+
+#undef TDataWriter_dispose_w_timestamp_c
+#undef TDataWriter_dispose_w_timestamp
+
+#undef TDataWriter_get_key_value_c
+#undef TDataWriter_get_key_value
+
+#undef TDataWriter_lookup_instance_c
+#undef TDataWriter_lookup_instance
+
+#undef DDS_CURRENT_SUBMODULE
+#endif /* defined(TDataWriter) && defined(TData) */
+
+
+/* End $Id: TDataWriter.c,v 1.9 2007/07/20 16:28:57 edward Exp $ */

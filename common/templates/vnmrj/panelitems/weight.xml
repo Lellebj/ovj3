@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ! 
+ ! Agilent Technologies All Rights Reserved.
+ ! This software contains proprietary and confidential
+ ! information of Agilent Technologies and its contributors.
+ ! Use, disclosure and reproduction is prohibited without
+ ! prior consent.
+ !
+ -->
+
+<template type="processing" element="composites">
+    <group size="192 24">
+      <check loc="166 0" size="16 24" fg="PlainText"
+        font="PlainText" style="PlainText" point="PlainText"
+        vq="lb"
+        vc="lb='y'"
+        vc2="lb='n'"
+        set="on('lb'):$VALUE"
+        />
+      <entry loc="102 0" size="56 24" fg="PlainText"
+        font="PlainText" style="PlainText" point="PlainText"
+        value="1.5" vq="lb"
+        vc="lb=$VALUE"
+        set="$VALUE=lb"
+        show="on('lb'):$VALUE"
+        />
+      <label loc="8 0" size="88 24" fg="Label1"
+        font="Label1" style="Label1" point="Label1"
+        value="Line broaden"
+        />
+    </group>
+</template>

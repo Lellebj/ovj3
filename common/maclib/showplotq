@@ -1,0 +1,7 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+"********************************************************"
+" showplotq  -  displays all current plot jobs for the   "
+"               active plotter				 "
+"********************************************************"
+
+shell('vnmrlp lpshow ' + plotter )

@@ -1,0 +1,18 @@
+"Copyright (c) Agilent Technologies  All Rights Reserved."
+
+"*******************************************************"
+" TOCSY_ES -						"
+
+/*
+-- Attributes for parlib/TOCSY_ES.par --
+P_LOCK  : nt mix ni plt2Darg slpat 
+apptype : homo2D
+modules : par2D homo2D presat wet gradient spinlock zfilter ExSculpt
+wrtp    : setslgh2
+setup   : TOCSY_ES_setup
+*/
+
+"*******************************************************"
+
+cpsetup($0)
+

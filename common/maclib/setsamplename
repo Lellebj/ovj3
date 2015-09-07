@@ -1,0 +1,10 @@
+"This macro does NOTHING at this time (20061026)"
+
+
+if ($# > 0) then
+  if ($1 = 'auto') and (auto='y') then 
+     RETURN
+  endif
+endif
+
+
