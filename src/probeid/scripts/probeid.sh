@@ -1,13 +1,16 @@
 #! /bin/sh -x
-# @(#)probid.sh 22.1 03/24/08 Copyright (c) 2009 Agilent Technologies All Rights Reserved
+# @(#)probid.sh 22.1 03/24/08 2009 
 #
 # change 1st line to "#! /bin/sh -x" for debug
 # 
-# Agilent Technologies All Rights Reserved.
-# This software contains proprietary and confidential
-# information of Agilent Technologies and its contributors.
-# Use, disclosure and reproduction is prohibited without
-# prior consent.
+#
+# Copyright (C) 2015  University of Oregon
+# 
+# You may distribute under the terms of either the GNU General Public
+# License or the Apache License, as specified in the README file.
+# 
+# For more information, see the README file.
+# 
 #
 
 # Get and manage ProbeId values

@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <!--
- ! @(#)DgsteSL_cc.xml 5.2 02/27/07 Copyright (c) 2003-2007 Agilent Technologies All Rights Reserved
  ! 
- ! Agilent Technologies All Rights Reserved.
- ! This software contains proprietary and confidential
- ! information of Agilent Technologies and its contributors.
- ! Use, disclosure and reproduction is prohibited without
- ! prior consent.
  !
  -->
 <template type="basic" name="DgsteSL_cc" author="dosy22" investigator=""

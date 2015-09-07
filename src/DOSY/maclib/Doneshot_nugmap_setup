@@ -1,3 +1,4 @@
+"macro Doneshot_nugmap_setup"
 sw=2500
 setoffset(4.7,tn):tof
 np=512

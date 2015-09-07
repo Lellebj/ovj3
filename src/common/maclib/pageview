@@ -156,7 +156,7 @@ if ($1='review') then
 	write('plotter',0,0,''):$ys
 	$y=-(4*$ys+5)
 	$x=5
-	write('plotter',$x,$y,'Plotname: --Not assigned--')
+  	write('plotter',$x,$y,'Plotname: --Not assigned--')
 //        pdfplotpar[1]=$name+'.pdf'
 	pdfplotpar[1]=$name
 	pdfplotpar[6]=$archive

@@ -1,10 +1,4 @@
-#$Id: fatsat.RF,v 2.1 2003/08/29 01:03:13 vnmr1 Exp $ (Cmed) $Date: 2003/08/29 01:03:13 $ Copyright (c) 2002 Agilent Technologies All Rights Reserved
 #
-# Copyright (c) 2002 Agilent Technologies All Rights Reserved.
-# This software contains proprietary and confidential
-# information of Agilent Technologies and its contributors.
-# Use, disclosure and reproduction is prohibited without
-# prior consent.
 #
 # SLR fat suppression pulse
 # 256 points, 10 ms duration

@@ -8,7 +8,6 @@ cwd = os.getcwd()
 
 
 GilsonFileList = [ 'asm',
-                   'bin',
                    'maclib',
                    'manual',
                    'parlib',

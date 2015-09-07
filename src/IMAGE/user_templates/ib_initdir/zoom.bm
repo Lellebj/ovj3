@@ -1,4 +1,3 @@
-/* Copyright (c) Agilent Technologies  All Rights Reserved. */
 #define zoom_width 16
 #define zoom_height 16
 static char zoom_bits[] = {

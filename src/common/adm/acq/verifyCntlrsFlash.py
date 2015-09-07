@@ -41,7 +41,6 @@
 __author__ = "Greg Brissey"
 __version__ = "$Revision: 1.0 $"
 __date__ = "$Date: 2012/05/22 $"
-__copyright__ = "Copyright (c) 2012 Agilent Technologies"
 __license__ = "Python"
 
 

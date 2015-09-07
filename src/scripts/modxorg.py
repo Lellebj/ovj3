@@ -7,7 +7,6 @@
 __author__ = "Greg Brissey"
 __version__ = "$Revision: 1.0 $"
 __date__ = "$Date: 2009/08/11 11:57:19 $"
-__copyright__ = "Copyright (c) 2009 Agilent Technologies"
 __license__ = "Python"
 
 #

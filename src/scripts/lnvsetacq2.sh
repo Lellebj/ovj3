@@ -1,18 +1,7 @@
-: '@(#)lnvsetacq2.sh 22.1 03/24/08 2003-2008 '
+: '@(#)lnvsetacq2.sh 22.1 03/24/08 '
 # 
 #
-# Copyright (C) 2015  Stanford University
-# 
-# You may distribute under the terms of either the GNU General Public
-# License or the Apache License, as specified in the README file.
-# 
-# For more information, see the README file.
-# 
-#
-: '@(#)lnvsetacq2.sh 1.1 01/29/08 2003-2004 '
-# 
-#
-# Copyright (C) 2015  Stanford University
+# Copyright (C) 2015  University of Oregon
 # 
 # You may distribute under the terms of either the GNU General Public
 # License or the Apache License, as specified in the README file.

@@ -1,4 +1,3 @@
-/* Copyright (c) Agilent Technologies  All Rights Reserved. */
 #define vs_width 16
 #define vs_height 16
 static char vs_bits[] = {

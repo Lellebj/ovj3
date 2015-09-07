@@ -2,7 +2,7 @@
 # '@(#)patchmake.sh 15.1 08/29/00 1991-1998 '
 # 
 #
-# Copyright (C) 2015  Stanford University
+# Copyright (C) 2015  University of Oregon
 # 
 # You may distribute under the terms of either the GNU General Public
 # License or the Apache License, as specified in the README file.

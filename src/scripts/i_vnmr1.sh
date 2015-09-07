@@ -1,7 +1,7 @@
 : '@(#)i_vnmr1.sh 22.1 03/24/08 1991-1994 '
 # 
 #
-# Copyright (C) 2015  Stanford University
+# Copyright (C) 2015  University of Oregon
 # 
 # You may distribute under the terms of either the GNU General Public
 # License or the Apache License, as specified in the README file.
@@ -12,7 +12,7 @@
 : '@(#)i_vnmr3.sh 13.1 10/10/97 1991-1997 '
 # 
 #
-# Copyright (C) 2015  Stanford University
+# Copyright (C) 2015  University of Oregon
 # 
 # You may distribute under the terms of either the GNU General Public
 # License or the Apache License, as specified in the README file.

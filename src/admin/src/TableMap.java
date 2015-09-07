@@ -1,22 +1,11 @@
 /*
- * Copyright (C) 2015  Stanford University
+ * Copyright (C) 2015  University of Oregon
  *
  * You may distribute under the terms of either the GNU General Public
  * License or the Apache License, as specified in the README file.
  *
  * For more information, see the README file.
  */
-/*
- * %Z%%M% %I% %G% Copyright (c) 2000-2002 Varian,Inc. All Rights Reserved
- * 
- * Varian,Inc. All Rights Reserved.
- * This software contains proprietary and confidential
- * information of Varian, Inc. and its contributors.
- * Use, disclosure and reproduction is prohibited without
- * prior consent.
- *
- */
-
 
 /**
  * In a chain of data manipulators some behaviour is common. TableMap

@@ -1,13 +1,3 @@
-#ifndef LINT
-static char SCCSid[] = "@(#)tndqcosy.c 13.1 10/10/97 Copyright (c) 1991-1996 Agilent Technologies All Rights Reserved";
-#endif
-/* 
- * Agilent Technologies All Rights Reserved.
- * This software contains proprietary and confidential
- * information of Agilent Technologies and its contributors.
- * Use, disclosure and reproduction is prohibited without
- * prior consent.
- */
 
 /* tndqcosy - double quantum filtered cosy experiment
                using obs xmtr for presaturation during presat period

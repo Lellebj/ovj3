@@ -1,11 +1,4 @@
 # 
-# Copyright (c) 1991-1996 Agilent Technologies All Rights Reserved. 
-# This software contains proprietary and confidential
-# information of Agilent Technologies and its contributors.
-# Use, disclosure and reproduction is prohibited without
-# prior consent.
-#
-#
 # lockfreqtab:  Hold the values from which lock frequencies can be
 #	set for the lock transceiver boards on each system.  The
 #	values are indexed by the proton frequency (h1freq) of the 

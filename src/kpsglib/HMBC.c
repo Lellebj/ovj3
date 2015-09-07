@@ -1,12 +1,10 @@
-// Copyright (C) 2015  Stanford University
+// Copyright (C) 2015  University of Oregon
 // You may distribute under the terms of either the GNU General Public
 // License or the Apache License, as specified in the README file.
 // For more information, see the README file.
 #ifndef LINT
 #endif
 /* 
- * Varian Assoc.,Inc. All Rights Reserved.
- * information of Varian Assoc., Inc. and its contributors.
  */
 /* HMBC - Heteronuclear Multiple Bond Correlation 
 

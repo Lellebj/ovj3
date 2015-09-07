@@ -6,7 +6,7 @@
 # John Ryan                 #
 # john_ryan@agilent.com     #
 #                           #
-# Version: 2.00 (13-Feb-15) #
+# Version: 2.02 (21-Aug-15) #
 #                           #
 #############################
 
@@ -22,17 +22,96 @@
 #  More user-friendly output
 #  Checks for minimum master1, rfx and ddrx on direct drive systems
 #  Checks for non-contiguous rfx or ddrx controllers
+#
+# Version 2.01 (18-Aug-15) [ Heiko Schill, heiko.schill@agilent.com ]
+#  Optional parameter (range 5,000-100,000, def. 5000): Number of packets
+#
+# Version 2.02 (21-Aug-15)
+#  Added option to specify the timeout too
+#  Converted parameter processing to use getopt
 
+SCRIPTNAME="testControllers"
+VERSION="2.02"
+DATE="21-Aug-15"
+COUNT=5000
+WAIT=20
+
+function usage()
+{
+	echo "Usage:"
+	echo " ${SCRIPTNAME} [options]"
+	echo
+	echo "Options:"
+	echo "-c, --count <packetcount> The number of packets to send (default: ${COUNT})"
+	echo "-h, --help                Display this help message"
+	echo "-v, --version             Display version information"
+	echo "-w, --wait <timeout>      The timeout for each flood ping in seconds (default: ${WAIT})"
+}
 #####################
 # START Start start #
 #####################
+
+# Use getopt to parse the command line
+OPTIONS=`getopt --options "c:hvw:" --long "count:,help,version,wait:" -n "${SCRIPTNAME}" -- "$@"`
+if [ $? -ne 0 ]
+then
+	usage
+	exit 1
+fi
+eval set -- "${OPTIONS}"
+
+# Process options
+while true
+do
+	case "$1" in
+	-c|--count)
+		if [[ "$2" =~ ^[0-9]+$ ]]
+		then
+			COUNT=$2
+			shift 2
+		else
+			echo "${SCRIPTNAME}: option '$1' requires a numerical argument"
+			usage
+			exit 1
+		fi
+		;;
+	-h|--help)
+		usage
+		exit 1
+		;;
+	-v|--version)
+		echo "${SCRIPTNAME} v${VERSION}, ${DATE}"
+		exit 1
+		;;
+	-w|--wait)
+		if [[ "$2" =~ ^[0-9]+$ ]]
+		then
+			WAIT=$2
+			shift 2
+		else
+			echo "${SCRIPTNAME}: option '$1' requires a numerical argument"
+			usage
+			exit 1
+		fi
+		;;
+	--)
+		shift
+		break
+		;;
+	*)
+		# Should never get here!
+		echo "Option processing error."
+		exit 1
+		;;
+	esac
+done
 
 # Check for root user
 USERID="`/usr/bin/id | awk '{print $1}'`"
 if [ ${USERID} != "uid=0(root)" ]
 then
-	  echo -e "\nTo run this script you will need to be the system's root user.\n"
-	  exit 1
+	echo -e "\nTo run this script you will need to be the system's root user.\n"
+	exit 1
 fi
 
 # Look for wormhole in /etc/hosts and determine IP address range
@@ -161,11 +240,11 @@ then
 fi
 
 # Test communication
-echo -e "\nActive addresses:$ACTIVE\n"
+echo -e "\nActive addresses:${ACTIVE}\n"
 for CONTROLLER in $ACTIVE
 do
 	echo -n "$CONTROLLER : "
-	ping -q -w 20 -c 5000 -f $CONTROLLER | grep received
+	ping -q -w ${WAIT} -c ${COUNT} -f ${CONTROLLER} | grep received
 done
 
 echo "Done."

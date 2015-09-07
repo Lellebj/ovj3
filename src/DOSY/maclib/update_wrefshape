@@ -1,4 +1,4 @@
-"@(#)update_wrefshape 1.1 02/26/07 Copyright (c) 2003-2005 Agilent Technologies All Rights Reserved."
+"macro update_wrefshape"
 "update_wrefshape - macro to update the water refocussing shape       "
 "                      for dpfgse water suppression sequences         "
 "   the macro takes the current shapename (wrefshape) and             "

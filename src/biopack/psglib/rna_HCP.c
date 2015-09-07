@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* rna_HCP.c
     3-D proton-C13-P31 correlation experiment
     Marino et al JACS (1994) 116, 6472-73.

@@ -1,4 +1,3 @@
-#  club180.RF Copyright (c) 2003-2004 Agilent Technologies All Rights Reserved
 #  Set duration to 125 us.
 #  B1 should be 15.5 kHz: up to 10% strong okay
 #  Covers +/- 12.5 kHz, good enough for carbon-13

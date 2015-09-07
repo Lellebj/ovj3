@@ -1,10 +1,8 @@
-// Copyright (C) 2015  Stanford University
+// Copyright (C) 2015  University of Oregon
 // You may distribute under the terms of either the GNU General Public
 // License or the Apache License, as specified in the README file.
 // For more information, see the README file.
 /* 
- * Varian,Inc. All Rights Reserved.
- * information of Varian, Inc. and its contributors.
  */
 /*  T1meas - Standard two-pulse sequence with presaturation option
               during relaxation delay d2 and d1 

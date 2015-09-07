@@ -1,3 +1,5 @@
+#
+
 import os
 import sys
 sys.path.append(os.path.join(os.pardir,os.pardir,'scripts'))
@@ -50,12 +52,15 @@ cmd = 'mv protocols_ny protocols_nn'
 print "cmd: ",cmd
 os.system(cmd);
 myShutil.copytree('protocols_nn',protocolPath,symlinks = False)
+cmd = 'mv protocols_nn protocols'
+print "cmd: ",cmd
+os.system(cmd);
 
 protocolPath = os.path.join(consoleDosyPath,'mercury',dosyDirName,'templates','vnmrj')
 if not os.path.exists(protocolPath) :
     os.makedirs(protocolPath)
-myShutil.copytree('protocols_nn',protocolPath,symlinks = False)
-cmd = 'cd '+protocolPath+'/protocols_nn;rm -f Ddeptse.xml Dproject_cc.xml'
+myShutil.copytree('protocols',protocolPath,symlinks = False)
+cmd = 'cd '+protocolPath+'/protocols;rm -f Ddeptse.xml Dproject_cc.xml'
 print "cmd: ",cmd
 os.system(cmd);
 #lnPath=os.path.join(protocolPath,'protocols')
@@ -64,6 +69,4 @@ os.system(cmd);
 #    print "cmd: ",cmd
 #    os.system(cmd)
 
-cmd = 'mv protocols_nn protocols'
-print "cmd: ",cmd
-os.system(cmd);
+SConscript('SConstruct.dosy')

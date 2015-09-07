@@ -1,2 +1,1 @@
-"macro sconsPostAction"
 ln -s lcXferDelay _lcXferDelayType

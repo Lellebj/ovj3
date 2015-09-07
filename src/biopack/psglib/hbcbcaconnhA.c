@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /*   hbcbcaconnhA.c  Auto(Pbox)Calibrated version of hbcbcaconnh_3c_pfg1_sel_500.c
 
     This pulse sequence will allow one to perform the following experiment:

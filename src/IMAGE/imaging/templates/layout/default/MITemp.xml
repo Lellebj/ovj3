@@ -1,11 +1,6 @@
 <template name="MITemp" element="pages" type="sample" >
 <!--
  ! 
- ! Agilent Technologies All Rights Reserved.
- ! This software contains proprietary and confidential
- ! information of Agilent Technologies and its contributors.
- ! Use, disclosure and reproduction is prohibited without
- ! prior consent.
  !
  -->
   <group size="780 270"

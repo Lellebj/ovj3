@@ -1,4 +1,3 @@
-/* Copyright (c) Agilent Technologies  All Rights Reserved. */
 #define pgon_width 16
 #define pgon_height 16
 static char pgon_bits[] = {

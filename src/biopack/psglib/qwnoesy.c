@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
  /* qwnoesy.c 
             2D cross relaxation experiment.  It can be performed in
             either phase-sensitive or absolute value mode.  Either

@@ -1,3 +1,4 @@
+"macro showdosyfit"
 "showdosyfit(n<,m>):  show fit of n'th peak in the dosy analysis with m-fold vertical expansion of residual "
 "GAM 2iv08 : remove expl.out to ensure correct scaling of graph"
 "GAM 3iv08 : fix hangup with only one decay"

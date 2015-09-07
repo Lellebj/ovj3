@@ -1,5 +1,4 @@
 "macro gxyzplotmenu"
-"@(#)vjplotmenu 19.1 01/13/06 Copyright (c) 2003-2004 Varian, Inc. All Rights Reserved."
 // make printer and plotter menus for VnmrJ
 
 $plotter='none' $printer='none'

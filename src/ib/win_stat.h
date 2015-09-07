@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Stanford University
+ * Copyright (C) 2015  University of Oregon
  *
  * You may distribute under the terms of either the GNU General Public
  * License or the Apache License, as specified in the README file.
@@ -8,14 +8,8 @@
  */
 /*-*- Mode: C++ -*-*/
 
-/* Copyright (c) Varian Assoc., Inc.  All Rights Reserved. */
 
 /* 
- * Varian Assoc.,Inc. All Rights Reserved.
- * This software contains proprietary and confidential
- * information of Varian Assoc., Inc. and its contributors.
- * Use, disclosure and reproduction is prohibited without
- * prior consent.
  */
 
 #ifndef _WIN_STAT_H

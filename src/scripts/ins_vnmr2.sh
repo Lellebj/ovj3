@@ -1,15 +1,5 @@
 #! /bin/sh
-#  '@(#)ins_vnmr.sh  1991-2014 '
 # 
-#
-# Copyright (C) 2015  Stanford University
-# 
-# You may distribute under the terms of either the GNU General Public
-# License or the Apache License, as specified in the README file.
-# 
-# For more information, see the README file.
-# 
-#
 #ins_vnmr.sh , the former i_vnmr.3j.sh
 
 #-----------------------------------------------
@@ -903,7 +893,7 @@ then
    load_main="y"
    if [ -r /vnmr/conpar ]
    then
-         echo "Backing up files from previous VnmrJ installation (this may take a few minutes)"
+         echo "Backing up files from previous installation (this may take a few minutes)"
          if [ -r /vnmr/conpar.prev ]
          then
             cp /vnmr/conpar.prev /tmp/conpar
@@ -1289,36 +1279,35 @@ fi
 ######### load the passworded options
 echo "-------------------------" 
 
-if [ x$did_vnmr = "xy" ]
-then
-   mkdir "$dest_dir"/adm/options
-   cp "$src_code_dir"/rht/${cons_type}.options "$dest_dir"/adm/options/options
-   cat "$src_code_dir"/rht/${cons_type}.options | (while read line
-     do
-        filename=`echo $line | awk 'BEGIN { FS = " " } { print $1 }'`
-        cp "$src_code_dir"/tarfiles/$filename "$dest_dir"/adm/options/.
-     done
-   )
-   if [ -f "$src_code_dir"/tarfiles/servicetools.pwd ]
-   then
-      cp "$src_code_dir"/tarfiles/servicetools.pwd "$dest_dir"/adm/options/.
-   fi
-   ${chown_cmd} -R $nmr_adm "$dest_dir"/adm/options
-   ${chgrp_cmd} -R $nmr_group "$dest_dir"/adm/options
-fi
-
-opt_testlist=`echo $opt_list | tr -d " "` 
-
-#if [ -z opt_testlist ]
-if [ x$opt_testlist = "x" ]
-then
-   echo "Skipping PASSWORDED OPTION files"
-else
-   echo "Installing PASSWORDED OPTION files"
-
-   load_pw_option $opt_list
-   #echo "Passworded Options Completed."
-fi
+# if [ x$did_vnmr = "xy" ]
+# then
+#    mkdir "$dest_dir"/adm/options
+#    cp "$src_code_dir"/rht/${cons_type}.options "$dest_dir"/adm/options/options
+#    cat "$src_code_dir"/rht/${cons_type}.options | (while read line
+#      do
+#         filename=`echo $line | awk 'BEGIN { FS = " " } { print $1 }'`
+#         cp "$src_code_dir"/tarfiles/$filename "$dest_dir"/adm/options/.
+#      done
+#    )
+#    if [ -f "$src_code_dir"/tarfiles/servicetools.pwd ]
+#    then
+#       cp "$src_code_dir"/tarfiles/servicetools.pwd "$dest_dir"/adm/options/.
+#    fi
+#    ${chown_cmd} -R $nmr_adm "$dest_dir"/adm/options
+#    ${chgrp_cmd} -R $nmr_group "$dest_dir"/adm/options
+# fi
+# 
+# opt_testlist=`echo $opt_list | tr -d " "` 
+# 
+# if [ x$opt_testlist = "x" ]
+# then
+#    echo "Skipping PASSWORDED OPTION files"
+# else
+#    echo "Installing PASSWORDED OPTION files"
+# 
+#    load_pw_option $opt_list
+#    #echo "Passworded Options Completed."
+# fi
 
 echo "ALL REQUESTED SOFTWARE EXTRACTED"
 
@@ -1364,10 +1353,10 @@ then
    if ( test x$load_type = "xmr400.opt" -o x$load_type = "xmr400dd2.opt" -o x$load_type = "xpropulse.opt" )
    then
        here=`pwd`
-       cd $dest_dir/acq/download
-       cp nvScript.ls nvScript
-       cp nvScript.ls.md5 nvScript.md5
-       cd $here
+#       cd $dest_dir/acq/download
+#       cp nvScript.ls nvScript
+#       cp nvScript.ls.md5 nvScript.md5
+#       cd $here
        if [ -f $dest_dir/conpar.400mr ]
        then
           mv $dest_dir/conpar.400mr $dest_dir/conpar
@@ -1376,14 +1365,14 @@ then
        rm -f $dest_dir/conpar.400mr
    fi
 
-   if ( test x$load_type = "xmercury.opt" -o x$load_type = "xmercvx.opt" -o x$load_type = "xmercplus.opt" )
-   then
-      file="$dest_dir/user_templates"
-      cp "$file"/global "$file"/tmp
-      cat "$file"/tmp | sed 's/lockgain 1 1 48 0 1/lockgain 1 1 39 0 1/' | \
-          sed 's/lockpower 1 1 68 0 1/lockpower 1 1 48 0 1/' > $file/global
-      rm "$file"/tmp
-   fi
+   # if ( test x$load_type = "xmercury.opt" -o x$load_type = "xmercvx.opt" -o x$load_type = "xmercplus.opt" )
+   # then
+   #    file="$dest_dir/user_templates"
+   #    cp "$file"/global "$file"/tmp
+   #    cat "$file"/tmp | sed 's/lockgain 1 1 48 0 1/lockgain 1 1 39 0 1/' | \
+   #        sed 's/lockpower 1 1 68 0 1/lockpower 1 1 48 0 1/' > $file/global
+   #    rm "$file"/tmp
+   # fi
 
 # if still there, delete the following.
    rm -rf "$dest_dir"/user_templates/dg/default.g2000
@@ -1400,6 +1389,10 @@ then
    rm -rf "$dest_dir"/asm/experiments.uplus
 
 
+   if [ ! -d "$dest_dir"/tmp ]
+   then
+      mkdir "$dest_dir"/tmp
+   fi
    chmod 777   "$dest_dir"/tmp
    chmod 666   "$dest_dir"/acq/info
    chmod 775   "$dest_dir"/tune
@@ -1439,12 +1432,14 @@ then
       chmod 775 "$dest_dir"/cryo/data
    fi
 
+   old_link=""
    if [ x$vnmr_link = "xyes" ]
    then
+      old_link=`readlink /vnmr`
       cd /
       rm -f /vnmr
       ln -s "$dest_dir" /vnmr
-      echo "Link '/vnmr' to VnmrJ Software"
+      echo "Link '/vnmr' to OpenVnmrJ Software"
    fi
 
    if [ x$cp_files = "xy" ]
@@ -1705,34 +1700,18 @@ home yes no '${nmr_home}'/$accname' > "$dest_dir"/adm/users/userDefaults.bak
    chown "$nmr_adm" "$dest_dir"/adm/users/userDefaults
       fi
    fi
-   # for windows change : to ; 
-   if [ x$os_version = "xwin" ]
-   then
-      files="templates/vnmrj/interface/dataDirDefault templates/vnmrj/interface/dataTemplateDefault templates/vnmrj/properties/studyname_templates templates/vnmrj/properties/filename_templates imaging/templates/vnmrj/properties/studyname_templates imaging/templates/vnmrj/properties/filename_templates walkup/templates/vnmrj/properties/studyname_templates walkup/templates/vnmrj/properties/filename_templates"
-      for file in $files
-      do
-   default="${dest_dir}/$file"
-   if [ -f "$default" ]
-   then
-       cat "$default" | sed 's/:/;/' > "$default".bak
-       mv "$default".bak "$default"
-   fi
-      done
-   fi
    if [ x$cp_dicom = "xy" ]
    then
-      echo "Restoring dicom."
       rm -rf "$dest_dir"/dicom/conf
-      if [ x$os_version != "xwin" ]
+      if [ -d "$dest_dir"/dicom ]
       then
+         echo "Restoring dicom."
          if [ x$lflvr != "xdebian" ]
          then
-       (cd "$dest_dir"/dicom; su $nmr_adm -fc "tar $taroption /tmp/dicom.tar")
-    else
-       (cd "$dest_dir"/dicom; sudo -u $nmr_adm tar $taroption /tmp/dicom.tar )
+           (cd "$dest_dir"/dicom; su $nmr_adm -fc "tar $taroption /tmp/dicom.tar")
+         else
+           (cd "$dest_dir"/dicom; sudo -u $nmr_adm tar $taroption /tmp/dicom.tar )
          fi
-      else
-   (cd "$dest_dir"/dicom; tar $taroption /tmp/dicom.tar)
       fi
       rm -f /tmp/dicom.tar
    fi
@@ -2151,8 +2130,8 @@ home yes no '${nmr_home}'/$accname' > "$dest_dir"/adm/users/userDefaults.bak
            ln -s libBLT24.so.8.4 libBLT.so
            rm -f /usr/share/tk8.4/vnmr
          fi
-         rm -f /vnmr/bin/wkhtmltopdf
-         mv /vnmr/bin/wkhtmltopdf-i386 /vnmr/bin/wkhtmltopdf
+         # rm -f /vnmr/bin/wkhtmltopdf
+         # mv /vnmr/bin/wkhtmltopdf-i386 /vnmr/bin/wkhtmltopdf
        else  # RHEL 6.X there will be no /usr/lib/libtcl8.4.so, that's installed further down
          cd "$dest_dir"/lib
          # for autotest and spincad
@@ -2160,7 +2139,7 @@ home yes no '${nmr_home}'/$accname' > "$dest_dir"/adm/users/userDefaults.bak
          ln -s libBLT24.so.8.4 libBLT.so
          # for autotest and spincad
          rm -f /usr/share/tk8.4/vnmr
-         rm -f /vnmr/bin/wkhtmltopdf-i386
+         # rm -f /vnmr/bin/wkhtmltopdf-i386
        fi
      fi
    fi
@@ -2204,21 +2183,21 @@ home yes no '${nmr_home}'/$accname' > "$dest_dir"/adm/users/userDefaults.bak
      fi
    fi
 
-   if [ x$os_version = "xsol" ]
-   then
-     ln -s /cdrom/cdrom0/.jhelp /vnmr/jhelp
-   elif [ x$os_version = "xrht" ]
-   then
-     if [ -d /media/cdrom ]
-     then
-        ln -s /media/cdrom/.jhelp /vnmr/jhelp
-     elif [  -d /media/cdrecorder ]
-     then
-        ln -s /media/cdrecorder/.jhelp /vnmr/jhelp
-     else
-        ln -s /mnt/cdrom/.jhelp /vnmr/jhelp
-     fi
-   fi
+#   if [ x$os_version = "xsol" ]
+#   then
+#     ln -s /cdrom/cdrom0/.jhelp /vnmr/jhelp
+#   elif [ x$os_version = "xrht" ]
+#   then
+#     if [ -d /media/cdrom ]
+#     then
+#        ln -s /media/cdrom/.jhelp /vnmr/jhelp
+#     elif [  -d /media/cdrecorder ]
+#     then
+#        ln -s /media/cdrecorder/.jhelp /vnmr/jhelp
+#     else
+#        ln -s /mnt/cdrom/.jhelp /vnmr/jhelp
+#     fi
+#   fi
 
    #Open Source Sudo package
    sudoers="/etc/sudoers"
@@ -2245,21 +2224,24 @@ home yes no '${nmr_home}'/$accname' > "$dest_dir"/adm/users/userDefaults.bak
       # for debian these packages would need to be already installed (tftp, rarpd)
       if [ x$lflvr != "xsuse" -a x$lflvr != "xdebian" ]
       then
-         echo "Installing/Updating dkms package"
-         logmsg "Installing/Updating dkms package"
-         rpm -U $src_code_dir/linux/dkms-2.0.19-1.noarch.rpm  >> $logfile 2>&1 
+         if [ -f $src_code_dir/linux/dkms-2.0.19-1.noarch.rpm ]
+         then
+            echo "Installing/Updating dkms package"
+            logmsg "Installing/Updating dkms package"
+            rpm -U $src_code_dir/linux/dkms-2.0.19-1.noarch.rpm  >> $logfile 2>&1 
+         fi
 
          # install kdiff3 for maintanance/diagnostic usage,etc...
          # For RHEL 6.1 this kidff uses a an older libkonq shared library /usr/lib64/libkonq.so.4
          #  so use --nodpes to avoid the dependency failure on 6.1
-         logmsg "Install kdiff3"
-         rpm -U --nodeps $src_code_dir/linux/kdiff3-0.9.92-1.el5.rf.x86_64.rpm >> $logfile  2>&1
+         # logmsg "Install kdiff3"
+         # rpm -U --nodeps $src_code_dir/linux/kdiff3-0.9.92-1.el5.rf.x86_64.rpm >> $logfile  2>&1
          #  in the 6.1  case just make a symlink between the older lib and the newer one.
-         if [ -h /usr/lib64/libkonq.so.5  -a ! -h /usr/lib64/libkonq.so.4 ] 
-         then 
-          logmsg "Create symlink between libkonq.so.5 libkonq.so.4"
-            ( cd /usr/lib64 ; ln -s libkonq.so.5 libkonq.so.4 >/dev/null >> $logfile 2>&1 )
-         fi
+         # if [ -h /usr/lib64/libkonq.so.5  -a ! -h /usr/lib64/libkonq.so.4 ] 
+         # then 
+         #  logmsg "Create symlink between libkonq.so.5 libkonq.so.4"
+         #    ( cd /usr/lib64 ; ln -s libkonq.so.5 libkonq.so.4 >/dev/null >> $logfile 2>&1 )
+         # fi
 
          # check for installed dkms package
          #if [ "$(rpm -q dkms | grep 'not installed' > /dev/null;echo $?)" == "0" ]
@@ -2283,9 +2265,12 @@ home yes no '${nmr_home}'/$accname' > "$dest_dir"/adm/users/userDefaults.bak
          #   rpm -U $src_code_dir/linux/rarpd-ss981107-22.2.2.x86_64.rpm 2>&1 >/dev/null
          #fi
  
-         if [ "$(rpm -q rarpd | grep 'not installed' > /dev/null;echo $?)" == "0" ]; then
-             logmsg "Install rarpd"
-             rpm -U $src_code_dir/linux/rarpd-ss981107-22.2.2.x86_64.rpm >> $logfile 2>&1
+         if [ -f $src_code_dir/linux/rarpd-ss981107-22.2.2.x86_64.rpm ]
+         then
+            if [ "$(rpm -q rarpd | grep 'not installed' > /dev/null;echo $?)" == "0" ]; then
+                logmsg "Install rarpd"
+                rpm -U $src_code_dir/linux/rarpd-ss981107-22.2.2.x86_64.rpm >> $logfile 2>&1
+            fi 
          fi 
 
          # for RHEL 6.1 
@@ -2294,20 +2279,29 @@ home yes no '${nmr_home}'/$accname' > "$dest_dir"/adm/users/userDefaults.bak
          if [ $distmajor -ge 6 ]
          then
             # shareutils package nolonger resides on the RHEL 6.X Installation DVD
+           if [ -f $src_code_dir/linux/sharutils-4.7-6.1.el6.x86_64.rpm ]
+           then
             if [ "$(rpm -q sharutils  | grep 'not installed' > /dev/null;echo $?)" == "0" ]; then
                 logmsg "Install sharutils"
                 rpm -U $src_code_dir/linux/sharutils-4.7-6.1.el6.x86_64.rpm >> $logfile 2>&1
             fi 
+           fi 
             # Need to install a tcl 8.4 version of the library to support vnmrWish and autotest 
+           if [ -f $src_code_dir/linux/tcl-8.4.13-4.el5.i386.rpm ]
+           then
             if [ "$(rpm -q tcl-8.4.13-4.el5.i386.rpm | grep 'not installed' > /dev/null;echo $?)" == "0" ]; then
                 logmsg "Install tcl 8.4"
                 rpm -i --force $src_code_dir/linux/tcl-8.4.13-4.el5.i386.rpm >> $logfile 2>&1
             fi 
+           fi
             # Need to install a tk 8.4 version of the library to support vnmrWish and autotest 
+           if [ -f $src_code_dir/linux/tk-8.4.13-5.el5_1.1.i386.rpm ]
+           then
             if [ "$(rpm -q tk-8.4.13-5.el5_1.1.i386.rpm  | grep 'not installed' > /dev/null;echo $?)" == "0" ]; then
                 logmsg "Install tk 8.4"
                 rpm -i --force $src_code_dir/linux/tk-8.4.13-5.el5_1.1.i386.rpm >> $logfile  2>&1
             fi 
+           fi 
          fi
          if [ ! -d /usr/share/tk8.4/vnmr ]
          then
@@ -2315,17 +2309,20 @@ home yes no '${nmr_home}'/$accname' > "$dest_dir"/adm/users/userDefaults.bak
             ln -s /vnmr/tcl/tklibrary/vnmr /usr/share/tk8.4/vnmr
          fi
 
-         if [ ! -r /etc/xinetd.d/tftp -a -f $src_code_dir/.nv -a x`uname -p` = "xx86_64" ]
+         if [ -f $src_code_dir/linux/tftp-server-0.32-4.i386.rpm ]
          then
-            echo "Installing tftp server package"
-            logmsg "Installing tftp server package"
-            rpm -i --nodeps $src_code_dir/linux/tftp-server-0.32-4.i386.rpm >> $logfile  2>&1
-         fi
-         if [ ! -r /etc/xinetd.d/tftp -a ! -f $src_code_dir/.nv ]
-         then
-            echo "Installing tftp server package"
-            logmsg "Installing tftp server package"
-            rpm -i $src_code_dir/linux/tftp-server-0.32-4.i386.rpm >> $logfile 2>&1
+           if [ ! -r /etc/xinetd.d/tftp -a -f $src_code_dir/.nv -a x`uname -p` = "xx86_64" ]
+           then
+              echo "Installing tftp server package"
+              logmsg "Installing tftp server package"
+              rpm -i --nodeps $src_code_dir/linux/tftp-server-0.32-4.i386.rpm >> $logfile  2>&1
+           fi
+           if [ ! -r /etc/xinetd.d/tftp -a ! -f $src_code_dir/.nv ]
+           then
+              echo "Installing tftp server package"
+              logmsg "Installing tftp server package"
+              rpm -i $src_code_dir/linux/tftp-server-0.32-4.i386.rpm >> $logfile 2>&1
+           fi
          fi
 #         if [ ! -x /usr/sbin/bootpd -a ! -f $src_code_dir/.nv ]
 #         then
@@ -2354,6 +2351,8 @@ home yes no '${nmr_home}'/$accname' > "$dest_dir"/adm/users/userDefaults.bak
       # then
          if [ x$lflvr = "xrhat" ]
          then
+           if [ -f $src_code_dir/linux/AdbeRdr9.3.2-1_i486linux_enu.rpm ]
+           then
              echo "Installing/Updating Acrobat package"
              logmsg "Installing/Updating Acrobat package"
 #            rpm -i $src_code_dir/linux/acroread-5.08-2.i386.rpm 2>&1 >/dev/null
@@ -2364,6 +2363,7 @@ home yes no '${nmr_home}'/$accname' > "$dest_dir"/adm/users/userDefaults.bak
 #            echo "     Use repository from www.medibuntu.org to obtain acroread for Ubuntu, etc."
             # dpkg --install 
             # aptitude ...
+           fi
          fi
          if [ x$lflvr = "xdebian" ] ; then
              # getlibs was install previous by the preinstall for Ubuntu
@@ -2428,6 +2428,8 @@ home yes no '${nmr_home}'/$accname' > "$dest_dir"/adm/users/userDefaults.bak
       # fi
       if [ x$lflvr = "xrhat" ]
       then
+       if [ -d $src_code_dir/linux/TurboVNC ]
+       then
          echo "Installing/Updating Turbo VNC package"
          logmsg "Installing/Updating Turbo VNC package"
          rpm -U $src_code_dir/linux/TurboVNC/xorg-x11-libs-6.8.2-31.i386.rpm >> $logfile 2>&1
@@ -2440,16 +2442,20 @@ home yes no '${nmr_home}'/$accname' > "$dest_dir"/adm/users/userDefaults.bak
       #   dpkg -i $src_code_dir/linux/TurboVNC/turbojpeg_1.11_amd64.deb >> $logfile 2>&1
       #   dpkg -i $src_code_dir/linux/TurboVNC/VirtualGL_2.1.2_amd64.deb >> $logfile 2>&1
       #   dpkg -i $src_code_dir/linux/TurboVNC/turbovnc_0.5.1_i386.deb >> $logfile 2>&1
+       fi
       fi
 
-      echo "Installing/Updating MATLAB RUNTIME package"
-      logmsg "Installing/Updating MATLAB RUNTIME package"
-      # note this test must change with version of matlab being stalled
-      if [ ! -d /opt/MATLAB/v714 ]
+      if [ -f $src_code_dir/linux/matlabv714.tbz2 ]
       then
+        echo "Installing/Updating MATLAB RUNTIME package"
+        logmsg "Installing/Updating MATLAB RUNTIME package"
+      #   note this test must change with version of matlab being stalled
+        if [ ! -d /opt/MATLAB/v714 ]
+        then
             mkdir -p /opt/MATLAB
             ( cd /opt/MATLAB; tar -xjf $src_code_dir/linux/matlabv714.tbz2 >> $logfile 2>&1 ; rm -fr matlab v713; ln -s v714 matlab ; )
             logmsg "symlink v714 matlab"
+        fi
       fi
       
       (cd $dest_dir/bin; ln Vnmrbg Vnmr)
@@ -2814,6 +2820,11 @@ then
     echo ""
 fi
 #pw_fault is deleted in ProgressMonitor.java
+
+if [ x$old_link != "x" ]
+then
+    su ${nmr_adm} -fc "/vnmr/bin/update_OpenVnmrJ /vnmr $old_link fromInstall"
+fi
 
 #
 #There is a check in ProgressMonitor.java for the below message

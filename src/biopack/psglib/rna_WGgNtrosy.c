@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* rna_WGgNtrosy.c
        This pulse sequence will allow one to perform trosy experiment(Ref.Pervushin
 	et al.  PNAS, 94,12366,1997)

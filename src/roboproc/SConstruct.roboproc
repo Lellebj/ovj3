@@ -1,3 +1,5 @@
+#
+
 import os
 import sys
 sys.path.append(os.path.join(os.getcwd(), os.pardir, os.pardir, 'scripts'))
@@ -5,7 +7,9 @@ import buildMethods
 
 ovjtools=os.getenv('OVJ_TOOLS')
 if not ovjtools:
-    print "OVJ_TOOLS env not found. Use export OVJ_TOOLS=<path>"
+    print "OVJ_TOOLS env not found."
+    print "For bash and variants, use export OVJ_TOOLS=<path>"
+    print "For csh and variants,  use setenv OVJ_TOOLS <path>"
     sys.exit(1)
 
 # we need to specify an absolute path so this SConstruct file

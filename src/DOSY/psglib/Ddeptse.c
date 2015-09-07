@@ -1,5 +1,12 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 #ifndef LINT
-static char SCCSid[] = "@(#)Ddeptse.c 0.5 26/9/08 Copyright (c) Adolfo Botana";
 #endif
 
 /* dept SE- distortionless enhancement by polarization transfer with gradient spin echo

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Stanford University
+ * Copyright (C) 2015  University of Oregon
  *
  * You may distribute under the terms of either the GNU General Public
  * License or the Apache License, as specified in the README file.
@@ -9,11 +9,6 @@
 /*
  * @(#)ReadLast.java 1.5 05/29/07 Copyright (c) 2003-2004 Varian,Inc. All Rights Reserved
  * 
- * Varian,Inc. All Rights Reserved.
- * This software contains proprietary and confidential
- * information of Varian, Inc. and its contributors.
- * Use, disclosure and reproduction is prohibited without
- * prior consent.
  *
  */
 /*

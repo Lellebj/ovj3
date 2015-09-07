@@ -1,0 +1,126 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+#
+# The STARS program was developed by a group in the Department of
+# Chemistry, Aarhus University, DK-8000 Aarhus C, Denmark
+ 
+# sourcedir, sccsdir are environment variables
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+
+MAKEFILE= makestars.win
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+SRC_DIR=$(SRCDIR)/sysstars/
+
+PROJCAT=
+
+STARS_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----
+MAKEFILE_SCCS_SRC = $(SCCSDIR)/$(PROJCAT)stars/SCCS/s.
+STARS_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)stars/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+STARS_LN = ln -s $(STARS_SRC_DIR)$(@)
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+STARS_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)stars/SCCS get
+
+#----  default source extraction to links -------
+STARS_GET= $(STARS_LN)
+
+CC= cc
+
+MAKE = make
+
+STARS_SRC=		\
+         allocations.c	\
+         amoeba.c	\
+         base.c		\
+         fftc.c		\
+         fid_1.c	\
+         fid_2.c	\
+         freqtofid.c	\
+         getrho.c	\
+         iterate.c	\
+         outputfid.c	\
+         printresults.c \
+         readinput.c	\
+         reduce.c	\
+         shortpulse.c	\
+         starsprog.c	\
+         tent.c
+
+STARS_HDR=		\
+         starsprog.h
+
+QPAR_SRC=		\
+	qpar.c
+
+PROGRAMS= starsprg qpar
+CFLAGS= -O
+CPPFLAGS=   
+LDFLAGS=  
+LINTFLAGS=
+
+STARS_OBJ= $(STARS_SRC:.c=.o)
+QPAR_OBJ= $(QPAR_SRC:.c=.o)
+
+.SUFFIXES: .c 
+.KEEP_STATE:
+
+std: all
+
+WINDOWS : all
+
+all: $$(MAKEFILE) Source
+	$(MAKE) -e -f $(MAKEFILE) \
+	$(PROGRAMS)
+	@echo "NMR_ID STARS program complete ------------------------------"
+
+
+starsprg: $(STARS_OBJ)
+	cc -o $@ $(STARS_OBJ) -lm
+
+qpar: $(QPAR_OBJ)
+	cc -o $@ $(QPAR_OBJ) -lm
+
+Source:
+	(cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+	    "STARS_SRC_DIR= $(STARS_SCCS_SRC)"    \
+	    "STARS_GET = $(STARS_SGET)" src)
+
+src: $$(MAKEFILE) $(STARS_SRC) $(STARS_HDR) $(QPAR_SRC)
+	@echo STARS sources up to date
+
+#$(MAKEFILE):
+#	$(STARS_SGET) $@
+
+#  SCCS stuff
+
+$(STARS_SRC) $(STARS_HDR) $(QPAR_SRC): $$(STARS_SRC_DIR)$$(@)
+	$(STARS_GET) $@
+
+amoeba.o: starsprog.h
+basecomp.o: starsprog.h
+fftc.o: starsprog.h
+fid_1.o: starsprog.h
+fid_2.o: starsprog.h
+freqtofid.o: starsprog.h
+getrho.o: starsprog.h
+iterate.o: starsprog.h
+outputfid.o: starsprog.h
+printresults.o: starsprog.h
+readinput.o: starsprog.h
+reduce.o: starsprog.h
+shortpulse.o: starsprog.h
+starsprog.o: starsprog.h
+tent.o: starsprog.h

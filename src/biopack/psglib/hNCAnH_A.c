@@ -1,4 +1,12 @@
-/* hNCAnH_A.c       Agilent Technologies 2011,2012 ... All Rights reserved
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
+/* hNCAnH_A.c
  
    (H)NCA(N)H with double-TROSY feature
     Use for 2H-13C-15N labeled proteins. 

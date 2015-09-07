@@ -1,5 +1,4 @@
 #ifndef LINT
-static char SCCSid[] = "@(#)dqcosy.c 9.1 9/28/93 Copyright (c) 1991,1993 Agilent Technologies All Rights Reserved";
 #endif
 
 /* wetdqcosy.c - made from dqcosy.c (V9.1 9/28/93)

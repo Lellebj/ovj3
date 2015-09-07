@@ -3,6 +3,6 @@ import sys
 # MAC -> darwin, Linux -> linux2
 platform = sys.platform
 
-if ( ('darwin' not in platform) and ('interix' not in platform)):
+if ('darwin' not in platform):
     SConscript('SConstruct.roboproc')
-SConscript('SConstruct.asm')
+SConscript('SConstruct.vast')

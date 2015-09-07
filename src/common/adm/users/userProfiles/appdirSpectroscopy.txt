@@ -1,20 +1,13 @@
-# @(#)appdirSpectroscopy.txt 1.1 02/05/07 Copyright (c) 2003-2009 Agilent Technologies All Rights Reserved
 # 
-# Copyright (c) 1999-2009 Agilent Technologies All Rights Reserved. 
-# This software contains proprietary and confidential
-# information of Agilent Technologies and its contributors.
-# Use, disclosure and reproduction is prohibited without
-# prior consent.
-#
 # Appdirs for Spectroscopy user
 
 1;USERDIR;Home account
-0;/vnmr/biopack;Agilent Biopack
-0;/vnmr/biosolidspack;Agilent Biosolidspack (requires Biopack)
-0;/vnmr/solidspack;Agilent Solidspack
-0;/vnmr/craft;Agilent CRAFT
-0;/vnmr/veripulse;Agilent veriPulse (uses 3D shimming and Autotest)
-1;/vnmr;Agilent system
-0;/vnmr/gxyzshim;Agilent 3D shimming
-0;/vnmr/autotest;Agilent Autotest
-0;/vnmr/service;Agilent Service Protocols
+0;/vnmr/biopack;OpenVnmrJ Biopack
+0;/vnmr/biosolidspack;OpenVnmrJ Biosolidspack (requires Biopack)
+0;/vnmr/solidspack;OpenVnmrJ Solidspack
+0;/vnmr/craft;OpenVnmrJ CRAFT
+0;/vnmr/veripulse;OpenVnmrJ veriPulse (uses 3D shimming and Autotest)
+1;/vnmr;OpenVnmrJ system
+0;/vnmr/gxyzshim;OpenVnmrJ 3D shimming
+0;/vnmr/autotest;OpenVnmrJ Autotest
+0;/vnmr/service;OpenVnmrJ Service Protocols

@@ -1,4 +1,3 @@
-/* Copyright (c) Agilent Technologies  All Rights Reserved. */
 #define rect_width 16
 #define rect_height 16
 static char rect_bits[] = {

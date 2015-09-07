@@ -1,0 +1,300 @@
+# 
+# Copyright (c) 1991-1996 Varian Assoc.,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian Assoc., Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+# makebackproj  make file
+#
+# make -f makebackproj creates backprojection software
+# make -f makebackproj dbx, creates 	DBX versions.
+#
+# ----->  dbx or profiling libraries are not a standard release item and are not to
+#         be given to customers....    1/29/88  Greg Brissey
+#
+
+MAKEFILE= makebackproj
+
+# sourcedir, sccsdir & vnmrdir are environment variables
+# sccsdir & vnmrdir are environment variables
+# sccsdir -> SCCS directory
+# vnmrdir -> vnmr directory
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+VNMRDIR=$(vnmrdir)
+
+#------  The Real Sources for object are contained in one directory --
+# for testing it is '../' normally it would be a absolute path..
+SRC_DIR=$(SRCDIR)/sysbackproj/
+
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+# set defines acording to system Type
+CC:sh = OSTYPE=`uname -s`; \
+	case $OSTYPE in \
+	SunOS ) \
+	    OSREV=`uname -r | awk '{ print substr($0,1,1) }'`; \
+            if [ $OSREV = "5" ]; then \
+                echo "cc -Xa -fsingle -DSOLARIS"; \
+            elif [ $OSREV = "4" ]; then \
+                echo "acc -Xa -fsingle "; \
+            fi; \
+	    ;; \
+	IRIX | IRIX64 ) \
+            echo "cc -cckr -float -DIRIX"; \
+	    ;; \
+	AIX ) \
+            echo "cc -fsingle -DAIX"; \
+	    ;; \
+	 esac;
+
+LIBS:sh = OSTYPE=`uname -s`; \
+         if [ $OSTYPE = "SunOS" ]; then \
+	    OSREV=`uname -r | awk '{ print substr($0,1,1) }'`; \
+            if [ $OSREV = "5" ]; then \
+                echo "-lm"; \
+            elif [ $OSREV = "4" ]; then \
+                echo "-lm"; \
+            fi; \
+         elif [ $OSTYPE = "IRIX" -o $OSTYPE = "IRIX64" ]; then \
+                echo "-lm"; \
+         elif [ $OSTYPE = "AIX" ]; then \
+                echo "-lm"; \
+	fi;
+
+OBJDIR:sh = OSTYPE=`uname -s`; \
+         if [ $OSTYPE = "SunOS" ]; then \
+	    OSREV=`uname -r | awk '{ print substr($0,1,1) }'`; \
+            if [ $OSREV = "5" ]; then \
+                echo "sol"; \
+            elif [ $OSREV = "4" ]; then \
+                echo ""; \
+            fi; \
+         elif [ $OSTYPE = "IRIX" -o $OSTYPE = "IRIX64" ]; then \
+                echo "irix"; \
+         elif [ $OSTYPE = "AIX" ]; then \
+                echo "aix"; \
+	fi;
+
+OPTIMIZE:sh = OSTYPE=`uname -s`; \
+         if [ $OSTYPE = "SunOS" ]; then \
+	    OSREV=`uname -r | awk '{ print substr($0,1,1) }'`; \
+            if [ $OSREV = "5" ]; then \
+                echo "-xO2"; \
+            elif [ $OSREV = "4" ]; then \
+                echo "-O2"; \
+            fi; \
+         elif [ $OSTYPE = "IRIX" -o $OSTYPE = "IRIX64" ]; then \
+                echo "-O"; \
+         elif [ $OSTYPE = "AIX" ]; then \
+                echo "-O"; \
+	 fi;
+
+DEBUGOPT:sh = OSTYPE=`uname -s`; \
+         if [ $OSTYPE = "SunOS" ]; then \
+	    OSREV=`uname -r | awk '{ print substr($0,1,1) }'`; \
+            if [ $OSREV = "5" ]; then \
+                echo "-g -xF -xsb"; \
+            elif [ $OSREV = "4" ]; then \
+                echo "-g -sb"; \
+            fi; \
+         elif [ $OSTYPE = "IRIX" -o $OSTYPE = "IRIX64" ]; then \
+                echo "-g"; \
+         elif [ $OSTYPE = "AIX" ]; then \
+                echo "-g"; \
+	fi;
+
+BACKPROJ_REV=
+CFLAGS= -O
+CPPFLAGS=
+LDFLAGS=
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(LDFLAGS) $(TARGET_ARCH)
+
+BACKPROJ_SRC_DIR=$(SRC_DIR)
+VNMR_SRC_DIR= $(SRC_DIR)
+
+#--- SCCS Sources ----
+BACKPROJ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)backproj/SCCS/s.
+VNMR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmr/SCCS/s.
+
+#--- Link Commands for Sources Needed. -------
+BACKPROJ_LN=ln -s $(BACKPROJ_SRC_DIR)$(@)
+VNMR_LN = ln -s $(VNMR_SRC_DIR)$(@)
+ 
+#---  SCCS Extraction Commands for Sources Needed.  -------
+BACKPROJ_SGET=sccs -p$(SCCSDIR)/$(PROJCAT)backproj/SCCS get
+VNMR_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vnmr/SCCS get
+ 
+#----  default source extraction to links -------
+BACKPROJ_GET=$(BACKPROJ_LN)
+VNMR_GET= $(VNMR_LN)
+
+
+#------------------------------------------------------------------------
+#---  Sources that are needed 
+#------------------------------------------------------------------------
+MACROLIST=	bp_setup	\
+		bp_reco		\
+		bp2d		\
+		bp3d
+
+
+SPECIAL_LIST=	bp_image
+
+
+
+BACKPROJ_HDR=			\
+		bp.h
+
+BACKPROJ_SRC_LIB=		\
+                bp_2d_ti.c	\
+                bp_2d_tp.c	\
+		bp_fht.c	\
+                bp_filt.c	\
+		bp_misc.c	\
+                bp_rdwr.c
+
+BACKPROJ_OBJ_LIB= $(BACKPROJ_SRC_LIB:.c=.o)
+
+BACKPROJ_SRC=		\
+		bp_3d.c		\
+		bp_2d.c		\
+		bp_ball.c	\
+		bp_mc.c		\
+		bp_sort.c
+
+BACKPROJ_OBJ= $(BACKPROJ_SRC:.c=.o)
+
+VNMR_HDR=                       \
+		data.h
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= 				\
+	$(BACKPROJ_HDR) $(VNMR_HDR) $(BACKPROJ_SRC) $(BACKPROJ_SRC_LIB)
+
+ALLOBJS= 				\
+	$(BACKPROJ_OBJ) $(BACKPROJ_OBJ_LIB) 
+
+#CFLAGS = -g -p  -fsingle
+#CFLAGS = -p -O -fsingle
+#LINK = $(CC) $(CFLAGS) -o $@ 
+#LIBS =  -lm
+
+.KEEP_STATE:
+
+std : Source
+	@( if [ ! -d $(OBJDIR)obj ]; then	\
+	   mkdir $(OBJDIR)obj; 			\
+	fi)
+	( cd $(OBJDIR)obj; $(MAKE) -e -f ../$(MAKEFILE) \
+	bp_3d bp_2d bp_mc bp_sort bp_ball )
+	@echo "NMR_ID Backproj complete -------------------------------------"
+
+dbx : Source
+	@( if [ ! -d $(OBJDIR)dbx ]; then	\
+	   mkdir $(OBJDIR)dbx; 			\
+	fi)
+	( cd $(OBJDIR)dbx; $(MAKE) -e -f ../$(MAKEFILE) \
+	"CFLAGS= $(DEBUGOPT)"	\
+	"LDFLAGS= $(DEBUGOPT)"	\
+	bp_3ddbx bp_2ddbx bp_mcdbx bp_sortdbx bp_balldbx )
+	@echo "NMR_ID Backproj dbx complete ---------------------------------"
+
+
+macros : $(MACROLIST) $(SPECIAL_LIST)
+	@echo macros complete
+
+
+# ---- Be sure True Source that we link to are upto date.
+Source :
+	( cd $(SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+             "VNMR_SRC_DIR=$(VNMR_SCCS_SRC)" 		\
+	     "VNMR_GET=$(VNMR_SGET)" 			\
+             "BACKPROJ_SRC_DIR=$(BACKPROJ_SCCS_SRC)" 	\
+	     "BACKPROJ_GET=$(BACKPROJ_SGET)" src )
+
+src : $(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+
+bp_3d bp_3ddbx:	bp_3d.o	$(BACKPROJ_OBJ_LIB)	
+	(umask 2; $(LINK.c) -o $@ bp_3d.o $(BACKPROJ_OBJ_LIB) $(LIBS))
+	( umask 2; cp $@ ..)
+	@echo $@ is complete
+#		$(LINK) bp_3d.o bp_filt.o bp_fht.o bp_misc.o\
+#		bp_2d_tp.o bp_2d_ti.o bp_rdwr.o $(LIBS)
+
+ bp_2d bp_2ddbx: bp_2d.o $(BACKPROJ_OBJ_LIB)
+	(umask 2; $(LINK.c) -o $@ bp_2d.o $(BACKPROJ_OBJ_LIB) $(LIBS))
+	( umask 2; cp $@ ..)
+	@echo $@ is complete
+#		$(LINK) bp_2d.o bp_filt.o bp_fht.o bp_misc.o\
+#		bp_2d_tp.o bp_2d_ti.o bp_rdwr.o $(LIBS)
+
+#bp_lint:	bp_3d.o		bp_filt.o	bp_fht.o\
+#		bp_misc.o	bp_2d_tp.o	bp_2d_ti.o \
+#		bp_rdwr.o	bp.h
+#		lint bp_3d.c bp_filt.c bp_fht.c bp_misc.c \
+#                bp_2d_tp.c bp_2d_ti.c bp_rdwr.c -lm
+
+bp_ball bp_balldbx: bp_ball.o $(BACKPROJ_OBJ_LIB)
+	(umask 2; $(LINK.c) -o $@ bp_ball.c $(BACKPROJ_OBJ_LIB) $(LIBS))
+	( umask 2; cp $@ ..)
+	@echo $@ is complete
+
+#bcftmc bcftmcdbx: bcftmc.c
+#	(umask 2; $(LINK.c) -o $@ bcftmc.c $(LIBS))
+#		$(LINK) bcftmc.o $(LIBS)
+
+bp_mc bp_mcdbx:	bp_mc.o
+	(umask 2; $(LINK.c) -o $@ bp_mc.o $(LIBS))
+	( umask 2; cp $@ ..)
+	@echo $@ is complete
+#		$(LINK) bp_mc.o $(LIBS)
+		
+bp_sort bp_sortdbx: bp_sort.o $(BACKPROJ_OBJ_LIB)
+	(umask 2; $(LINK.c) -o $@ bp_sort.o $(BACKPROJ_OBJ_LIB) $(LIBS))
+	( umask 2; cp $@ ..)
+	@echo $@ is complete
+#		$(LINK) bp_sort.o bp_rdwr.o $(LIBS)
+		
+#sel_zero sel_zerodbx: sel_zero.c $(BACKPROJ_OBJ_LIB)
+#	(umask 2; $(LINK.c) -o $@ sel_zero.c $(BACKPROJ_OBJ_LIB) $(LIBS))
+#		$(LINK) sel_zero.o bp_rdwr.o $(LIBS)
+
+bp_image: FORCE
+	$(BACKPROJ_SGET) $@
+
+FORCE:
+
+#--- Object Targets ----------------------------------------------
+
+$(ALLOBJS) : $(@:.o=.c) $(BACKPROJ_HDR) $(VNMR_HDR)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#------ makefile extraction via SCCS  -------
+
+$(MAKEFILE) : 
+	$(BACKPROJ_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(BACKPROJ_SRC) $(BACKPROJ_SRC_LIB) $(BACKPROJ_HDR) : $(BACKPROJ_SRC_DIR)$$@
+	$(BACKPROJ_GET) $@
+
+$(VNMR_HDR) : $(VNMR_SRC_DIR)$$@
+	$(VNMR_GET) $@
+
+$(MACROLIST) : $(BACKPROJ_SCCS_SRC)$$(@)
+	$(BACKPROJ_SGET) $@
+
+

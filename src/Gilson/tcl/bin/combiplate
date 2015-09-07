@@ -1,11 +1,5 @@
 #! /bin/sh
 # 
-# Copyright (c) 2007 Agilent Technologies All Rights Reserved. 
-# This software contains proprietary and confidential
-# information of Agilent Technologies and its contributors.
-# Use, disclosure and reproduction is prohibited without
-# prior consent.
-#
 # Re execute this file under Tcl.
 # The next line is executed by "sh" but it is a comment to Tcl. \
         exec $vnmrsystem/tcl/bin/vnmrwish "$0" ${1+"$@"}

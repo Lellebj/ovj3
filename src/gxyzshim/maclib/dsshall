@@ -1,5 +1,4 @@
 "macro dsshall"
-"Copyright (c) Varian Assoc., Inc.  All Rights Reserved."
 "dsshall"
 
 $i=arraydim/(ni*ni2)

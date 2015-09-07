@@ -1,4 +1,3 @@
-/* Copyright (c) Agilent Technologies  All Rights Reserved. */
 #define alpha_width 16
 #define alpha_height 16
 static char alpha_bits[] = {

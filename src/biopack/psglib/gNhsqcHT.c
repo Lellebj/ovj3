@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* gNhsqcHT.c    Hadamard version of the Fast N15 HSQC using 3919 watergate 
 
     Requires a frequency list of N-15 resonances, htfrq1 in the current 

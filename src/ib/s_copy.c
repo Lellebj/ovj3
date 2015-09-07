@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2015  Stanford University
+ * Copyright (C) 2015  University of Oregon
  *
  * You may distribute under the terms of either the GNU General Public
  * License or the Apache License, as specified in the README file.
  *
  * For more information, see the README file.
  */
-/* Copyright (c) Varian Assoc., Inc.  All Rights Reserved. */
 /* Unless compiled with -DNO_OVERWRITE, this variant of s_copy allows the
  * target of an assignment to appear on its right-hand side (contrary
  * to the Fortran 77 Standard, but in accordance with Fortran 90),

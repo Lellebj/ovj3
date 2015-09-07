@@ -1,4 +1,12 @@
 /*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
+/*
  BEST-intraHNCA 1H-15N-13CA experiment       
 set f2coef='1 0 -1 0 0 0 1 0 1' for SE_flg='y'
 and f2coef='' for SE_flg='n' for Vnmr/VnmrJ

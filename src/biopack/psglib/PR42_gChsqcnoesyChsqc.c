@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* PR42_gChsqcnoesyChsqc.c
 This pulse sequences is used for PR4D methyl-NOE experiments.
 Note that the HMQC-NOE-HMQC approach is superior for aliphatic NOEs.

@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* gNhsqc_IPAP.c    "N15 IPAP-hsqc using 3919 watergate suppression"
 
    step cycling is 8; Ref: JMR v131, 373-378 (1998)

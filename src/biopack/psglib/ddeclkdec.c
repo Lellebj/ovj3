@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* ddeclkdec-  one-pulse sequence using lock/decoupler as transmitter
 
   Set tn='lk' for 2H observe via the lock rf path

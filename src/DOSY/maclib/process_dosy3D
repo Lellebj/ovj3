@@ -1,3 +1,4 @@
+"macro process_dosy3D"
 $s=size('phase')
 if ($s>1 and arraydim > $s*ni) then  "first 2D of arrayed phase sensitive dosy3Ds"
   wft2da(1)

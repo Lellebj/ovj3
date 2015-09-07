@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Stanford University
+ * Copyright (C) 2015  University of Oregon
  *
  * You may distribute under the terms of either the GNU General Public
  * License or the Apache License, as specified in the README file.
@@ -649,7 +649,8 @@ static void b_cursor()
   else update_ycursor(1,0);
 
   activate_mouse(ds_m_newcursor,ds_reset);
-  aspFrame("ds",0,0,0,0,0);
+  if ( ! this_is_addi)
+     aspFrame("ds",0,0,0,0,0);
 }
 
 /**************/
@@ -998,7 +999,8 @@ static int m_newphase(int butnum, int x, int y, int moveflag)
     }
   }
   grf_batch(0);
-  aspFrame("ds",0,0,0,0,0);
+  if ( ! this_is_addi)
+     aspFrame("ds",0,0,0,0,0);
   return(COMPLETE);
 }
 
@@ -1113,7 +1115,8 @@ static void b_phase()
    m_newphase(4, dfpnt + dnpnt / 2, dfpnt2 + mnumypnts / 2, 0);
    update_ycursor(1, threshY);
    activate_mouse(m_newphase, exit_phase);
-   aspFrame("ds",0,0,0,0,0);
+   if ( ! this_is_addi)
+      aspFrame("ds",0,0,0,0,0);
 }
 
 
@@ -1230,7 +1233,8 @@ static void m_spwp(int butnum, int x, int y, int mask)
 	static double frqset;
 	static double vpsave=0;
 
-	P_getreal(CURRENT,"vp",cur_vp,1);
+        if ( ! this_is_addi)
+	   P_getreal(CURRENT,"vp",cur_vp,1);
 
 	if (get_dis_setup() != 1)
 		select_init(0, GRAPHICS, NO_FREQ_DIM, NO_HEADERS, DO_CHECK2D,
@@ -1330,7 +1334,8 @@ static void m_spwp(int butnum, int x, int y, int mask)
 			vpsave=*cur_vp;
 		}
 	}
-	aspFrame("ds",0,0,0,0,0);
+        if ( ! this_is_addi)
+	   aspFrame("ds",0,0,0,0,0);
 }
 
 /*****************/
@@ -1349,6 +1354,8 @@ static void b_spwp()
         NO_PHASEFILE
     );
   Wgmode();
+  if (this_is_addi)
+     spwpflag = (!spwpflag);
   if (spwpflag)
   {
     if (phaseflag)
@@ -1982,7 +1989,8 @@ static void b_expand()
 #endif
   if(graph_flag) execString("ds('again')\n");
   else if(!isInset()) redo_dpf_dpir();
-  aspFrame("ds",0,0,0,0,0);
+  if ( ! this_is_addi)
+     aspFrame("ds",0,0,0,0,0);
 }
 
 #ifdef OLD
@@ -2133,7 +2141,8 @@ static void ds_multiply(int x, int y)
     if(is_aip_window_opened() && dsChanged()) aipSpecViewUpdate();
     if(!isInset()) redo_dpf_dpir();
     ds_sendVs();
-    aspFrame("ds",0,0,0,0,0);
+    if ( ! this_is_addi)
+       aspFrame("ds",0,0,0,0,0);
 #endif
   }
 }
@@ -2344,7 +2353,8 @@ static void specdisp()
     drawPlotBox();
     set_vscale(yoff,vscale);
 
-    curcolor = getVpSpecColor();
+    if ( ! this_is_addi )
+       curcolor = getVpSpecColor();
     calc_ybars(curspec+fpnt,1,vscale,dfpnt,dnpnt,npnt,yoff,next);
     displayspec(dfpnt,dnpnt,0,&next,curindex,curerase,vmax,vmin,curcolor);
     
@@ -2772,7 +2782,8 @@ static int init_ds(int argc, char *argv[], int retc, char *retv[])
   graph_flag=FALSE;
   start_from_ft = 0;
   ds_sendSpecInfo(1);
-  aspFrame("clearAspSpec",0,0,0,0,0);
+  if ( ! this_is_addi)
+     aspFrame("clearAspSpec",0,0,0,0,0);
   return(COMPLETE);
 }
 
@@ -3347,7 +3358,8 @@ Winfoprintf("##ds %d %d %s",argc,i,argv[i]);
 
   // update CSI spectra if in CSI display mode (two windows).
   if(is_aip_window_opened() && dsChanged()) aipSpecViewUpdate();
-  aspFrame("ds",0,0,0,0,0);
+  if ( ! this_is_addi)
+     aspFrame("ds",0,0,0,0,0);
 #endif
 
   if(vsflag) ds_sendVs();
@@ -3423,20 +3435,20 @@ static void b_select()
     curcolor = color2;
     sp_spec1 = sp;
     set_spec(spec2ptr,&vp_spec2,&vs_spec2,&scl_spec2,sp_spec2,&spec2,&erase2);
-    ParameterLine(1,28,INT_COLOR,"addsub ");
+    ParameterLine(2,COLUMN(FIELD5),INT_COLOR,"addsub ");
   }
   else if (*curindex == spec2)
   {
     curcolor = color3;
     sp_spec2 = sp;
     set_spec(spec3ptr,&vp_spec3,&vs_spec3,&scl_spec2,sp_spec2,&spec3,&erase3);
-    ParameterLine(1,28,THRESH_COLOR,"result ");
+    ParameterLine(2,COLUMN(FIELD5),THRESH_COLOR,"result ");
   }
   else
   {
     curcolor = color1;
     set_spec(spectrum,&vp,&vs,&scale,sp_spec1,&spec1,&erase1);
-    ParameterLine(1,28,SPEC_COLOR,"current");
+    ParameterLine(2,COLUMN(FIELD5),SPEC_COLOR,"current");
   }
   ds_mode = -1;
   b_cursor();
@@ -3472,11 +3484,12 @@ static void b_addsub()
   addi_mode = (addi_mode + 1) % 3;
   show_addsub();
   if (addi_mode == ADD_MODE)
-    ParameterLine(2,28,PARAM_COLOR,"add");
+    ParameterLine(2,COLUMN(FIELD6),PARAM_COLOR,"add");
   else if (addi_mode == SUB_MODE)
-    ParameterLine(2,28,PARAM_COLOR,"sub");
+    ParameterLine(2,COLUMN(FIELD6),PARAM_COLOR,"sub");
   else if (addi_mode == MIN_MODE)
-    ParameterLine(2,28,PARAM_COLOR,"min");
+    ParameterLine(2,COLUMN(FIELD6),PARAM_COLOR,"min");
+
   ds_mode = (ds_mode == BOX_MODE) ? CURSOR_MODE : -1;
   b_cursor();
 }
@@ -3639,10 +3652,10 @@ int start_addi(float *ptr2, float *ptr3, double scl, char *path)
   exp_factors(TRUE);
   combinespec(spectrum,spec2ptr,spec3ptr);
   addi_disp(TRUE,TRUE,TRUE);
-  ParameterLine(1,20,PARAM_COLOR,"active: ");
-  ParameterLine(1,28,color1,"current");
-  ParameterLine(2,20,PARAM_COLOR,"mode:   ");
-  ParameterLine(2,28,PARAM_COLOR,"add");
+  ParameterLine(1,COLUMN(FIELD5),PARAM_COLOR,"active");
+  ParameterLine(2,COLUMN(FIELD5),color1,"current");
+  ParameterLine(1,COLUMN(FIELD6),PARAM_COLOR,"mode");
+  ParameterLine(2,COLUMN(FIELD6),PARAM_COLOR,"add");
   return(COMPLETE);
 }
 

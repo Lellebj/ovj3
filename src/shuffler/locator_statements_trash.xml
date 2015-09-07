@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ ! 
+ !
+ -->
+
+
+<shuffler>
+
+    <!-- Trash Shuffler Statements*** -->
+    <Statement>
+        <ObjectType value="trash" />
+        <MenuString value="by date" />
+        <Label value="Show Items Trashed"/>
+        <Date value="datetrashed" display="false"/>
+        <Calendar value="on any date"/>
+        <UserType value="owner$me$exclusive" display="false"/>
+        <Columns value="filename$objtype$datetrashed"/>
+        <Sort  value="datetrashed$ASC"/>
+    </Statement>
+
+    <Statement>
+        <ObjectType value="trash" />
+        <MenuString value="by type" />
+        <Label value="Show"/>
+        <Attribute-0 value="objtype" display="false"/>
+        <AttrValue-0 value="all"/>
+        <Label value="Items Trashed"/>
+        <Date value="datetrashed" display="false"/>
+        <Calendar value="on any date"/>
+        <UserType value="owner$me$exclusive" display="false"/>
+        <Columns value="filename$objtype$datetrashed"/>
+        <Sort  value="objtype$ASC"/>
+    </Statement>
+
+</shuffler>

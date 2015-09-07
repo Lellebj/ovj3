@@ -1,20 +1,3 @@
-/*
- * Copyright (C) 2015  Stanford University
- *
- * You may distribute under the terms of either the GNU General Public
- * License or the Apache License, as specified in the README file.
- *
- * For more information, see the README file.
- */
-/*
- *
- * Varian, Inc. All Rights Reserved.
- * This software contains proprietary and confidential
- * information of Varian, Inc. and its contributors.
- * Use, disclosure and reproduction is prohibited without
- * prior consent.
- *
- */
 //LoadNmr.java
 
 //output to  ins_vnmr are the following:
@@ -113,7 +96,7 @@ public class LoadNmr extends JFrame {
     protected ProgressMonitor m_progb;
 
     protected static final String EXITMSG =
-		">>>>> VnmrJ Installation Program Exited <<<<<";
+		">>>>> OpenVnmrJ Installation Program Exited <<<<<";
     ImageIcon icons[] = {null, null, null, null, null, null};
 
     // These seems to be used only as the icon for the Frame and
@@ -126,7 +109,7 @@ public class LoadNmr extends JFrame {
     ImageIcon datIcon = new ImageIcon(codeDir+"/icon/datastn.gif");
 
 
-    String   labelString[] = { "VnmrJ home directory  :   ",
+    String   labelString[] = { "OpenVnmrJ home directory  :   ",
                                "User name  :   ",
                                "Group name  :   ",
                                "Administrator email :"
@@ -140,7 +123,7 @@ public class LoadNmr extends JFrame {
 
     public LoadNmr() {
         int dotnvExists = 0;
-        setTitle( "Load VnmrJ Software" );
+        setTitle( "Load OpenVnmrJ Software" );
 ///cdrom/code/.nv
 	// File xx = new File(codeDir +"/.nv");
 	// if (xx.exists()) {
@@ -152,7 +135,7 @@ public class LoadNmr extends JFrame {
 	//     setIconImage(inoIcon.getImage());
         // }
 
-        if ((getVnmrVersion().equals("VnmrJ_SE"))) {
+        if ((getVnmrVersion().equals("OpenVnmrJ_SE"))) {
     	    NUM_LABEL = 4;
 	    nmradminemail = labelDefaultValues[3];
 	}
@@ -688,7 +671,7 @@ public class LoadNmr extends JFrame {
                }
 	       if ((destDir == null) || (destDir.length() < 1)) {
                      JOptionPane.showMessageDialog(getContentPane(),
-				"VnmrJ home directory field is empty",
+				"OpenVnmrJ home directory field is empty",
 				"Error",
 				JOptionPane.ERROR_MESSAGE);
                      return;
@@ -1383,6 +1366,8 @@ public class LoadNmr extends JFrame {
                     (str.compareTo("Chinese") != 0) &&
                     (str.compareTo("Japanese") != 0) &&
                     (str.compareTo("Secure_Environments") != 0) &&
+                    (str.compareTo("VAST") != 0) &&
+                    (str.compareTo("LC-NMR") != 0) &&
           	    (str.compareTo("768AS") != 0)) chkBoxGen[k].doClick();
           	add(chkBoxGen[k]);
           	// chkBoxGen[k].addItemListener(chkboxListener);

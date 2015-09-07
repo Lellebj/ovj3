@@ -1,11 +1,5 @@
 #
-# hsine.GRD Copyright (c) 1991-1996 Agilent Technologies All Rights Reserved
 # 
-# Copyright (c) 1991-1996 Agilent Technologies All Rights Reserved. 
-# This software contains proprietary and confidential 
-# information of Agilent Technologies and its contributors. 
-# Use, disclosure and reproduction is prohibited without 
-# prior consent. 
 #
 #	one - half sine for GRADIENTS 128 points long
 #	you must explictly turn it off!

@@ -7,7 +7,9 @@ import buildMethods
 
 ovjtools=os.getenv('OVJ_TOOLS')
 if not ovjtools:
-    print "OVJ_TOOLS env not found. Use export OVJ_TOOLS <path>"
+    print "OVJ_TOOLS env not found."
+    print "For bash and variants, use export OVJ_TOOLS=<path>"
+    print "For csh and variants,  use setenv OVJ_TOOLS <path>"
     sys.exit(1)
 
 #import variables  and environment from SConstruct
@@ -163,12 +165,12 @@ nvlocki = nvLockiCppEnv.Program(target  = nvLockiTarget,
 
 
 # define with absolute path where built files will be copied
-vnmrInstallPath = os.path.join(cwd, os.pardir, os.pardir, os.pardir, 'vnmr', 'bin')
+ddrPath = os.path.join(cwd, os.pardir, os.pardir, os.pardir, 'console','ddr', 'bin')
 
 # make sure the path(s) exist
-if not os.path.exists(vnmrInstallPath):
-   os.makedirs(vnmrInstallPath)
+if not os.path.exists(ddrPath):
+   os.makedirs(ddrPath)
 
 nvLockiCppEnv.AddPostAction(nvlocki,
-                            Action(Copy(os.path.join(vnmrInstallPath,'nvlocki'), os.path.join(cwd, nvLockiTarget))))
+                            Action(Copy(os.path.join(ddrPath,'nvlocki'), os.path.join(cwd, nvLockiTarget))))
 

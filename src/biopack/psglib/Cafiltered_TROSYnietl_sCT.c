@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* Cafiltered_TROSYnietl_sCT.c  
 
 Cafiltered_TROSYnietl_sCT is used to measure the 1-and 2-bond

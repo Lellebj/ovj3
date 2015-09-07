@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /*  mfpresat - multi-frequency presat functions. Eriks Kupce, Oxford, June 2005.
  
                Pbox utility functions for multi-frequency presat and multi-frequency 

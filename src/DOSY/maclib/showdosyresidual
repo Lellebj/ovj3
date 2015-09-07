@@ -1,4 +1,4 @@
-"@(#)showdosyresidual 1.2 04/24/07 Copyright (c) 2003-2007 Agilent Technologies All Rights Reserved."
+"macro showdosyresidual"
 " GAM 9i04 allow 2nd argument:  expansion factor for residual	" 
 " PS version May 2009						"
  

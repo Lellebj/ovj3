@@ -1,4 +1,14 @@
+#
+
 import os
+import sys
+
+ovjtools=os.getenv('OVJ_TOOLS')
+if not ovjtools:
+    print "OVJ_TOOLS env not found."
+    print "For bash and variants, use export OVJ_TOOLS=<path>"
+    print "For csh and variants,  use setenv OVJ_TOOLS <path>"
+    sys.exit(1)
 
 # targets
 fdf2niftiTarget = 'fdf2nifti'
@@ -7,8 +17,7 @@ fdf2niftiTarget = 'fdf2nifti'
 # can be called from any other SConstruct file
 cwd = os.getcwd()
 
-gslLibPath = os.path.join(cwd, os.pardir, os.pardir, 
-               '3rdParty','supportLibs','gsllibs')
+gslLibPath = os.path.join(ovjtools, 'gsllibs')
 
 # source files
 fdf2niftiFileList = ['main_fdf2nifti.c']
@@ -30,7 +39,7 @@ fdf2nifti = fdf2niftiEnv.Program(target = fdf2niftiTarget,
 				'm'])
 
 # define with absolute path where built files will be copied
-vnmrInstallPath = os.path.join(cwd, os.pardir, os.pardir, os.pardir, 'vnmr', 'bin')
+vnmrInstallPath = os.path.join(cwd, os.pardir, os.pardir, os.pardir, 'options', 'standard', 'IMAGE', 'bin')
 
 # make sure the path(s) exist
 if not os.path.exists(vnmrInstallPath):

@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /*  gNhsqc2.c    gNhsqc.c for a two-channel machine
     
     WARNING: Be sure no C13 or other bandpass filters are in line between

@@ -1,4 +1,4 @@
-"@(#)sdp 18.1 06/25/04 Copyright (c) 1991-2000 Agilent Technologies All Rights Reserved."
+"macro sdp"
 "	sdp - show diffusion projection				"
 "	To be used with 2 or 3D DOSY data after DOSY analysis 	"
 "	Displays D spectrum using Varian's dsp facility 	"

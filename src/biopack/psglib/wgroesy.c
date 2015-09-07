@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* wgroesy.c - rotating frame NOE experiment with T-Roesy modification 
                    allows T-Roesy or standard cw Roesy
                    WATERGATE version

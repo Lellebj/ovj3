@@ -1,4 +1,12 @@
 /*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
+/*
    BEST-HNCOCACB 1H-15N-13CA/Cb experiment   
    
    Correlates Ca(i) and Cb(i) with N(i+1), NH(i+1).

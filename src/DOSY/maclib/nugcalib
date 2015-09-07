@@ -1,7 +1,8 @@
+"macro nugcalib"
 "@(#) nugcalib: combine functions of previus nugcalib and 	"
 " nugfit macros, calibrating non-uniform PFGs "
 
-"Copyright 2008 Agilent Technologies and The University of Manchester      "
+"macro nugcalib"
 
 " 21 ii 08  GAM/MN: combine DOSY analysis and fitting of calibration in a single macro "
 

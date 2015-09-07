@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /*  noesyCA.c   auto-calibrated version of noesy_C_chirp_purge_lek_v3a.c (D2O,800MHz) 
 
     This pulse sequence will allow one to perform the following experiment:

@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /*flipsi-   presaturation with rejection of regions of poor rf homogeneity
             Neuhaus, Ismail and Chung, J. Magn. Reson.A, 118, 256-263(1995).
             Also see: Lauridsen et.al, Anal.Chem. 80, 3365-3371(2008)   

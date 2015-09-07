@@ -2,7 +2,7 @@
 : '@(#)simplemovie.sh 1.0 07/18/11 2011-2016 '
 #
 #
-# Copyright (C) 2015  Stanford University
+# Copyright (C) 2015  University of Oregon
 # 
 # You may distribute under the terms of either the GNU General Public
 # License or the Apache License, as specified in the README file.

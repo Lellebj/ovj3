@@ -1,4 +1,3 @@
-"macro sconsPostAction"
 ln -s C13ETBsens_process C13ETBSN_process
 ln -s C13sens_process C13SN_process
 ln -s F19sens_process F19SN_process

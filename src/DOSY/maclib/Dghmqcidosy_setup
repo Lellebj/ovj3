@@ -1,3 +1,4 @@
+"macro Dghmqcidosy_setup"
 axis='pd' pmode='full' gaussian
 phase=1,2 f1coef='1 0 0 1 0 1 1 0'
 setdecpars dm='nny'

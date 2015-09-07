@@ -1,3 +1,5 @@
+#
+
 import os
 import sys
 import shutil
@@ -28,7 +30,6 @@ standAloneFileList = ['convertbru.c',
                       'fileowner.c',
                       'findLinks.c',
                       'expandphase.c',
-                      'fitspec.c',
                       'import1Dspec.c',
                       'jdxfid.c',
                       'jdxspec.c',
@@ -48,10 +49,6 @@ acqStandAloneFileList = ['cptoconpar.c',
 
 imageStandAloneFileList = ['read_raw_data.c']
 
-dosyFileList = ['contin.for',
-                'splmod.for',
-                'splmodNUG.for']
-
 cleanFileList = ['cln2d.c',
                 'cln3d.c',
                 'fidx.c',
@@ -69,33 +66,6 @@ env = Environment(CCFLAGS = '-O2 -Wall -m32',
 
 env64 = Environment(CCFLAGS = '-O2 -Wall -m64',
                   LINKFLAGS = '-m64')
-
-fenv = Environment(FORTRANFLAGS = '-fno-f2c -ffast-math -O',
-                   FORTRAN = 'g77')
-
-if (isUbuntuVersion()==1):
-   fenv.Replace( FORTRAN='f77' )
-
-if ('interix' in platform):    # Interix
-   interixgcc= os.path.join(os.sep,'opt','gcc.3.3','bin','gcc')
-   interixg77= os.path.join(os.sep,'opt','gcc.3.3','bin','g77')
-   env.Replace( CC=interixgcc )
-   env.Replace(  LINKFLAGS='-O -m32' )
-   env.AppendUnique(  CPPDEFINES=[ '_ALL_SOURCE','__INTERIX','LINUX']  )
-   env.Append(  LIBPATH=[ os.path.join(os.sep, 'usr','lib','x86'), os.path.join(os.sep, 'usr','lib') ]  )
-   env64.Replace( CC=interixgcc )
-   env64.Replace( CCFLAGS='-O2 -Wall -m32' )
-   env64.Replace(  LINKFLAGS='-O -m32' )
-   env64.AppendUnique(  CPPDEFINES=[ '_ALL_SOURCE','__INTERIX']  )
-   env64.Append(  LIBPATH=[ os.path.join(os.sep, 'usr','lib','x86'), os.path.join(os.sep, 'usr','lib') ]  )
-   fenv.Replace( FORTRAN=interixg77 )
-   #print "CC is:", env['CC']
-   #print "C++ is:", env['CXX']
-
-if ('darwin' in platform):    # Interix
-   LIBG2C=File(os.path.join(os.sep,'usr','local','lib','libg2c.a'))
-   fenv.Replace(  LIBS=LIBG2C )
-
 
 # define with absolute path where built files will be copied
 vnmrInstallPath = os.path.join(cwd, os.pardir, os.pardir, os.pardir, 'vnmr', 'bin')
@@ -142,6 +112,11 @@ if (platform!="darwin"):
 
 shutil.copy(os.path.join(cwd,'weight.h'),
             os.path.join(vnmrInstallPath,'weight.h') )
+# The program fitspec contains NR code that cannot be open-sourced.
+# Copy the executable.
+shutil.copy(os.path.join(cwd,'fitspec'),
+            os.path.join(vnmrInstallPath,'fitspec') )
+os.system('chmod 755 '+os.path.join(vnmrInstallPath,'fitspec') )
 
 #image path
 stdImageBinPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,
@@ -160,12 +135,3 @@ for i in imageStandAloneFileList:
    env.AddPostAction(imageBuildObj,
                      Action(Copy(stdImageBinPath, os.path.join(cwd, filename))))
 
-dosyBinPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir, 'options','standard','DOSY','bin')
-if not os.path.exists(dosyBinPath):
-       os.makedirs(dosyBinPath)
-for i in dosyFileList:
-       (filename, ext) = os.path.splitext(i)
-       tempBuildObj = fenv.Program(target = filename,
-                              source = i)
-       fenv.AddPostAction(tempBuildObj,
-                     Action(Copy(dosyBinPath, os.path.join(cwd, filename))))

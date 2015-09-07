@@ -1,10 +1,6 @@
 "macro prescan_cleanup_globals"
 "********************************************************************
-" Copyright (c) 1999-2003 Agilent Technologies All Rights Reserved.
 "
-" This software contains proprietary and confidential information of
-" Agilent Technologies and its contributors. Use, disclosure and reproduction
-" is prohibited without prior consent.
 "
 " NAME:
 "    prescan_cleanup_globals

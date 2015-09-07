@@ -1,0 +1,150 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+#
+#
+# makebackproj.lnx Linux make file
+#
+#
+
+MAKEFILE= makebackproj.lnx
+
+# sccsdir -> SCCS directory
+SCCSDIR=$(sccsdir)
+
+#-----  Project Category Under the SCCS directory --------
+# sccsdir -> SCCS directory  (e.g., /big/sccs )
+# PROJCAT= vnmr/  -> directory under SCCS directory  (e.g., /big/sccs/vnmr/ )
+PROJCAT=
+
+# set defines acording to system Type
+CC = gcc
+LIBS = -lm
+BACKPROJ_REV=
+CFLAGS= -O2 -DLINUX
+CPPFLAGS=
+LDFLAGS=
+TARGET_ARCH=
+COMPILE.c= $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+LINK.c= $(CC) $(LDFLAGS) $(TARGET_ARCH)
+
+#--- SCCS Sources ----
+BACKPROJ_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)backproj/SCCS/s.
+VNMR_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)vnmr/SCCS/s.
+
+#---  SCCS Extraction Commands for Sources Needed.  -------
+BACKPROJ_SGET=sccs -p$(SCCSDIR)/$(PROJCAT)backproj/SCCS get
+VNMR_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)vnmr/SCCS get
+ 
+#------------------------------------------------------------------------
+#---  Sources that are needed 
+#------------------------------------------------------------------------
+MACROLIST=	bp_setup	\
+		bp_reco		\
+		bp2d		\
+		bp3d
+
+
+SPECIAL_LIST=	bp_image
+
+
+
+BACKPROJ_HDR=			\
+		bp.h
+
+BACKPROJ_SRC_LIB=		\
+                bp_2d_ti.c	\
+                bp_2d_tp.c	\
+		bp_fht.c	\
+                bp_filt.c	\
+		bp_misc.c	\
+                bp_rdwr.c
+
+BACKPROJ_OBJ_LIB= $(BACKPROJ_SRC_LIB:.c=.o)
+
+BACKPROJ_SRC=		\
+		bp_3d.c		\
+		bp_2d.c		\
+		bp_ball.c	\
+		bp_mc.c		\
+		bp_sort.c
+
+BACKPROJ_OBJ= $(BACKPROJ_SRC:.c=.o)
+
+VNMR_HDR=                       \
+		data.h
+
+
+#---- All Sources and headers required for compilation -----
+ALLSRC= 				\
+	$(BACKPROJ_HDR) $(VNMR_HDR) $(BACKPROJ_SRC) $(BACKPROJ_SRC_LIB)
+
+ALLOBJS= 				\
+	$(BACKPROJ_OBJ) $(BACKPROJ_OBJ_LIB) 
+
+std LINUX : Source bp_3d bp_2d bp_mc bp_sort bp_ball
+	@echo "NMR_ID Backproj complete -------------------------------------"
+
+macros : $(MACROLIST) $(SPECIAL_LIST)
+	@echo macros complete
+
+
+# ---- Be sure True Source that we link to are upto date.
+
+Source src : $(MAKEFILE) $(ALLSRC)
+	@echo Sources up to date...
+
+
+bp_3d :	bp_3d.o	$(BACKPROJ_OBJ_LIB)	
+	(umask 2; $(LINK.c) -o $@ bp_3d.o $(BACKPROJ_OBJ_LIB) $(LIBS))
+	@echo $@ is complete
+#		$(LINK) bp_3d.o bp_filt.o bp_fht.o bp_misc.o\
+#		bp_2d_tp.o bp_2d_ti.o bp_rdwr.o $(LIBS)
+
+ bp_2d : bp_2d.o $(BACKPROJ_OBJ_LIB)
+	(umask 2; $(LINK.c) -o $@ bp_2d.o $(BACKPROJ_OBJ_LIB) $(LIBS))
+	@echo $@ is complete
+
+bp_ball : bp_ball.o $(BACKPROJ_OBJ_LIB)
+	(umask 2; $(LINK.c) -o $@ bp_ball.c $(BACKPROJ_OBJ_LIB) $(LIBS))
+	@echo $@ is complete
+
+bp_mc :	bp_mc.o
+	(umask 2; $(LINK.c) -o $@ bp_mc.o $(LIBS))
+	@echo $@ is complete
+		
+bp_sort : bp_sort.o $(BACKPROJ_OBJ_LIB)
+	(umask 2; $(LINK.c) -o $@ bp_sort.o $(BACKPROJ_OBJ_LIB) $(LIBS))
+	@echo $@ is complete
+		
+bp_image: FORCE
+	$(BACKPROJ_SGET) $@
+
+FORCE:
+
+#--- Object Targets ----------------------------------------------
+
+$(ALLOBJS) : $(@:.o=.c) $(BACKPROJ_HDR) $(VNMR_HDR)
+	-(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+#------ makefile extraction via SCCS  -------
+
+$(MAKEFILE) : 
+	$(BACKPROJ_SGET) $@
+
+#------------  Source Extraction via SCCS or Links ---------------
+
+$(BACKPROJ_SRC) $(BACKPROJ_SRC_LIB) $(BACKPROJ_HDR) : % :$(BACKPROJ_SCCS_SRC)%
+	$(BACKPROJ_SGET) $@
+
+$(VNMR_HDR) : % : $(VNMR_SCCS_SRC)%
+	$(VNMR_SGET) $@
+
+$(MACROLIST) : % : $(BACKPROJ_SCCS_SRC)%
+	$(BACKPROJ_SGET) $@
+
+

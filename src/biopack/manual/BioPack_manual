@@ -145,7 +145,6 @@ macro is a text file present in /vnmr/maclib and detailed in Table 1.
 
           Table 1.  The gnoesyChsqc macro. 
 
-"gnoesyChsqc macro, 1.1 06/29/00 Copyright (c) 1999-2000 Agilent Technologies 
 All Rights Reserved." 
 
 BPrtppar('gnoesyChsqc')                   "sets up parameter set"
@@ -195,7 +194,6 @@ depending on user preference. If no user parlib entry for gnoesyChsqc.par is pre
 
                              Table 2. The BPrtppar macro  
 
-"@(#)BPrtppar 1.1 06/29/00 Copyright (c) 1999-2000 Agilent Technologies All 
 Rights Reserved."
 if $#>0.5 then             "$# is the number of arguments supplied"
 

@@ -1,0 +1,82 @@
+# 
+# Copyright (c) 1999-2000 Varian,Inc. All Rights Reserved. 
+# This software contains proprietary and confidential
+# information of Varian, Inc. and its contributors.
+# Use, disclosure and reproduction is prohibited without
+# prior consent.
+#
+
+SHELL=/usr/bin/sh
+MAKEFILE= makedicom_store
+
+SRCDIR=$(sourcedir)
+SCCSDIR=$(sccsdir)
+DICOM_SRC_DIR= $(sourcedir)/sysdicom_store/
+
+TARGET_ARCH=
+CFLAGS= -O -DHAVE_CONFIG_H -D_REENTRANT -DNDEBUG
+LPCFLAGS= -O4
+CPPFLAGS=
+LDFLAGS=
+RANLIB= ranlib
+
+####### The options for Forte CC
+CCC= CC
+AR= CC
+ARFLAGS= -xar -o
+
+####### The options for gnu c++
+#CCC= c++
+#AR= ar
+#ARFLAGS= cruv
+###########################
+
+INCLUDES=
+
+IN_LINE=
+
+DICOM_SCCS_SRC=$(SCCSDIR)/$(PROJCAT)dicom_store/SCCS/s.
+
+DICOM_LN = - ln -s $(DICOM_SRC_DIR)$(@)
+
+DICOM_SGET = sccs -p$(SCCSDIR)/$(PROJCAT)dicom_store/SCCS get
+
+DICOM_GET= $(DICOM_LN)
+
+
+PROG_HDR=        \
+	constants.h
+
+PROG_OBJS=         \
+	byte_swap.o create_ctn_input.o create_fdf_dicom.o split_fdf.o \
+	create_dicom.o start_server.o stop_server.o store_image.o
+
+PROG_SRC= $(PROG_OBJS:.o=.c) 
+
+std : SOLARIS
+
+all: byte_swap create_ctn_input create_fdf_dicom split_fdf start_server \
+	create_dicom stop_server store_image
+
+SOLARIS: Source src all
+	@echo " makedicom_store complete --------------------------"
+
+$(PROG_OBJS): $(@:.o=.c)
+	(umask 2; $(COMPILE.c) $(@:.o=.c) )
+
+Source:
+	@( cd $(DICOM_SRC_DIR); $(MAKE) -e -f $(MAKEFILE) \
+	   "DICOM_SRC_DIR= $(DICOM_SCCS_SRC)"             \
+	   "DICOM_GET= $(DICOM_SGET)"                     \
+	   src )
+
+src:  $(PROG_HDR) $(PROG_SRC)
+	@echo  Sources up to date...
+
+
+$(PROG_SRC): $$(DICOM_SRC_DIR)$$(@)
+	$(DICOM_GET) $@
+
+$(PROG_HDR): $$(DICOM_SRC_DIR)$$(@)
+	$(DICOM_GET) $@
+

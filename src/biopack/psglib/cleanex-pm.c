@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* cleanexp-pm - 1D-ROE experiment to detect
                  water - protein exchange and intermolecular NOEs
 Literature:  Tsang-Lin Hwang, Susumu Mori, A.J. Shaka and P. C. M. van Zijl:

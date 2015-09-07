@@ -1,4 +1,4 @@
-"@(#)dosy_parfix 1.1 02/26/07 Copyright (c) 2003-2005 Agilent Technologies All Rights Reserved."
+"macro dosy_parfix"
 d1=2 satdly=2 
 if ni<2 then at=2 endif
 exists('lkgate_flg','parameter'):$e

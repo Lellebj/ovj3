@@ -1,4 +1,3 @@
-/* Copyright (c) Agilent Technologies  All Rights Reserved. */
 #define frame_width 16
 #define frame_height 16
 static char frame_bits[] = {

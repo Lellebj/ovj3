@@ -1,11 +1,5 @@
-# @(#)termcap 22.1 03/24/08 Copyright (c) 1991-1996 Agilent Technologies All Rights Reserved
+# @(#)termcap 22.1 03/24/08
 # 
-# Copyright (c) 1991-1996 Agilent Technologies All Rights Reserved. 
-# This software contains proprietary and confidential 
-# information of Agilent Technologies and its contributors. 
-# Use, disclosure and reproduction is prohibited without 
-# prior consent. 
-#
 # ------------------------
 #
 #	Termcap source file @(#)termcap.src 1.5 86/11/13 SMI; from UCB 1.19 05/20/83

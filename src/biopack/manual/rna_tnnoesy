@@ -1,13 +1,3 @@
-#ifndef LINT
-static char SCCSid[] = "@(#)tnnoesy.c 13.3 11/06/98 Copyright (c) 1991-1996 Agilent Technologies All Rights Reserved";
-#endif
-/* 
- * Agilent Technologies All Rights Reserved.
- * This software contains proprietary and confidential
- * information of Agilent Technologies and its contributors.
- * Use, disclosure and reproduction is prohibited without
- * prior consent.
- */
 
 /* tnnoesy -  2D cross relaxation experiment.  It can be performed in
             either phase-sensitive or absolute value mode.  Either

@@ -1,12 +1,14 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 #ifndef LINT
-static char SCCSid[] = "@(#)Dbppste_ghsqcse.c 1.1 02/26/07 Copyright (c) 2003-2005 Agilent Technologies All Rights Reserved";
 #endif
 /* 
- * Agilent Technologies All Rights Reserved.
- * This software contains proprietary and confidential
- * information of Agilent Technologies and its contributors.
- * Use, disclosure and reproduction is prohibited without
- * prior consent.
  */
 /* Dbppste_ghsqcse 
 	Sensitivity enhanced phase sensitive gradient selected HSQC

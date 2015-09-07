@@ -1,5 +1,4 @@
 "macro AuNdec"
-"Copyright (c) Varian Inc.  All Rights Reserved."
 
 $probe='' shell('basename '+probe):$probe
 
@@ -469,7 +468,7 @@ ENDIF
 ELSEIF ($CALmethod = 'newcal') THEN
 "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&"
 
-"Copyright (c) Varian Assoc., Inc.  All Rights Reserved."
+"macro AuNdec"
 
 "AuNdec: N15 decoupler Autocalibration macro "
 " options/arguments: "

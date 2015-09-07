@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /***********************************************************************
 Localization by Adiabatic Selective Refocusing (LASER)
 Garwood et al, JMR 72 (1987), p.502-508

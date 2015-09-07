@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /*  Hadamard-SOFAST-NHMQC               */
 /*  P.Schanda and B. Brutscher, JMR, 178, 334-339(2006)
     Modified for BioPack, GG, Palo Alto, March 2006

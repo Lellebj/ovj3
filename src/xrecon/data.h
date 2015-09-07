@@ -1,9 +1,7 @@
 /* data.h */
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* data.h: Stripped down Agilent data file handler                           */
-/*                                                                           */
-/* Copyright (C) 2012 Agilent Technologies                                   */
+/* data.h: Stripped down data file handler                           */
 /*                                                                           */
 /* This file is part of Xrecon.                                              */
 /*                                                                           */

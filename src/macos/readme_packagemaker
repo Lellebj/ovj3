@@ -1,0 +1,24 @@
+To make a MacOS package, start packagemaker from /Developer/Applications/Utilities/PackageMaker.
+Set Organization: com.Agilent
+    Minimum target Leopard.
+Select menu Project/AddContents...
+Use browser to select Package_contents
+  then select VnmrJ.app  (the VJ picture should show in Contents.)
+Unclick Allow Relocation choice.
+Click Scripts Choice. Use Browser for 
+   Scripts directory:
+to select install_resources
+Click Configuration, use browser to select
+   Destination: /Applications
+   Unselect "Allow custom location"
+   Package Identifier: com.Agilent.VnmrJ31A.pkg
+Click Area below "Contents" on the left and then set
+   Choice Name: VnmrJ31A
+Click "Untitled Package: area, then Configuration. Set
+   Title: VnmrJ31A
+Select "System volume" deselect others.
+Click "Edit Installer"
+Drop Splash screen and select To-Fit. (git-repo/software/vnmrbg_iconlib/Splash_VnmrJ.png)
+Drop Readme file at appropriate time. (git-repo/software/macos/ReadMe.txt)
+Drop License file at appropriate time. (git-repo/3rdParty/SFU/installer/AgilentSoftwareLicenseAgreement.rtf)
+Click Build. Set Save As: VnmrJ31A in cdimageNVJ directory

@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /*  hbcbcgcdhdA.c - auto-calibrated version of the original sequence
         hbcbcgcdhd_aro_pfg_500.c - auto-calibrated version of the original sequence
 

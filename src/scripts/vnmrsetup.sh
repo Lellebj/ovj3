@@ -1,5 +1,5 @@
 #! /bin/sh
-# '@(#)vnmrsetup.sh '
+# '@(#)vnmrsetup.sh'
 #
 #   aka load.nmr 
 #
@@ -162,9 +162,9 @@ form_dest_dir() {
     versionLine=`grep VnmrJ_SE ${base_dir}/vnmrrev | wc -l`
     if [ $versionLine -eq 1 ]
     then
-       vname=vnmrjSE_
+       vname=openvnmrjSE_
     else
-       vname=vnmrj_
+       vname=openvnmrj_
     fi
 
     $GREP -i -E 'alpha|beta|devel|test'  ${base_dir}/vnmrrev 2> /dev/null

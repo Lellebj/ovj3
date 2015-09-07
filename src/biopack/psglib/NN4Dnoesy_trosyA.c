@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /*NN4Dnoesy_trosyA
        This pulse sequence will allow one to perform the following experiment:
 	4D 15N 15N edited noesy, with TROSY detection in F3,F4. 

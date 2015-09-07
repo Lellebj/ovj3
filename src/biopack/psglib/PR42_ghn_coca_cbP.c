@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* PR42_ghn_coca_cbP.c
 4D HNCOCACB PR-NMR (Non-TROSY) 2D version
 

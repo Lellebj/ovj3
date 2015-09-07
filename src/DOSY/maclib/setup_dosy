@@ -1,3 +1,4 @@
+"macro setup_dosy"
 " setup_dosy:  initialise gradient calibration, and set up"
 " gradient strengths in equal increments of gradient squared"
 

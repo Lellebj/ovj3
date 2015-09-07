@@ -36,15 +36,18 @@ acqList    = 	['bootr',
                 'killstat',
                 'makesuacqproc',
                 'protune',
+                'rmipcs',
+                'set_tunehw'
+		]
+
+ddrAcqList  =   [
+                'mkprobeifc',
                 'probeid',
                 'probe_mount',
                 'probe_unmount',
-                'mkprobeifc',
 	        'restore3x',
-                'rmipcs',
                 'rsu_bt_setup',
-                'set_tunehw'
-		]
+                ]
 
 fileList    = 	['adddevices',
                 'calcramp',
@@ -82,7 +85,6 @@ fileList    = 	['adddevices',
                 'patchuninstall',
                 'protopub',
                 'psggen',
-                'rsu_bt_setup',
                 'rvnmrj',
                 'rvnmrx',
                 'S99pgsql',
@@ -96,6 +98,7 @@ fileList    = 	['adddevices',
                 'turbovnc',
                 'turbovncsetup',
                 'turbovncserver',
+                'update_OpenVnmrJ',
                 'vbg',
                 'vjhelp',
                 'vnmr_accounting',
@@ -176,6 +179,13 @@ if ( ('darwin' not in platform) and ('interix' not in platform) ):
       Execute(Copy(dest,i+'.sh'))
       Execute(Chmod(dest,0755))
 
+   acqPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,'console','ddr','bin')
+   if not os.path.exists(acqPath) :
+       os.makedirs(acqPath)
+   for i in ddrAcqList:
+      dest = os.path.join(acqPath,i)
+      Execute(Copy(dest,i+'.sh'))
+      Execute(Chmod(dest,0755))
    vnmrAcqBinPath = os.path.join(cwd,os.pardir,os.pardir,os.pardir,'vnmr','acqbin')
    if not os.path.exists(vnmrAcqBinPath) :
        os.makedirs(vnmrAcqBinPath)

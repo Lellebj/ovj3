@@ -2,11 +2,6 @@
 <template type="basic" element="elements">
 <!--
  ! 
- ! Agilent Technologies All Rights Reserved.
- ! This software contains proprietary and confidential
- ! information of Agilent Technologies and its contributors.
- ! Use, disclosure and reproduction is prohibited without
- ! prior consent.
  !
  -->
       <selmenu size="56 24" fg="PlainText" font="PlainText"

@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* wgnoesy  -  NOESY experiment with water suppression by gradient echo.  
                No attempt is made to suppress J-cross peaks in this pulse 
                sequence. F1 axial peaks are shifted by States TPPI method. 

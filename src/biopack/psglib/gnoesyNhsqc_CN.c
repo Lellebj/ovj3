@@ -1,10 +1,17 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /*  gnoesyNhsqc_CN.c for Heterodimer studies
     has been temporarily removed
     for pulse sequence revision
 */
 
 #ifndef LINT
-static char SCCSid[] = "@(#)s2pul.c 18.1 06/25/04 Copyright (c) 1991-1996 Agilent Technologies All Rights Reserved";
 #endif
 
 /*  s2pul - standard two-pulse sequence */

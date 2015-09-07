@@ -1,11 +1,5 @@
 #!/bin/csh
 # 
-# Agilent Technologies All Rights Reserved.
-# This software contains proprietary and confidential
-# information of Agilent Technologies and its contributors.
-# Use, disclosure and reproduction is prohibited without
-# prior consent.
-#
 
 #    theme can be default, ocean, aqua or emerald
 #

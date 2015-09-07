@@ -1,4 +1,3 @@
-/* Copyright (c) Agilent Technologies  All Rights Reserved. */
 #define line_width 16
 #define line_height 16
 static char line_bits[] = {

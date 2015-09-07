@@ -1,4 +1,3 @@
-/* Copyright (c) Agilent Technologies  All Rights Reserved. */
 #define graphics_width 65
 #define graphics_height 65
 static char graphics_bits[] = {

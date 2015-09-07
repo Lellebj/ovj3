@@ -38,6 +38,8 @@ optionsInstallPath = os.path.join(cwd, os.pardir, os.pardir, os.pardir,
 optionsInstallP11Path = os.path.join(cwd, os.pardir, os.pardir, os.pardir,
                                   'options', 'standard', 'P11', 'p11', 'bin')
 
+vnmrInstallPath = os.path.join(cwd, os.pardir, os.pardir, os.pardir,
+                                  'vnmr', 'bin')
 # make sure the path(s) exist
 if not os.path.exists(optionsInstallPath):
    os.makedirs(optionsInstallPath)
@@ -45,6 +47,9 @@ if not os.path.exists(optionsInstallPath):
 # make sure the path(s) exist
 if not os.path.exists(optionsInstallP11Path):
    os.makedirs(optionsInstallP11Path)
+
+if not os.path.exists(vnmrInstallPath):
+   os.makedirs(vnmrInstallPath)
 
 # actual builds
 for i in safep11TargetList:

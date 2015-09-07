@@ -1,5 +1,5 @@
-"@(#)dosy_updatepars 1.1 02/26/07 Copyright (c) 2003-2005 Agilent Technologies All Rights Reserved."
-"@(#)updatepars 18.1 06/25/04 Copyright (c) 1991-1996 Agilent Technologies All Rights Reserved."
+"macro dosy_updatepars"
+"macro dosy_updatepars"
 "*************************************************************************"
 "dosy_updatepars(directory)  fixs parameters of all the parameter sets and data"
 "                       sets in the specified directory                   "

@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* wlogsy_noe - 1D-NOE ePHOGSY experiment for detection
                 of ligands with WaterLOGSY
 Literature:  C. Dalvit et al. J. Biomol. NMR, 18, 65-68 (2000).

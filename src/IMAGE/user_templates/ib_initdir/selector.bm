@@ -1,4 +1,3 @@
-/* Copyright (c) Agilent Technologies  All Rights Reserved. */
 #define selector_width 16
 #define selector_height 16
 static char selector_bits[] = {

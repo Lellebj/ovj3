@@ -1,3 +1,5 @@
+#
+
 import os
 import sys
 sys.path.append(os.path.join(os.getcwd(), os.pardir, os.pardir, 'scripts'))
@@ -61,11 +63,7 @@ vwacqHdrList = ['hostAcqStructs.h']
 env = Environment(CCFLAGS    = '-fPIC -g -c -Wall -O -m32',
                   CPPDEFINES = ['LINUX', 'NESSIE', 'USE_HTONS'],
                   LINKFLAGS  = '-m32',
-                  CPPPATH    = [cwd,
-                                os.path.join(cwd, os.pardir, os.pardir,
-                                             '3rdParty', 'java', 'include'),
-                                os.path.join(cwd, os.pardir, os.pardir,
-                                             '3rdParty', 'java', 'include', 'linux')])
+                  CPPPATH    = [cwd])
 if ('darwin' in platform):
     env.Append(CPPDEFINES = 'MACOS')
 

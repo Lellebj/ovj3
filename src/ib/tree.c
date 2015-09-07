@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Stanford University
+ * Copyright (C) 2015  University of Oregon
  *
  * You may distribute under the terms of either the GNU General Public
  * License or the Apache License, as specified in the README file.
@@ -14,7 +14,6 @@
    Utility" by Alan Holub, Dr. Dobb's Journal, October 1986 (#120), page 25.
  */
 
-/* Copyright (c) Varian Assoc., Inc.  All Rights Reserved. */
 
 #include <memory.h>
 #include <stdio.h>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Stanford University
+ * Copyright (C) 2015  University of Oregon
  *
  * You may distribute under the terms of either the GNU General Public
  * License or the Apache License, as specified in the README file.
@@ -8,14 +8,8 @@
  */
 /* sendcmds.c - Table of commands & function calls */
 #ifndef LINT
-static char SCCSid[] = "sendcmds.c Copyright (c) 1994-2000 Varian Inc. All Rights Reserved";
 #endif
 /* 
- * Varian Inc. All Rights Reserved.
- * This software contains proprietary and confidential
- * information of Varian Inc. and its contributors.
- * Use, disclosure and reproduction is prohibited without
- * prior consent.
  */
 
 #include <stdio.h>

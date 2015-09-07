@@ -1,14 +1,5 @@
 #! /bin/sh
 # 
-#
-# Copyright (C) 2015  Stanford University
-# 
-# You may distribute under the terms of either the GNU General Public
-# License or the Apache License, as specified in the README file.
-# 
-# For more information, see the README file.
-# 
-#
 # Re execute this file under Tcl.
 # The next line is executed by "sh" but it is a comment to Tcl. \
         exec $vnmrsystem/tcl/bin/vnmrwish "$0" ${1+"$@"}

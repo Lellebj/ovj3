@@ -1,15 +1,8 @@
-# 
-# Copyright (c) 1999-2000 Agilent Technologies All Rights Reserved. 
-# This software contains proprietary and confidential
-# information of Agilent Technologies and its contributors.
-# Use, disclosure and reproduction is prohibited without
-# prior consent.
-#
 #
 # Appdirs for LC NMR MS user
 
 1;USERDIR;Home account
-1;/vnmr/lc;Agilent LC NMR MS
-1;/vnmr;Agilent system
-0;/vnmr/gxyzshim;Agilent 3D shimming
-0;/vnmr/autotest;Agilent Autotest
+1;/vnmr/lc;OpenVnmrJ LC NMR MS
+1;/vnmr;OpenVnmrJ system
+0;/vnmr/gxyzshim;OpenVnmrJ 3D shimming
+0;/vnmr/autotest;OpenVnmrJ Autotest

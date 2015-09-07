@@ -1,5 +1,4 @@
 "macro Ndec"
-"Copyright (c) Varian Inc.  All Rights Reserved."
 
 $probe='' shell('basename '+probe):$probe
 

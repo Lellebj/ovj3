@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 
 /********************************************************/
 /* jexp   - join a nmr experiment          		*/
@@ -131,8 +139,10 @@ static int rjexpnum = 0;
 static int autoexp = 0;
 
 extern void saveGlobalPars(int sv, char *suff);
+static void report_copy_file_error(int errorval, char *filename );
 static void saveallshims(int rtsflag);
 static int saveshim(const char *vname, int rtsflag);
+static int fid_is_link(char *filepath );
 static int param_access(char *path, int level );
 int set_nodata();
 extern int aspFrame(char *keyword, int frameID, int x, int y, int w, int h);
@@ -1121,7 +1131,8 @@ int downsizefid(int argc, char *argv[], int retc, char *retv[])
        }
  
    // make procparpath
-      strncpy(procparpath,filepath,strlen(filepath)-3);
+      strcpy(procparpath,filepath);
+      procparpath[strlen(filepath)-3] = '\0';
       strncat(procparpath,"procpar",7);
    }
 
@@ -1338,9 +1349,436 @@ int svf(int argc, char *argv[], int retc, char *retv[])
 /**************************/
 /* svf stores fid */
 /* svp stores parameters */
+{ char filepath[MAXPATH],path[MAXPATH];
+  char origpath[MAXPATH],destpath[MAXPATH];
+  int r,fidflag;
+  int  diskIsFull;
+  int  ival;
+  char *name;
+  char systemcall[2*MAXPATH+8];
+  int svf_update;
+  int svf_nofid;		/* saving FID, but do not copy FID.  See below */
+  int nolog, no_arch, i;
+  int doDB;
+  int force;
+  int opt;
+  vInfo info;
+  char *ptmp;
+#ifdef SIS
+  int permission = 0755; 
+#else 
+  int permission = 0777; 
+#endif 
+
+  Wturnoff_buttons();
+  D_allrelease();
+  if (strcmp(argv[0],"SVP")==0)
+    fidflag = 0;
+  else
+    fidflag = 1;
+  nolog = FALSE;
+  no_arch = TRUE;
+  doDB = TRUE;
+  force = FALSE;
+  opt = FALSE;
+  if ( !strcmp(argv[0],"SVF") )
+  {  for (i = 1; i<argc; i++)
+     {
+        if (!strcmp(argv[i],"nolog") ) nolog = TRUE;
+        if (!strcmp(argv[i],"arch") ) no_arch = FALSE;
+     }
+  }
+  for (i = 1; i<argc; i++)
+  {
+     if (!strcmp(argv[i],"nodb") ) doDB = FALSE;
+     if (!strcmp(argv[i],"force") ) force = TRUE;
+     if (!strcmp(argv[i],"opt") ) opt = TRUE;
+  }
+  if (nolog) argc--;
+  if (!no_arch) argc--;
+  if (!doDB) argc--;
+  if (force) argc--;
+  if (opt) argc--;
+
+  if (argc<2)
+    { W_getInput("File name (enter name and <return>)? ",filepath,MAXPATH-1);
+      name = filepath;
+      if (strlen(name)==0)
+        { Werrprintf("No file name given, command aborted");
+          ABORT;
+        }
+    }
+  else if (argc!=2)
+    { Werrprintf("usage - %s(filename)",argv[0]);
+      ABORT;
+    }
+  else
+    name = argv[1];
+  if ((int) strlen(name) >= (MAXPATH-32))
+    { Werrprintf("file path too long");
+      ABORT;
+    }
+  if (verify_fname(name))
+    { Werrprintf( "file path '%s' not valid", name );
+      ABORT;
+    }
+
+  strcpy(filepath,name);
+  if (fidflag)
+    { if (isPar(filepath))
+        { Werrprintf("illegal file name %s with extension .par",filepath);
+          ABORT;
+        }
+      // if file name extension is not specified, .fid will be saved regardless part11System.
+      if ( strlen(filepath) < 5)
+      {
+         strcat(filepath,".fid");
+      }
+      else
+      {
+         ptmp = filepath +strlen(filepath)-4; 
+         if ( strcmp(ptmp,".fid") && strcmp(ptmp,".rec") && strcmp(ptmp,".REC"))
+         {
+ 	    strcat(filepath,".fid");
+         }
+      }
+
+      // if current data is not SE data, svr_FDA will save .rec even though 
+      // given extension is .REC.
+      if (isFDARec(filepath) || isRec(filepath))
+	{
+	   svr_FDA(argc, argv, retc, retv);
+	   RETURN;
+	}
+    }
+  else
+    { if (isFid(filepath))
+        { Werrprintf("illegal file name %s with extension .fid",filepath);
+          ABORT;
+        }
+      else if (!isPar(filepath))
+        strcat(filepath,".par");
+    }
+#ifdef VMS
+    filepath[ strlen( filepath ) - 4 ] = '_';		/*  Replace '.' with '_'  */
+    make_vmstree(filepath,filepath,MAXPATHL-20);	/*  Make into VMS directory  */
+#endif 
+  disp_status("SVF/SVP ");
+  svf_update = 0;
+  svf_nofid = 0;
+
+  if (mkdir(filepath,permission))
+    { if (errno==EEXIST)
+        {
+          int rmDir;
+
+          rmDir = FALSE;
+          if (force)
+          {
+            rmDir = TRUE;
+          }
+          else
+          {
+             char answer[16];
+             W_getInput("File exists, overwrite (enter y or n <return>)? "
+               ,answer,15);
+             if ((strcmp(answer,"y")==0) || (strcmp(answer,"yes")==0))
+               rmDir = TRUE;
+          }
+          if (rmDir)
+	  {
+
+	/*
+	 * Problem can result if $curexp/acqfil/fid is a symbolic link
+	 * to the fid file in this directory.  If this directory were
+	 * removed, the symbolic links would point to a non-existant file.
+	 * The routine `fid_is_link' returns 1 if this is the situaton.
+	 */
+
+	    if (fid_is_link( filepath ) == 0) {
+                svf_update = 1;
+                sprintf(systemcall,"rm -rf %s",check_spaces(filepath,chkbuf,MAXPATH+2));
+                system(systemcall);
+                if (mkdir(filepath,permission)) {
+                       Werrprintf("cannot overwrite existing file: %s",filepath);
+                       disp_status("        ");
+                       ABORT;
+                }
+            }  
+
+	/*
+	 * Next statement executes if $curexp/acqfil/fid is a link to the
+	 * FID file in this directory.  We do not remove the directory,
+	 * but set the SVF-NO-FID flag so as to prevent copying the FID
+	 * since that's already been done!
+	 */
+	    else
+	      svf_nofid = 1;
+	  }
+	  else
+	  {
+            disp_status("        ");
+            ABORT;
+	  }
+        }
+      else
+        { Werrprintf("cannot create file %s",filepath);
+          disp_status("        ");
+          ABORT;
+        }
+    }
+
+/* create and set vnmrj time parameter */
+  currentDate(origpath, MAXPATH);
+  if (P_getVarInfo(CURRENT,"time_saved",&info) == -2)
+     P_creatvar(CURRENT,"time_saved",T_STRING);
+  P_setstring(CURRENT,"time_saved",origpath,1);
+
+/*
+  Wgetgraphicsdisplay(disCmd, 20);
+  if (P_getVarInfo(CURRENT,"disCmd",&info) == -2)
+     P_creatvar(CURRENT,"disCmd",T_STRING);
+  P_setstring(CURRENT,"disCmd",disCmd,1);
+*/
+
+  if (svprocpar(fidflag,filepath) != 0)
+      ABORT;
+
+/*  Remember the original path is constrained
+    to MAXPATH-32 or fewer letters.		*/
+
+#ifdef UNIX
+  sprintf( &origpath[ 0 ], "%s/text", curexpdir );
+  sprintf( &destpath[ 0 ], "%s/text", filepath );
+#else 
+  sprintf( &origpath[ 0 ], "%stext", curexpdir );
+  sprintf( &destpath[ 0 ], "%stext", filepath );
+#endif 
+
+  ival = isDiskFullFile( filepath, &origpath[ 0 ], &diskIsFull );
+  if (ival == 0 && diskIsFull) {
+      Werrprintf( "svf: problem saving text in %s: disk is full", filepath );
+      ABORT;
+  }
+
+  r = copy_file_verify( &origpath[ 0 ], &destpath[ 0 ] );
+  if (r != 0) {
+      report_copy_file_error( r, "text" );
+      ABORT;
+  }
+
+/*  The FID flag is 0 if the command was SVP.
+    The SVF-NO-FID flag is not 0 if the FID in the current experiment
+    is a link to the FID in the directory this command is accessing.	*/
+
+  if (fidflag == 0 || svf_nofid != 0) {
+#ifdef VNMRJ
+    if (doDB)
+    {
+      char tmppath[3*MAXPATH];
+      if (filepath[0]=='/')
+        strcpy(tmppath,filepath);
+      else
+      {
+        if (getcwd(tmppath,MAXPATH) == NULL)
+          strcpy(tmppath,"");
+        strcat(tmppath,"/");
+        strcat(tmppath,filepath);
+        strncpy(filepath,tmppath,MAXPATH);
+	i = strlen(filepath);
+	if (filepath[i] != '\0')
+	  filepath[i] = '\0';
+      }
+      ptmp = "";
+      for (i=strlen(filepath); i>0; i--)
+      {
+	ptmp = &filepath[i-1];
+	if (*ptmp == '/')
+	{
+	  ptmp++;
+	  break;
+	}
+      }
+      sprintf(tmppath,"%s vnmr_par \"%s\" \"%s\"",UserName,ptmp,filepath);
+      if (strlen(tmppath) > 3*MAXPATH)
+         Winfoprintf("WARNING: %s cannot add file to database, filename too long!\n",argv[0]);
+      else
+         writelineToVnmrJ(argv[0],tmppath);
+    }
+#endif 
+
+      if(part11System) {
+        sprintf( &origpath[ 0 ], "%s/acqfil", curexpdir );
+        p11_writeAuditTrails_S("jexp:svp", origpath, filepath);
+      }
+
+      disp_status("        ");
+      RETURN;
+  }
+
+#ifdef UNIX
+  sprintf( &origpath[ 0 ], "%s/acqfil/fid", curexpdir );
+  sprintf( &destpath[ 0 ], "%s/fid", filepath );
+#else 
+  strcpy(path,curexpdir);
+  vms_fname_cat(path,"[.acqfil]");
+  sprintf( &origpath[ 0 ], "%sfid", path );
+  sprintf( &destpath[ 0 ], "%sfid", filepath );
+#endif 
+
+  ival = isDiskFullFile( filepath, &origpath[ 0 ], &diskIsFull );
+  if (ival == 0 && diskIsFull) {
+      Werrprintf( "svf: problem saving fid data in %s: disk is full", filepath );
+      ABORT;
+  }
+
+  r = copy_file_verify( &origpath[ 0 ], &destpath[ 0 ] );
+  if (r != 0) {
+      report_copy_file_error( r, "fid" );
+      ABORT;
+  }
+
+  /* Copy sampling schedules */
+  sprintf(origpath , "%s/acqfil/sampling.sch",curexpdir);
+  if ( ! access(origpath,F_OK))
+  {
+     char systemcall[4*MAXPATH];
+
+     sprintf(destpath, "%s/sampling.sch", filepath );
+     sprintf(systemcall,"cp %s %s", origpath, destpath);
+     system(systemcall);
+  }
+/* When the FID is already a link then so is the 'log' file (see rt)
+   So this is the place to copy the 'log' file or we would already
+   have returned from this call */
+
+  strcpy(path,curexpdir);
+#ifdef UNIX
+  strcat(path,"/acqfil/log");
+#else 
+     vms_fname_cat(path,"[.acqfil]log");
+#endif 
+  if (!nolog && !access(path,F_OK))
+  {
+#ifdef UNIX
+     strcpy( &origpath[ 0 ], path );
+     strcpy( &destpath[ 0 ], filepath );
+     strcat( &destpath[ 0 ], "/log" );
+#else 
+     strcpy( &origpath[ 0 ], path );
+     strcpy( &destpath[ 0 ], filepath );
+     strcat( &destpath[ 0 ], "log" );
+#endif 
+
+     ival = isDiskFullFile( filepath, &origpath[ 0 ], &diskIsFull );
+     if (ival == 0 && diskIsFull) {
+         Werrprintf( "svf: problem saving log file: disk is full" );
+         ABORT;
+     }
+     r = copy_file_verify( &origpath[ 0 ], &destpath[ 0 ] );
+     if (r != 0) {
+	 report_copy_file_error( r, "log" );
+         ABORT;
+     }
+  }
+  
+  if (!no_arch)
+  {	FILE	*fd,*fd_text;
+	double	loc;
+	char	*ptr, solvent[20], tmp_text[130];
+	strcpy(path,filepath);
+	ptr = strrchr(path,'/');
+        if (ptr==0) strcpy(path,"doneQ");
+	else { *ptr = '\0'; strcat(path,"/doneQ"); }
+	fd = fopen(path,"a");	/* append, or open if not existing */
+        if (fd)
+	{  P_getreal(PROCESSED,"loc",&loc,1);
+	   fprintf(fd,"  SAMPLE#: %d\n",(int)loc);
+	   fprintf(fd,"     USER: %s\n",UserName);
+	   fprintf(fd,"    MACRO: ??\n");
+	   P_getstring(PROCESSED,"solvent",solvent,1, 18);
+	   fprintf(fd,"  SOLVENT: %s\n",solvent);
+	   strcpy(path,filepath); strcat(path,"/text");
+	   fd_text = fopen(path,"r");
+	   ptr = &tmp_text[0];
+	   while ( (*ptr = fgetc(fd_text)) != EOF && ptr-tmp_text < 128) 
+	   {  if (*ptr == '\n') *ptr='\\';
+	      ptr++;
+	   }
+	   fclose(fd_text); *ptr = '\0';
+	   fprintf(fd,"     TEXT: %s\n",tmp_text);
+	   /* chop '.fid' then only retain filename */
+	   strcpy(path,filepath); ptr = strrchr(path,'.'); *ptr = '\0';
+	   ptr = strrchr(path,'/'); if (ptr==0) ptr=path; else ptr++;
+	   fprintf(fd,"  USERDIR:\n");
+	   fprintf(fd,"     DATA: %s\n",ptr);
+	   fprintf(fd,"   STATUS: Saved\n");
+	   fprintf(fd,"------------------------------------------------------------------------------\n");
+	   fclose(fd);
+	}
+	else
+	   Werrprintf("problem opening '%s'",path);
+  }
+  if (retc > 0)
+  {
+     retv[0]=newString(filepath);
+  }
+#ifdef VNMRJ
+  if (doDB)
+  {
+     char tmppath[3*MAXPATH];
+     if (filepath[0]=='/')
+       strcpy(tmppath,filepath);
+     else
+     {
+       if (getcwd(tmppath,MAXPATH) == NULL)
+         strcpy(tmppath,"");
+       strcat(tmppath,"/");
+       strcat(tmppath,filepath);
+       strncpy(filepath,tmppath,MAXPATH);
+       i = strlen(filepath);
+       if (filepath[i] != '\0')
+         filepath[i] = '\0';
+     }
+     ptmp = "";
+     for (i=strlen(filepath); i>0; i--)
+     {
+	ptmp = &filepath[i-1];
+	if (*ptmp == '/')
+	{
+	  ptmp++;
+	  break;
+	}
+     }
+     if (fidflag == 0 || svf_nofid != 0)
+        sprintf(tmppath,"%s vnmr_par \"%s\" \"%s\"",UserName,ptmp,filepath);
+     else
+        sprintf(tmppath,"%s vnmr_data \"%s\" \"%s\"",UserName,ptmp,filepath);
+     if (strlen(tmppath) > 3*MAXPATH)
+        Winfoprintf("WARNING: %s cannot add file to database, filename too long!\n",argv[0]);
+     else
+        writelineToVnmrJ(argv[0],tmppath);
+  }
+#endif 
+
+  if(part11System || opt) save_optFiles(filepath,"all");
+  if(part11System) {
+    sprintf( &origpath[ 0 ], "%s/acqfil", curexpdir );
+    p11_writeAuditTrails_S("jexp:svf", origpath, filepath);
+  }
+
+  disp_status("        ");
+  RETURN;
+}
+
+static void report_copy_file_error(int errorval, char *filename )
 {
-  Werrprintf("svf disabled in OpenVnmrJ");
-  ABORT;
+	if (errorval == SIZE_MISMATCH)
+	  Werrprintf( "'%s' file not completely copied", filename );
+	else if (errorval == NO_SECOND_FILE)
+	  Werrprintf( "Failed to create '%s' file", filename );
+	else
+	  Werrprintf( "Problem copying '%s' file", filename );
 }
 
 /******************************/
@@ -3307,6 +3745,66 @@ int exists(int argc, char *argv[], int retc, char *retv[])
       ABORT;
   }
   RETURN;
+}
+
+static int fid_is_link(char *filepath )
+{
+#ifdef UNIX
+	char		curexp_fid[ MAXPATH ],
+			curfid_link[ MAXPATH*2 ],
+			fidpath[ MAXPATH ];
+	int		ival;
+	dev_t		exp_dev, fid_dev;
+	ino_t		exp_ino, fid_ino;
+	struct stat	stat_blk;
+
+/*
+ *  Is $curexp/acqfil/fid a (symbolic) link?  If not, no
+ *  special action required, so this subroutine returns.
+ */
+	strcpy( &curexp_fid[ 0 ], curexpdir );
+	strcat( &curexp_fid[ 0 ], "/acqfil/fid" );
+	if (isSymLink( &curexp_fid[ 0 ] ) != 0)
+	  return( 0 );
+
+/*  Locate the symbolic link (readlink).  */
+
+	ival = readlink( &curexp_fid[ 0 ], &curfid_link[ 0 ], sizeof( curfid_link ) );
+	if (ival < 0)
+	  return( 0 );
+
+/*  UNIX manual asserts `readlink' does not null-terminate the string;
+    rather it returns the number of characters in the symbolic link path.  */
+
+	curfid_link[ ival ] = '\0';
+
+/*
+ *  The two filepaths point to the same file if the device and I-node
+ *  fields in the stat block are both identical.  Return normal status
+ *  if not successful.  Most likely two reasons are the file does not
+ *  exist or the process has no access.
+ */
+	ival = stat( &curfid_link[ 0 ], &stat_blk );
+	if (ival != 0)
+	  return( 0 );
+	exp_ino = stat_blk.st_ino;
+	exp_dev = stat_blk.st_dev;
+
+	strcpy( &fidpath[ 0 ], filepath );
+	strcat( &fidpath[ 0 ], "/fid" );
+	ival = stat( &fidpath[ 0 ], &stat_blk );
+	if (ival != 0)
+	  return( 0 );
+	fid_ino = stat_blk.st_ino;
+	fid_dev = stat_blk.st_dev;
+
+	if (fid_ino != exp_ino || fid_dev != exp_dev)
+	  return( 0 );
+	else
+	  return( 1 );
+#else 
+	return( 0 );			/* no special action required on VMS */
+#endif 
 }
 
 int expdir_to_expnum(char *expdir )

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Stanford University
+ * Copyright (C) 2015  University of Oregon
  *
  * You may distribute under the terms of either the GNU General Public
  * License or the Apache License, as specified in the README file.
@@ -8,11 +8,6 @@
  */
 /* rngLLib.c  11.1 07/09/07 - Long Ring Buffer Object Source Modules */
 /* 
- * Varian Assoc.,Inc. All Rights Reserved.
- * This software contains proprietary and confidential
- * information of Varian Assoc., Inc. and its contributors.
- * Use, disclosure and reproduction is prohibited without
- * prior consent.
  */
 
 

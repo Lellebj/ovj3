@@ -1,4 +1,3 @@
-/* Copyright (c) Agilent Technologies  All Rights Reserved. */
 #define oval_width 16
 #define oval_height 16
 static char oval_bits[] = {

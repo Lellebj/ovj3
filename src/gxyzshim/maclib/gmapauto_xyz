@@ -1,5 +1,4 @@
 "macro gmapauto_xyz"
-"Copyright (c) Varian Assoc., Inc.  All Rights Reserved."
 "auto macros for running gradient shimming"
 "Modified slightly from gmapauto to work with 3D shimming under automation"
 "PJB 16viii10"

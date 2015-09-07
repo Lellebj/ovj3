@@ -1,5 +1,4 @@
 "macro BP_PRdpra"
-"@(#)dpra 17.1 04/01/03 Copyright (c) 1991-1995 Varian Assoc.,Inc. All Rights Reserved."
 " ************************************************************* "
 " ***    dpra - display predicted best projection angle     *** "
 " ***           Eriks Kupce, adapted from dshape            *** "

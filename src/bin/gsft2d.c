@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Stanford University
+ * Copyright (C) 2015  University of Oregon
  *
  * You may distribute under the terms of either the GNU General Public
  * License or the Apache License, as specified in the README file.
@@ -7,11 +7,6 @@
  * For more information, see the README file.
  */
 /* 
- * Varian,Inc. All Rights Reserved.
- * This software contains proprietary and confidential
- * information of Varian, Inc. and its contributors.
- * Use, disclosure and reproduction is prohibited without
- * prior consent.
  */
 /*****************************************************************************
 
@@ -27,8 +22,9 @@
 *****************************************************************************/
 
 #include	<stdio.h>
+#include        <stdlib.h>
+#include        <string.h>
 #include	<math.h>
-#include	<malloc.h>
 #include	"nrutil.h"
 #include	"nr.h"
 #include	"util.h"
@@ -126,7 +122,7 @@ char	*argv[];
     efgets(s,80,paramsfile);
     sscanf(s,"%f",&mindelay);
     efgets(s,80,paramsfile);
-    sscanf(s,"%s %f %f %f",&orient,&psi,&phi,&theta);
+    sscanf(s,"%s %f %f %f",orient,&psi,&phi,&theta);
     efgets(s,80,paramsfile);
     sscanf(s,"%f %f %f",&xoffset,&yoffset,&zoffset); /* r,p,s */
     efgets(s,80,paramsfile);

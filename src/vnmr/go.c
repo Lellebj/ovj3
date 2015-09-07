@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 
 #define _FILE_OFFSET_BITS 64
 
@@ -206,6 +214,12 @@ static int Wtimeprintf(int mode, char *control, char *time);
 /* Function prototypes */
 
 static int argtest(int, char * [], char *);
+static int set_options(int, char * [], int restart, char *a_name_option, int *overridespin);
+static int do_space_check(int);
+static int check_status_console(char *, char *);
+static int savepars(char *, int debugPutCmd);
+static int saveVpPars(char *acqfile, int debugPutCmd);
+static int copytext(char *);
 static int check_acqpar();
 static int check_loc();
 static int check_ra();
@@ -224,8 +238,17 @@ static int dateStr(char *, char *, char **, int *);
 static void getStr(char *, FILE *, char **, int *);
 static void replaceSpace(char *);
 static int fireUpJPSG(void);
+void createActiveFlagParameter();
 void getVnmrInfo(int okToSet, int okToSetSpin, int overRideSpin);
 void cleanup_pars();
+static char *named_string_arg(int argc, char **argv, char *name);
+static int jacq(int acqi_fid, int spinCadCheck,
+                char *hostname, int retc, char *retv[]);
+static int sacq(int acqi_fid, char *psgpath, int retc, char *retv[]);
+static int test4PS(char *psgpath);
+static int test4meth(char *method, char *methodpath);
+static int test4Lock();
+static int test4ACQ(char *dirname, char *dirpath, int acqiflag);
 static void runPsgPutCmd(int debugPutCmd);
 int arraytests();
 int initacqqueue(int argc, char *argv[]);
@@ -606,6 +629,18 @@ int acq(int argc, char *argv[], int retc, char *retv[])
     int   ret;
     int   psg_return_val=0;
 
+#ifdef CLOCKTIME
+    /* Turn on a clocktime timer */
+    if ( start_timer ( go_timer_no ) != 0 )
+    {  Werrprintf ( "go: \"start_timer ( go_timer_no )\" fails\n" );
+       fprintf ( stderr, "go: \"start_timer ( go_timer_no )\" fails\n" );
+       exit ( 1 );
+    }
+#endif 
+
+    EPRINT(0,0,0);
+    EPRINT(1,"current time is %s\n",0);
+    EPRINT(-1,"elapsed time is %s secs\n",0);
     strcpy(arrayname,"array");	/* incase array parameter changes name */
     calcdimflag = argtest(argc,argv,"calcdim");
 
@@ -614,6 +649,21 @@ int acq(int argc, char *argv[], int retc, char *retv[])
        noGainTest = 0;
        goto abortAcq;
     }
+    if (argtest(argc,argv,"vpcheck"))
+    {
+       char label[MAXPATH];
+       vpmode = checkVpMode(label);
+       if (retc)
+          retv[0] = intString(vpmode);
+       else if (vpmode)
+         Winfoprintf("Data will be acquired in '%s' viewport",label);
+       else
+         Winfoprintf("Data will be acquired here");
+       RETURN;
+    }
+    if ( ! calcdimflag )
+       Wturnoff_buttons();	/* deactive any interactive programs */
+
     arraydim = 1.0;	/* initialize number of fids */
     acqcycles = 1.0;	/* number of acode sets */
     arrayelemts = 0.0;	/* initialize number of array elements */
@@ -631,6 +681,86 @@ int acq(int argc, char *argv[], int retc, char *retv[])
     |   arraydim is calculated for the arrayed parameters in array.
     |   arrayelement number is calculated for the arrayed parameters in array.
     +---------------------------------------------------------------*/
+    d2Array = d3Array = d4Array = d5Array = 0;
+    if (arraytests())
+    {
+       noGainTest = 0;
+       goto abortAcq;
+    }
+    sparse = (( CSinit("",curexpdir) == 0) && ! calcdimflag);
+
+    EPRINT(-1,"elapsed time after arraytests is %s secs\n",0);
+    /*----------------------------------------------------------------
+    |	test for presence of ni
+    |	if ni is greater than 1.5 then correct arraydim for the
+    |	2D experiment 
+    +---------------------------------------------------------------*/
+    for (i = 1; i < MAXnD; i++)
+    {
+       char	niname[10];
+       double	*tmpni;
+       int      ndArray = 0;
+
+       switch (i)
+       {
+          case 1:   strcpy(niname, "ni");
+                    tmpni = &ni;
+                    if (sparse && (getCSparIndex("d2") != -1))
+                       ndArray = 1;
+                    else
+                       ndArray = d2Array;
+                    break;
+          case 2:   strcpy(niname, "ni2");
+                    tmpni = &ni2;
+                    if (sparse && (getCSparIndex("d3") != -1))
+                       ndArray = 1;
+                    else
+                       ndArray = d3Array;
+                    break;
+          case 3:   strcpy(niname, "ni3");
+                    tmpni = &ni3;
+                    if (sparse && (getCSparIndex("d4") != -1))
+                       ndArray = 1;
+                    else
+                       ndArray = d4Array;
+                    break;
+          default:  Werrprintf("internal error in `arraydim` calculation");
+                    goto abortAcq;
+       }
+
+       if ( !ndArray &&  (P_getreal(CURRENT, niname, tmpni, 1) >= 0) )
+       {
+          GPRINT2(1, "%s = %5.0lf\n", niname, *tmpni);
+          if (*tmpni > 1.5)
+          {
+             arraydim *= (*tmpni);
+	     acqcycles *= (*tmpni);
+             arrayelemts += 1.0;  /* Add 1 to array elements for each
+				     acquisiton dimension */
+          }
+       }
+    }
+    if (sparse)
+    {
+       int num;
+       num = getCSnum();
+       arraydim *= num;
+       acqcycles *= num;
+       arrayelemts += 1.0;  /* Add 1 to array elements for each acquisiton dimension */
+       releaseAllWithId("1_CS");
+    }
+
+    noGainTest = 0;
+    if ( P_getstring(CURRENT, "rcvrs", rcvrs, 1, MAXPATHL) >= 0 )
+    {
+	i = numActiveRcvrs(rcvrs);
+	/* NB: Here is where arraydim can get larger than acqcycles */
+	arraydim *= i;
+    }
+	
+    /* ============================================================== */
+    /* stop here if we want only to calc the arraydim & arrayelements */
+    /* -------------------------------------------------------------- */
     if (calcdimflag)
     {
         if (setparm("arraydim","real",CURRENT,&arraydim,1))
@@ -650,12 +780,1127 @@ int acq(int argc, char *argv[], int retc, char *retv[])
         RETURN;
     }
 
+    /*----------------------------------------------------------------
+    |	test for presents of PSG selected (i.e., S2PUL,COSY, etc.)
+    +---------------------------------------------------------------*/
+    /* new test4PS for JPSG */
+    TypeOfPS = test4PS(psgpath);
+  
+    if (TypeOfPS == ERROR)  /* if found psgpath contain absolute path */
+    {
+        goto abortAcq;
+    }
+
+    if ( (TypeOfPS != USE_JPSG) && argtest(argc,argv,"SAR") )
+    {
+       Werrprintf("SAR option is invalid for this pulse sequence");
+       goto abortAcq;
+    }
+  
+    /* ============================================================== */
+    silent_mode = argtest(argc,argv,"silent");
+    acqi_fid = argtest(argc,argv,"acqi");
+    checkSpinCad = 0;
+    checkSpinCad = argtest(argc,argv,"check") || argtest(argc,argv,"checkarray");
+    if ( ! strcmp(callname,"exptime") || 
+         ! strcmp(callname,"dps")     ||
+	 ! strcmp(callname,"pps")     ||
+         ( argtest(argc,argv,"SAR") && (TypeOfPS==USE_JPSG) )    ||
+	 checkSpinCad )
+    {   char	tmpStr[50];
+	acqi_fid = 1;
+        if (TypeOfPS==USE_JPSG)
+        {
+	   if (P_getstring(CURRENT,"vchannelmap",tmpStr,1,50) < 0)
+	      execString("sccheck\n");
+        }
+    }
+    if (acqi_fid){
+	automode = 0;
+	if ( !(tagname=named_string_arg(argc,argv,"tag_")) ){
+	    tagname = "acqi";
+	}
+    }
+
+    /* -- if it's a datastation go no further --- */
+    if (datastation && !acqi_fid) 
+    {	Werrprintf("Cannot Run Acquisition Programs on A Data Station");
+        goto abortAcq;
+    }
+
+    /* -- if it's not the console go no further --- */
+    /* first clause is true if running from a terminal */
+    /* second is true if ruuning in background,  */
+    /* but not automation or acquisition         */
+
+    setSilentMode(silent_mode);
+    if (!silent_mode)
+       disp_acq(callname); /* display alias of GO on Master Window */
+
+    if ((acqi_fid || ( suflag != EXEC_GO )) && strcmp(argv[0],"exptime")
+	           && strcmp(argv[0],"pps") && strcmp(argv[0],"dps") ) {
+	/* force arraydim to one if not a go,ga,au */
+        saveArraydim = arraydim;
+        saveAcqCycles = acqcycles;
+        P_creatvar(CURRENT,"saveArraydim",ST_REAL);
+        P_setgroup(CURRENT,"saveArraydim",G_ACQUISITION);
+        P_setreal(CURRENT,"saveArraydim", saveArraydim, 0);
+        if ( ! argtest(argc,argv,"checkarray") )
+	   arraydim = acqcycles = 1.0;
+    }
+
+    /*----------------------------------------------------------------
+    |  if acqi active and connected and acqi did not issue the call
+    |  to go,  then force it to disconnect
+    +---------------------------------------------------------------*/
+    if (interact_is_connected("") && !acqi_fid) 
+    {
+        interact_disconnect("");
+
+	/* Read the parameters set by acqi */
+        read_acqi_pars();
+    }
+    stop_acqi( 1 );
+    if (nvAcquisition())
+       stop_nvlocki();
+
+    /*----------------------------------------------------------------
+    |	test for proper parameter setting for np, rfband, and ct.
+    +---------------------------------------------------------------*/
+    if (check_acqpar())
+    {
+        goto abortAcq;
+    }
+
+    /*----------------------------------------------------------------
+    |   if JPSG is not running then start it up here
+    +---------------------------------------------------------------*/
+    if (TypeOfPS == USE_JPSG)
+        fireUpJPSG();
+
+    GPRINT1(1,"Pulse Sequence path: '%s' \n",psgpath);
+    EPRINT(-1,"elapsed time after test4PS is %s secs\n",0);
+    /*----------------------------------------------------------------
+    |   check that loc is a valid sample position 
+    +---------------------------------------------------------------*/
+    GPRINT2(1,"automode= %d  acqi_fid= %d\n",automode,acqi_fid);
+    if (check_loc())
+    {
+        goto abortAcq;
+    }
+    vpmode = 0;
+    if ( !strcmp(callname,"au") && !acqi_fid && argtest(argc,argv,"vp"))
+    {
+       vpmode = checkVpMode(NULL);
+    }
+    if (vpmode && ! automode)
+    {
+       sprintf(tmpStr,"%s/curparSave",curexpdir);
+       P_save(CURRENT,tmpStr);
+    }
+    /*----------------------------------------------------------------
+    |	make sure frequencies are set correctly
+    |   save ct in case of ra because setfrq sets ct to zero.
+    +---------------------------------------------------------------*/
+    ret = P_getreal( CURRENT, "ct", &c_val, 1 );
+    if (ret != 0) {
+	Werrprintf("Internal error in go, cannot obtain value for 'ct'");
+    }
+    setfrq(1,argv,0,NULL);
+    if (setparm("ct","real",CURRENT,&c_val,1))
+       goto abortAcq;
+    P_creatvar(CURRENT,"com$string",ST_STRING);
+    P_setgroup(CURRENT,"com$string",G_ACQUISITION);
+    if (setparm("com$string","string",CURRENT,"",1))  /* initialize to null */
+    {
+       goto abortAcq;
+    }
+    /*----------------------------------------------------------------
+    |   if wshim does not equal 'no' then check for the method presence
+    +---------------------------------------------------------------*/
+    if (getparm("wshim","string",CURRENT,tmpStr,MAXPATH))
+    {
+       goto abortAcq;
+    }
+    GPRINT1(1,"wshim: '%s'\n",tmpStr);
+    if (  ! (((tmpStr[0] == 'n') || (tmpStr[0] == 'N')) &&
+	       (suflag == EXEC_GO)) &&
+	  ! ((suflag != EXEC_GO) && (suflag != EXEC_SHIM) &&
+	       (suflag != EXEC_SAMPLE)) )
+    {
+    	if (getparm("method","string",CURRENT,method,MAXPATHL))
+    	{
+           goto abortAcq;
+    	}
+	GPRINT1(1,"method: '%s'\n",method);
+	if (test4meth(method,methodpath))
+    	{
+           goto abortAcq;
+    	}
+	GPRINT1(1,"Shimming method path: '%s' \n",methodpath);
+        if (strlen(methodpath) )
+          if (setparm("method","string",CURRENT,methodpath,1))
+    	  {
+             goto abortAcq;
+    	  }
+    }
+    /*----------------------------------------------------------------
+    |    If acqi did not call go, then test for presence of
+    |    the acqproc lockfile
+    +---------------------------------------------------------------*/
+    if (!acqi_fid && test4Lock())  /* if found Abort GO */
+    {
+       goto abortAcq;
+    }
+    EPRINT(-1,"elapsed time after test4Lock is %s secs\n",0);
+    /*----------------------------------------------------------------
+    |   set arraydim and arrayelemts
+    +---------------------------------------------------------------*/
+    if (setparm("arraydim","real",CURRENT,&arraydim,1))
+    {
+       goto abortAcq;
+    }
+    P_creatvar(CURRENT,"arrayelemts",ST_REAL);
+    P_setgroup(CURRENT,"arrayelemts",G_ACQUISITION);
+    if (setparm("arrayelemts","real",CURRENT,&arrayelemts,1))
+    {
+       goto abortAcq;
+    }
+    P_creatvar(CURRENT,"acqcycles",ST_REAL);
+    P_setgroup(CURRENT,"acqcycles",G_ACQUISITION);
+    if (setparm("acqcycles","real",CURRENT,&acqcycles,1))
+    {
+       goto abortAcq;
+    }
+    GPRINT3(1,"arraydim=%5.0lf elemts=%5lf acqcycles=%5.0lf\n",
+	    arraydim, arrayelemts, acqcycles);
+
+    /* -- If command is RA, perform tests specific to RA.  Any
+          problems (or warnings) are reported by the subroutine --- */
+
+    this_is_ra = 0;
+    if ( ! strcmp(callname, "ra" ) )
+    {
+      if (check_ra())
+      {
+         goto abortAcq;
+      }
+      this_is_ra = 1;
+    }
+
+    /* -- If command is not RA, then set ``celem'' to 0.
+          Create this parameter if it does not exist,
+          setting its group ID to acquisition.		--- */
+
+    else
+
+    {
+	double ct;
+	ret = P_getreal( CURRENT, "celem", &c_val, 1 );
+	if (ret != 0)
+	{
+	    if (ret == -2)
+	    {
+		ret = P_creatvar( CURRENT, "celem", T_REAL );
+		P_setgroup( CURRENT, "celem", G_ACQUISITION );
+	    }
+	}
+	if (ret != 0)
+	{
+	   Wscrprintf("BUG:  cannot access 'celem' in go, error = %d\n", ret);
+           goto abortAcq;
+	}
+   
+       /* -- celem = 0 at the beginning of an acquisition. --- */
+   
+        if ( strcmp(callname,"exptime") && strcmp(callname,"dps")  &&
+              strcmp(callname,"pps") )
+        {
+	   P_setreal( CURRENT, "celem", 0.0, 1 );
+           ct = 0.0;
+           if (setparm("ct","real",CURRENT,&ct,1))
+              goto abortAcq;
+       }
+    }
+
+/*  'celem' must be set in the current parameter tree before calling
+    ``initacqqueue'', as that routine takes the value from the tree
+    and writes it to a file read by Acqproc.  'arraydim' should be set
+    in the current parameter tree before calling ``check_ra'', as that
+    routine uses the value in the tree to compare against the value of
+    'celem'.  You could rework ``check_ra'' to use the static variable
+    'arraydim' if desired.
+
+    During an acquisition, 'celem' is set in the ACQHDL routines each
+    time an element finishes.  See ACQHDL.C for more details.		*/
+
+    /*-------------------------------------------------------------
+    |   if "nocheck" is active, the go program will not check that
+    |   the available disk space is sufficient to hold all of the
+    |   acquired data.
+    +------------------------------------------------------------*/
+    if ((suflag == EXEC_GO) && !acqi_fid)
+    {
+       int     nospace_check;	/* no checking of available space for data */
+       nospace_check = argtest( argc, argv, "nocheck" );
+       if (!nospace_check) {
+	int nelem;
+
+        nelem = get_number_new_fids( this_is_ra );
+        if (nelem < 0)
+        {
+          if (automode)
+             execString("autosa\n");
+          goto abortAcq;
+        }
+        ret = do_space_check(nelem);
+        if (ret != 0)
+        {
+          if (automode)
+             execString("autosa\n");
+          goto abortAcq;
+        }
+       }
+    }
+
+    if (!acqi_fid && !ACQOK(HostName) )
+    {
+        Werrprintf("Acquisition system is not active!");
+        goto abortAcq;
+    }
+
+    if (!acqi_fid && (check_status_console( callname, HostName ) != 0))
+    {
+        goto abortAcq;
+    }
+
+    if (P_getstring(CURRENT,"load",tmpStr,1,MAXPATH))
+       strcpy(tmpStr,"n");
+    if (!acqi_fid && (tmpStr[0] == 'y') &&
+        !argtest( argc, argv, "nosafeshim" ) && check_ShimPowerPars() )
+    {
+        Werrprintf("Too much shim current is requested");
+        goto abortAcq;
+    }
+
+    restartflag = argtest(argc,argv,"restart");
+    if (restartflag && ! automode && !strcmp(callname,"au") )
+    {
+       /* turn off restartflag if not automode or not called with au */
+       restartflag = 0;
+    }
+    if (restartflag && ! calledFromWerr() )
+    {
+       /* turn off restartflag if not called during werr processing */
+       restartflag = 0;
+    }
+    /*----------------------------------------------------------------
+    |	test for presence of acqfile 'file' name
+    +---------------------------------------------------------------*/
+    if (getparm("file","string",CURRENT,dirname,MAXPATH))
+    {
+        goto abortAcq;
+    }
+    if ((suflag == EXEC_GO) && !acqi_fid)
+    {
+       set_vnmrj_acq_params();
+    }
+
+    strcpy(a_name_option,"");
+    waitflag = set_options(argc,argv,restartflag, a_name_option, &overridespinflag);
+
+    if (automode)
+    {
+       char  a_name[MAXPATH];
+       char  sif_name[MAXPATH];
+       if ( ! restartflag )
+       {
+           /*  file is "sampleinfo file" */
+          strcpy(sif_name,curexpdir);
+          strcat(sif_name,"/sampleinfo");
+	  /* get autoname parameter */
+          a_name[0] = '\0';
+          if ( strcmp(a_name_option,"") )
+             strcpy(a_name,a_name_option);
+          else if (P_getstring(GLOBAL,"autoname",a_name,1,MAXPATHL) < 0)
+	     strcpy(a_name,"%SAMPLE#:%%PEAK#:%");
+          if (a_name[0] == '\000')
+	     strcpy(a_name,"%SAMPLE#:%%PEAK#:%");
+          if (makeautoname("autoname",a_name,sif_name,dirname,TRUE,TRUE,".fid",".fid"))
+          {
+             goto abortAcq;
+          }
+       }
+       else
+       {
+            if (dirname[0] == '/')
+               sprintf(a_name,"%s.fid",dirname);
+            else
+               sprintf(a_name,"%s/%s.fid",autodir,dirname);
+            sprintf(sif_name, "%s/fid",a_name);
+            unlink(sif_name);
+            sprintf(sif_name, "%s/procpar",a_name);
+            unlink(sif_name);
+            sprintf(sif_name, "%s/text",a_name);
+            unlink(sif_name);
+       }
+    }
+    else if (vpmode)
+        sprintf(dirname,"vp");
+    else
+	strcpy(dirname,"exp");
+
+    if ( (suflag == EXEC_GO) && !acqi_fid )
+    {
+      if (setparm("file","string",CURRENT,dirname,1))
+      {
+          goto abortAcq;
+      }
+      /* Ignore failure if "filename" parameter does not exist */
+      P_setstring(CURRENT,"filename","",1);
+    }
+    GPRINT1(1,"dirname: '%s'\n",dirname);
+
+    if ( !vpmode && test4ACQ(dirname,dirpath,          /* test & generate path to acqfil */
+	   ( (strcmp(argv[CALLNAME],"ra") == 0) || acqi_fid))) 
+    {
+        goto abortAcq;
+    }
+
+    /*----------------------------------------------------------------
+    |	initialize the acqqueue files that the Acq. Process will use
+    |   sets the id,priority,data etc writes to file
+    +----------------------------------------------------------------*/
+    /* goid exp ID usage (e.g., exp1.username.######) */
+    P_creatvar(CURRENT,"goid",ST_STRING);
+    P_setgroup(CURRENT,"goid",G_ACQUISITION);
+    if (acqi_fid)
+    {
+	sprintf(goid,"%s/acqqueue/%s", systemdir, tagname);
+        if (setparm("goid","string",CURRENT,goid,1))
+        {
+           goto abortAcq;
+        }
+        P_setstring(CURRENT,"goid",UserName,2);
+        P_setstring(CURRENT,"goid","1",3);
+        P_setstring(CURRENT,"goid","exp1",4);
+    }
+    else if (initacqqueue(argc,argv))
+    {
+       goto abortAcq;
+    }
+
+    P_deleteVar(CURRENT,"consoleIdNumber");
+    P_creatvar(CURRENT,"consoleIdNumber",ST_INTEGER);
+    P_setgroup(CURRENT,"consoleIdNumber",G_ACQUISITION);
+    P_setreal( CURRENT, "consoleIdNumber", (double) getAcqConsoleID(), 1 );
+
+    P_creatvar(CURRENT,"acqstatus",ST_INTEGER);
+    P_setreal( CURRENT, "acqstatus", 0.0, 0 );
+    P_setreal( CURRENT, "acqstatus", 0.0, 2 );
+    P_setprot(CURRENT,"acqstatus",P_NOA);  /* do not set array parameter */
+
+    P_deleteVar(CURRENT,"rfchnuclei");
+    P_creatvar(CURRENT,"rfchnuclei",ST_STRING);
+    P_setgroup(CURRENT,"rfchnuclei",G_ACQUISITION);
+    P_setprot(CURRENT,"rfchnuclei",P_NOA);
+
+    /* current experiment fid path  */
+    if (vpmode)
+    {
+       P_getstring(CURRENT,"go_id",tmpStr,1,MAXPATH);
+       sprintf(dirpath,"%s/acq/",userdir);
+       if ( ! access(dirpath, R_OK | W_OK | X_OK) )
+       {
+          strcat(dirpath, tmpStr);
+       }
+       else
+       {
+          sprintf(dirpath,"%s/acqqueue/acq/%s",systemdir, tmpStr);
+       }
+       sprintf(tmpStr,"mkdir -p %s; chmod %o %s\n",dirpath,0777,dirpath);
+       system(tmpStr);
+    }
+    GPRINT1(1,"Acqfile to use: '%s' \n",dirpath);
+
+    P_creatvar(CURRENT,"exppath",ST_STRING);
+    P_setgroup(CURRENT,"exppath",G_ACQUISITION);
+    if (setparm("exppath","string",CURRENT,dirpath,1))
+    {
+       goto abortAcq;
+    }
+    P_creatvar(CURRENT,"appdirs",ST_STRING);
+    P_setgroup(CURRENT,"appdirs",G_ACQUISITION);
+    P_setstring(CURRENT,"appdirs",getAppdirValue(),1);
+
+    if ((suflag == EXEC_GO) && !acqi_fid)
+    {
+        /* -- GO initializes the phase & data files in datdir --- */
+        if ( ! vpmode )
+        {
+           clearExpDir(curexpdir);
+        }
+
+	/* Delete parameters used by flashc,tabc if they exist */
+	P_deleteVar ( PROCESSED, "flash_converted" );
+	P_deleteVar ( CURRENT,   "flash_converted" );
+	P_deleteVar ( PROCESSED, "tab_converted" );
+	P_deleteVar ( CURRENT,   "tab_converted" );
+    }
+    /*  remove psg error file */
+    strcpy(tmpStr,userdir);
+    strcat(tmpStr,"/psg.error");
+    unlink(tmpStr);
+
+
+    /*
+     *------------------------------------------------------------
+     * --- Fork & Exec PSG, then pipe parameter over to PSG
+     * --- sends over parameters through the pipe to
+     * --- the child and returns to vnmr without waiting. 
+     *------------------------------------------------------------
+     */
+
+    /* only set spinner information if go, spin, or sample command */
+    setspin = ( (suflag == EXEC_GO) || 
+		(suflag == EXEC_SPIN) || 
+		(suflag == EXEC_SAMPLE) ) ? 1 : 0;
+
+    getVnmrInfo(1,setspin, overridespinflag );
+    if ((suflag == EXEC_GO) && !acqi_fid)
+       saveGlobalPars(3,"_"); /* delete old copies of global parameters */
+
+    if (Bnmr)
+    {
+       /* avoid buffered output being displayed after
+        * PSG messages in the acqlog
+        */
+       fflush(stdout);
+       fflush(stderr);
+    }
+    /* To JPSG or NOT to JPSG */
+    if (TypeOfPS == USE_JPSG)
+    {
+        if (!silent_mode)
+           disp_acq("JPSG    ");
+	jacq(acqi_fid,checkSpinCad,HostName,retc,retv);
+    }
+    else
+    {
+        /* testarrayparam(); */
+        if (!silent_mode)
+           disp_acq("PSG     ");
+        sacq(acqi_fid,psgpath,retc,retv);
+    }
+
+    cleanup_pars();
+    P_deleteVar(CURRENT,"consoleIdNumber");
+    if (!acqi_fid)
+    {
+       P_setstring(CURRENT,"load","n",1);
+    }
+    else
+    {
+       P_setreal( CURRENT, "arraydim", saveArraydim, 1 );
+       P_setreal( CURRENT, "acqcycles", saveAcqCycles, 1 );
+    }
+
+
+    /* -- if fid or spectrum displayed donot allow redrawing of it --- */
+    if (!vpmode && (WgraphicsdisplayValid("ds") || WgraphicsdisplayValid("dfid") ||
+	 WgraphicsdisplayValid("df") || WgraphicsdisplayValid("dconi")) )
+    {
+    	Wsetgraphicsdisplay("");
+    }
+
+    /* JPSG modification */
+    if (TypeOfPS == USE_PSG)
+    {
+      /*
+       *  this read operation will cause go to wait until PSG closes
+       *  its pipe
+       */
+      if ((automode || acqi_fid || waitflag) && psg_busted == 0)
+      {
+        psg_return_val = protectedRead(pipe2[0]);
+      }
+      close(pipe2[0]);  /* parent closes its read end of first pipe */
+    }
+    /* copy and write files out only if GO */
+    if ((suflag == EXEC_GO) && !acqi_fid)
+    {
+        int debugPutCmd;
+
+        debugPutCmd = argtest(argc,argv,"debugputcmd");
+        P_copyvar(SYSTEMGLOBAL,CURRENT,"Console","console");
+        saveGlobalPars(1,"_");
+        if (automode)
+        {
+            if (dirname[0] == '/')
+               sprintf(dirpath,"%s.fid",dirname);
+            else
+               sprintf(dirpath,"%s/%s.fid",autodir,dirname);
+        }
+        if (vpmode && saveVpPars(dirpath, debugPutCmd))
+        {
+           goto abortAcq;
+        }
+        else if ( !vpmode && savepars(dirpath, debugPutCmd))
+        {
+           goto abortAcq;
+        }
+    }
+    else if (checkSpinCad)
+    {
+       runPsgPutCmd( argtest(argc,argv,"debugputcmd") );
+    }
+
+
+    if (acqi_fid)
+    {
+	sprintf(goid,"%s/acqqueue/%s.Code", systemdir, tagname);
+        strcpy(exppath,goid);
+    	strcat(exppath,".lock");
+        rename(exppath,goid);
+    }
+    GPRINT(1,"GO: Complete");
+    RETURN;
+
 abortAcq:
    disp_acq("");
-Werrprintf("OpenVnmrJ disabled go");
+   if (retc)
+   {
+      retv[ 0 ] = intString( 0 );
+      RETURN;
+   }
    ABORT;
 }
 
+
+static int sacq(int acqi_fid, char *psgpath, int retc, char *retv[])
+{
+    int   ret;
+
+    ret = pipe(pipe1); /* make first pipe */
+    /*
+     *  The first pipe is used to send parameters to PSG
+     */
+    if(ret == -1)
+    {   Werrprintf("GO: could not create system pipes!");
+        if (!acqi_fid)
+          release_console();
+        return(1);
+    }
+    ret = pipe(pipe2); /* make second pipe */
+    /*
+     *  The second pipe is used to cause go to wait for PSG to
+     *  complete.  This is only used in automation mode.
+     */
+    if(ret == -1)
+    {   Werrprintf("GO: could not create system pipes!");
+        if (!acqi_fid)
+          release_console();
+        close(pipe1[0]);
+        close(pipe1[1]);
+        return(1);
+    }
+    GPRINT(1,"GO: Starting PSG\n");
+    EPRINT(-1,"elapsed time before fork is %s secs\n",0);
+
+#ifdef __INTERIX
+    child = vfork(); 
+#else 
+    child = fork();
+#endif 
+    if (child < 0)
+    {   Werrprintf("GO: could not create a PSG process!");
+        if (!acqi_fid)
+          release_console();
+        close(pipe1[0]);
+        close(pipe1[1]);
+        close(pipe2[0]);
+        close(pipe2[1]);
+        return(1);
+    }
+    psg_pid = child;  /* set global psg pid value */
+    EPRINT(-1,"elapsed time after fork is %s secs\n",0);
+
+    if (child)		/* if parent set signal handler to reap process */
+        set_wait_child(child);
+
+    if (child == 0)
+    {	char suflagstr[10];
+        char Rev_Num[10];
+
+	sprintf(pipe1_0,"%d",pipe1[0]);
+     	sprintf(pipe1_1,"%d",pipe1[1]);
+	sprintf(pipe2_0,"%d",pipe2[0]);
+     	sprintf(pipe2_1,"%d",pipe2[1]);
+	sprintf(suflagstr,"%d",suflag);
+	sprintf(Rev_Num,"%d",GO_PSG_REV);
+        set_effective_user();
+
+	ret = execl(psgpath,"psg",Rev_Num,pipe1_0,pipe1_1,pipe2_0,pipe2_1,suflagstr,NULL);
+	Werrprintf("PSG could not execute");
+        exit(EXIT_SUCCESS);
+    }
+    EPRINT(-1,"elapsed time after execl is %s secs\n",0);
+
+
+#ifdef CLOCKTIME
+    /* Turn off the clocktime timer */
+    if ( stop_timer ( go_timer_no ) != 0 )
+    {  Werrprintf ( "go: \"stop_timer ( go_timer_no )\" fails\n" );
+       fprintf ( stderr, "go: \"stop_timer ( go_timer_no )\" fails\n" );
+       exit ( 1 );
+    }
+#endif 
+
+    close(pipe1[0]);  /* parent closes its read end of first pipe */
+    close(pipe2[1]);  /* parent closes its write end of second pipe */
+ 
+/* The following 5 lines were added September 1994.  See
+   comments at catch_sigpipe and block_sigchld, above.   */
+
+    psg_busted = 0;
+    catch_sigpipe();
+    block_sigchld();
+    if (setjmp( brokenpipe ) == 0)
+    {
+       P_sendGPVars(SYSTEMGLOBAL,G_ACQUISITION,pipe1[1]);
+       P_sendGPVars(GLOBAL,G_ACQUISITION,pipe1[1]);/* send global tree to PSG */ 
+       P_sendVPVars(GLOBAL,"curexp",pipe1[1]);
+		/* send current experiment directory to PSG */ 
+       P_sendVPVars(GLOBAL,"userdir",pipe1[1]);
+		/* send user directory to PSG */ 
+       P_sendVPVars(GLOBAL,"systemdir",pipe1[1]);
+		/* send system directory to PSG */
+       if (vpmode)
+       {
+          char  tmp[MAXSTR];
+          if (P_getstring(GLOBAL,"vnmraddr",tmp,1,MAXSTR) == 0)
+          {
+             char tmp2[MAXSTR];
+             P_setstring( GLOBAL,"vnmraddr", vpAddr(tmp2), 1);
+             P_sendVPVars(GLOBAL,"vnmraddr",pipe1[1]);
+             P_setstring( GLOBAL,"vnmraddr", tmp, 1);
+             P_creatvar(CURRENT,"vpmode",ST_STRING);
+             P_setgroup(CURRENT,"vpmode",G_ACQUISITION);
+             P_setstring( CURRENT,"vpmode", "y", 0 );
+             if (P_getstring(CURRENT,"actionid",tmp2,1,MAXSTR) == 0)
+             {
+                char tmp3[MAXSTR];
+                P_creatvar(CURRENT,"VPaddr",ST_STRING);
+                P_setgroup(CURRENT,"VPaddr",G_ACQUISITION);
+                sprintf(tmp3,"%s; %s",tmp,tmp2);
+                P_setstring( CURRENT,"VPaddr", tmp3, 0 );
+             }
+          }
+       }
+       else if (psgaddr[0] != '\0')
+       {
+          char  tmp[MAXSTR];
+          if (P_getstring(GLOBAL,"vnmraddr",tmp,1,MAXSTR) == 0)
+          {
+             P_setstring( GLOBAL,"vnmraddr", psgaddr, 1);
+             P_sendVPVars(GLOBAL,"vnmraddr",pipe1[1]);
+             P_setstring( GLOBAL,"vnmraddr", tmp, 1);
+          }
+       }
+       EPRINT(-1,"elapsed time after first pipe is %s secs\n",0);
+       P_sendGPVars(CURRENT,G_ACQUISITION,pipe1[1]);/* send current tree to PSG */ 
+       EPRINT(-1,"elapsed time after second pipe is %s secs\n",0);
+       P_endPipe(pipe1[1]);   /* send end character */
+
+/* The following 7 lines were added September 1994,
+   along with other references to `psg_busted', below.  */
+
+    }
+    else {
+       Werrprintf( "%s: pulse sequence failed to start", callname);
+       Wscrprintf( "Check your swap space and the shared libraries that your pulse sequence uses\n" );
+       if (!acqi_fid)
+         release_console();
+       psg_busted = 1;
+    }
+    if (vpmode)
+    {
+       P_deleteVar(CURRENT,"vpmode");
+       P_deleteVar(CURRENT,"VPaddr");
+    }
+    restore_sigchld();
+    restore_sigpipe();
+    close(pipe1[1]);  /* parent closes its write end of first pipe */
+    EPRINT(-1,"elapsed time after close pipe is %s secs\n",0);
+
+    /* go waits here until psg finishes the first element of the experiemnt */
+    if (psg_busted == 0)
+    {
+       int psg_return_val = protectedRead(pipe2[0]);
+       if (retc)
+       {
+          if (psg_return_val == 0)
+            retv[0] = newString("1");  /* return of 1 to macro means PSG executed successfully */
+          else
+            retv[0] = newString("0");  /* return of 0 to macro means PSG aborted in ps or PSG code */
+       }
+    }
+    else if (retc)
+      retv[0] = newString("0");  /* return of 0 to macro means PSG aborted in ps or PSG code */
+
+    return(0);
+
+}
+
+
+static int jacq(int acqi_fid, int spinCadCheck,
+                char *hostname, int retc, char *retv[])
+{
+    FILE *sd;
+    char    ackbuf[MAXPATHL];	/* JPSG .... */
+    char *nparmsCmd = "NewParms\n";
+    char *exptimeCmd = "Exptime\n";
+    char *dpsCmd = "Dps\n";
+    char *checkCmd = "Check\n";
+    char *acqiCmd = "Acqi\n";
+    char *goCmd = "Go\n";
+    char *suCmd = "Su\n";
+    char *createParamsCmd = "CreateParams\n" ;
+    char *subStr;
+    int numconv;
+    char portstr[50];
+    char pidstr[50];
+    char jhostname[50];
+    char readymsge[50];
+    char jpsgPIDFileName[MAXSTR];
+    int port;
+    int bytes;
+    int done,i;
+
+    Socket  *tSocket;
+    Socket* connect2Jpsg(int,char*);
+
+    int   psg_busted;		/* added September 1994 */
+
+    double  maxsw;
+    double   max,min,step;
+
+    disp_acq(callname); /* display alias of GO on Master Window */
+
+   /******************************** JPSG SOCKETS ***************************/
+    /* printf("jacq: just starting \n"); */
+    if ( ! isJpsgReady() )
+    {
+       disp_acq("");
+       Werrprintf( "%s: no Jpsg is running, check CLASSPATH and rerun command", callname);
+       ABORT;
+    }
+    EPRINT(-1,"elapsed time before fork is %s secs\n",0);
+    /* printf("Reading Jpsg Port # ---  "); */
+    strcpy(jpsgPIDFileName,"/vnmr/acqqueue/jinfo1.");
+    strcat(jpsgPIDFileName,UserName);
+
+    sd = fopen(jpsgPIDFileName,"r");
+    numconv = fscanf(sd,"%s %s %s %s",portstr,pidstr,jhostname,readymsge);
+    fclose(sd);
+    /* printf(" Done --- \n "); */
+    /* printf("jacq()  conv: %d, port: '%s', pid: '%s', host: '%s', rdymsge: '%s'\n",
+                   numconv, portstr,pidstr,jhostname,readymsge);
+    */
+    if ((numconv != 4) || (strcmp(readymsge,"ready") !=0))
+    {
+       disp_acq("");
+       Werrprintf( "%s: /vnmr/acqqueue/jinfo1.%s syntax error, rerun command", callname,UserName);
+       Wscrprintf( "Check your /vnmr/jpsg directory\n" );
+       ABORT;
+    }
+    port = atoi(portstr);
+    /* printf("port Id: '%s', #: %d\n",portstr, port); */
+
+    /*
+    P_creatvar(CURRENT,"when_mask",ST_INTEGER);
+    P_setgroup(CURRENT,"when_mask",G_ACQUISITION);
+    P_setreal( CURRENT,"when_mask", (double) when_mask, 1 );
+    P_creatvar(CURRENT,"jpsgPSfile",ST_STRING);
+    P_setgroup(CURRENT,"jpsgPSfile",G_ACQUISITION);
+    P_setstring(CURRENT,"jpsgPSfile",psgpath,0);
+    P_deleteVar(CURRENT,"jpsgPSfile");
+    */
+
+    
+    P_creatvar(CURRENT,"goalias",ST_STRING);
+    P_setgroup(CURRENT,"goalias",G_ACQUISITION);
+    P_setstring( CURRENT,"goalias", callname, 0 );
+
+    /* generate the active parameter flag parameters in the TEMPORARY tree */
+    createActiveFlagParameter();
+
+    /* generate the additional parameters for JPSG  in the TEMPORARY tree */
+    if (P_getreal( SYSTEMGLOBAL, "parmax", &maxsw, 5 ) )
+	ABORT;
+    P_creatvar(TEMPORARY,"maxsw",ST_REAL);
+    P_setgroup(TEMPORARY,"maxsw",G_ACQUISITION);
+    P_setreal( TEMPORARY,"maxsw", maxsw, 1 );
+
+    /* Create gain max. min and step values for use in autogain */
+    par_maxminstep(CURRENT, "gain", &max, &min, &step);
+    /* fprintf(stderr,"gain: max %lf, min: %lf, step: %lf \n",max,min,step); */
+    P_creatvar(TEMPORARY,"gainmax",ST_REAL);
+    P_setgroup(TEMPORARY,"gainmax",G_ACQUISITION);
+    P_setreal( TEMPORARY,"gainmax", max, 1 );
+    P_creatvar(TEMPORARY,"gainmin",ST_REAL);
+    P_setgroup(TEMPORARY,"gainmin",G_ACQUISITION);
+    P_setreal( TEMPORARY,"gainmin", min, 1 );
+    P_creatvar(TEMPORARY,"gainstep",ST_REAL);
+    P_setgroup(TEMPORARY,"gainstep",G_ACQUISITION);
+    P_setreal( TEMPORARY,"gainstep", step, 1 );
+
+    GPRINT(1,"GO: Starting PSG\n");
+
+    /* printf("connect2Jpsg(%d, '%s')\n",port, hostname ); */
+    tSocket = connect2Jpsg( port, hostname );
+    if (tSocket == NULL)
+    {
+       disp_acq("");
+       Werrprintf( "%s: connection to JPSG failed", callname);
+       Wscrprintf( "Check your /vnmr/jpsg directory\n" );
+       ABORT;
+    }
+       
+    /* fprintf(stderr,"Connected to Socket: %d\n",tSocket->sd); */
+
+    EPRINT(-1,"elapsed time after execl is %s secs\n",0);
+
+#ifdef CLOCKTIME
+    /* Turn off the clocktime timer */
+    if ( stop_timer ( go_timer_no ) != 0 )
+    {  Werrprintf ( "go: \"stop_timer ( go_timer_no )\" fails\n" );
+       fprintf ( stderr, "go: \"stop_timer ( go_timer_no )\" fails\n" );
+       exit ( 1 );
+    }
+#endif 
+ 
+
+    psg_busted = 0;
+    block_sigchld();
+ 
+
+    /* NewParmCmd */
+    writeSocket(tSocket,nparmsCmd,strlen(nparmsCmd));
+
+    J_sendGPVars(SYSTEMGLOBAL,G_ACQUISITION,tSocket->sd);
+    J_sendGPVars(GLOBAL,G_ACQUISITION,tSocket->sd);/* send global tree to PSG */
+    J_sendVPVars(GLOBAL,"curexp",tSocket->sd);
+                /* send current experiment directory to PSG */
+    J_sendVPVars(GLOBAL,"userdir",tSocket->sd);
+                /* send user directory to PSG */
+    J_sendVPVars(GLOBAL,"systemdir",tSocket->sd);
+                /* send system directory to PSG */
+    if (psgaddr[0] != '\0')
+    {
+       char  tmp[MAXSTR];
+       if (P_getstring(GLOBAL,"vnmraddr",tmp,1,MAXSTR) == 0)
+       {
+          P_setstring( GLOBAL,"vnmraddr", psgaddr, 1);
+          J_sendVPVars(GLOBAL,"vnmraddr",tSocket->sd);
+          P_setstring( GLOBAL,"vnmraddr", tmp, 1);
+       }
+    }
+    J_sendGPVars(CURRENT,G_ACQUISITION,tSocket->sd);/* send current tree to PSG */
+    J_sendGPVars(TEMPORARY,G_ACQUISITION,tSocket->sd);/* send temporary tree to PSG */
+    P_endPipe(tSocket->sd);
+     
+    /* bytes = readSocket(tSocket,ackbuf,256);
+               readSocket(..) interrupted by SIGALM and causing return */ 
+    bytes = readProtectedSocket(tSocket,ackbuf,256);
+    closeSocket(tSocket);
+
+    restore_sigchld();
+
+    P_treereset(TEMPORARY);   /* Clear the Temporary tree */
+
+    /* printf("bytes recv: %d\n",bytes); */
+    ackbuf[bytes]=0;
+    /* printf("reply: '%s'\n",ackbuf); */
+    if (strcmp(ackbuf,"ack") != 0)
+    {
+       disp_acq("");
+       Werrprintf( "%s: pulse sequence failed at 1", callname);
+       Wscrprintf( "Check your pulse sequence\n" );
+       if (!acqi_fid)
+         release_console();
+       psg_busted = 1;
+       ABORT;
+    }
+     
+
+    /* printf("connect2Jpsg(%d, '%s')\n",port, hostname ); */
+    tSocket = connect2Jpsg( port, hostname );
+    if (tSocket == NULL)
+    {
+       disp_acq("");
+       Werrprintf( "%s: connection to JPSG failed", callname);
+       Wscrprintf( "Check your /vnmr/jpsg directory\n" );
+       ABORT;
+    }
+    if ( ( suflag == EXEC_SU ) || ( suflag == EXEC_LOCK ) || 
+	 ( suflag == EXEC_SHIM) || (suflag == EXEC_SAMPLE) ||
+	 ( suflag == EXEC_SPIN) || (suflag == EXEC_CHANGE) )
+    {
+       writeSocket(tSocket,suCmd,strlen(suCmd));
+    }
+    else if (suflag == EXEC_EXPTIME)
+    {
+       writeSocket(tSocket,exptimeCmd,strlen(exptimeCmd));
+    }
+    else if (suflag == EXEC_DPS)
+    {
+       writeSocket(tSocket,dpsCmd,strlen(dpsCmd));
+    }
+    else if (suflag == EXEC_CREATEPARAMS)
+    {
+       writeSocket(tSocket,createParamsCmd,strlen(createParamsCmd));
+    }
+    else
+    {
+       if (acqi_fid)
+       {
+	  if ( spinCadCheck )
+             writeSocket(tSocket,checkCmd,strlen(checkCmd));
+          else
+             writeSocket(tSocket,acqiCmd,strlen(acqiCmd));
+       }
+       else
+          writeSocket(tSocket,goCmd,strlen(goCmd));
+    }
+    done = 0; /* init, seed */
+    strcpy(ackbuf,"");
+    while ( ! done )
+    {
+        /* bytes = readSocket(tSocket,ackbuf,256);
+                   readSocket() being interrupted and causing return */
+        bytes = readProtectedSocket(tSocket,ackbuf,256);
+
+	ackbuf[bytes]=0;
+	if ( bytes <= 0 ) { subStr = ackbuf; break; }
+
+	subStr = strtok(ackbuf," \n");
+	if ( ! strcmp(ackbuf,"ack") )
+        {
+           subStr = ackbuf;
+           done = 1;
+        }
+        else if ( ! strcmp(subStr,"results") )
+        {
+            subStr = strtok(NULL, " \n"); /* this should be "SAR" */
+	    subStr = strtok(NULL," \n");
+	    i=0;
+            while ( subStr!=NULL )
+	    {
+	       if ( ! strcmp(subStr,"ack") ) 
+               {
+                  done = 1;
+		  break;
+               }
+               if (i < retc)
+                 retv[i] = newString(subStr);
+	       i++;
+	       subStr = strtok(NULL," \n");
+            }
+        }
+    }
+
+    closeSocket(tSocket);
+    /* printf("bytes recv: %d\n",bytes); */
+    ackbuf[bytes]=0;
+    /* printf("reply: '%s'\n",ackbuf); */
+    if (strcmp(subStr,"ack") != 0)
+    {
+       disp_acq("");
+       Werrprintf( "%s: pulse sequence failed at 2", callname);
+       Wscrprintf( "Check your pulse sequence\n" );
+       if (!acqi_fid)
+         release_console();
+       psg_busted = 1;
+       ABORT;
+    }
+     
+    EPRINT(-1,"elapsed time after close socket is %s secs\n",0);
+
+    disp_acq("");
+    RETURN;
+}
+
+
+/*
+
+The following are parameters that currently use 
+active/inactive states in psg.
+
+-  bs -  dhp -  d0 -  gain -  nf -  oversamp -  osfb -  oslsfrq -  pad -  spin -  ss -  temp - preacq  CURRENT
+
+- loc - z0   GLOABAL tree
+*/
+
+/* list just the CURRENT tree Parameters Here */
+static char *activeflags[] = { "bs", "dhp", "gain", "nf",
+                                "oversamp", "osfb", "oslsfrq", "pad", "spin",
+                                "slp0","slp","slp2","slp3","slp4","slp5","slp6",
+                                "ss", "ss2", "temp", "preacq", "mrfb", "mrgain" };
+
+/* d0 set seperately since need it even if d0 not present */
+/* z0 & loc are from the global tree and done seperately */
+
+
+void createActiveFlagParameter()
+{
+    vInfo info;
+    int i;
+    int entries;
+    char *strval;
+    char flagname[512];
+
+    P_treereset(TEMPORARY);
+    /*
+    printf("sizeof activeflags: %d, %d (entries)\n",
+        sizeof(activeflags), sizeof(activeflags)/sizeof(char*));
+    */
+    entries = sizeof(activeflags)/sizeof(char*);
+
+    for (i=0; i < entries; i++)
+    {
+       /* create name such as bsactive, gainactive, etc... */
+
+       if (P_getVarInfo(CURRENT,activeflags[i],&info) > -1)
+       { 
+         sprintf(flagname,"%sactive",activeflags[i]);
+         P_creatvar(TEMPORARY,flagname,ST_STRING);
+         P_setgroup(TEMPORARY,flagname,G_ACQUISITION);
+         strval = (var_active(activeflags[i], CURRENT) == 1) ? "y" : "n";
+         /*
+         printf("Parm: '%s', activeParm: '%s' = '%s'\n",activeflags[i],
+                flagname, strval);
+	 */
+         P_setstring( TEMPORARY,flagname, strval, 1);
+       } 
+    }   
+    if (P_getVarInfo(CURRENT,"d0",&info) > -1)
+       strval = (var_active("d0", CURRENT) == 1) ? "y" : "n";
+    else
+       strval = "n";
+    P_creatvar(TEMPORARY,"d0active",ST_STRING);
+    P_setgroup(TEMPORARY,"d0active",G_ACQUISITION);
+    P_setstring( TEMPORARY,"d0active", strval, 1 );
+
+    P_creatvar(TEMPORARY,"locactive",ST_STRING);
+    P_setgroup(TEMPORARY,"locactive",G_ACQUISITION);
+    strval = (var_active("loc", GLOBAL) == 1) ? "y" : "n";
+    P_setstring( TEMPORARY,"locactive", strval, 1 );
+    P_creatvar(TEMPORARY,"z0active",ST_STRING);
+    P_setgroup(TEMPORARY,"z0active",G_ACQUISITION);
+    strval = (var_active("z0", GLOBAL) == 1) ? "y" : "n";
+    P_setstring( TEMPORARY,"z0active", strval, 1 );
+}
 
 
 /*----------------------------------------------------------------------------
@@ -670,6 +1915,170 @@ static int argtest(int argc, char *argv[], char *argname)
     found = (strcmp(*++argv,argname) == 0);
   return(found);
 }
+
+/*----------------------------------------------------------------------------
+|	named_string_arg(argc, argv, name)
+|	Look for an argument of the form "name...".  Typically,
+|	name will be something like "name_", so we look for something
+|	like "name_whatever".
+|	Returns a pointer to the string "whatever", or NULL if the
+|	name is not found.
+|	Note: The address returned points to somewhere in the argvs
+|	that the caller passed.
++---------------------------------------------------------------------------*/
+static char *
+named_string_arg(int argc, char **argv, char *name)
+{
+    char *rtn = NULL;
+
+    while (--argc){
+	if (strncasecmp(*++argv, name, strlen(name)) == 0){
+	    rtn = *argv + strlen(name);
+	    break;
+	}
+    }
+    return rtn;
+}
+
+/*
+ *  Put the arguments passed to go into a parameter that will
+ *  be passed to PSG.
+ */
+/*  when_mask is bit field for different when conditions;
+ */
+static int set_options(int argc, char *argv[], int restart, char *a_name_option, int *overridespinflag)
+{
+    int index;
+    int num;
+    int when_mask = 0;
+    int waitflag = 0;
+    char    tmpstr[MAXSTR];
+
+    *overridespinflag = 0;
+    if ( ! restart)
+    {
+       index = 0;
+       num = 1;
+       P_deleteVar(CURRENT,"go_Options");
+       P_creatvar(CURRENT,"go_Options",ST_STRING);
+       P_setgroup(CURRENT,"go_Options",G_ACQUISITION);
+       if  (strcmp(argv[CALLNAME],"ra") == 0)
+       {
+          P_setstring(CURRENT,"go_Options",argv[CALLNAME],index);
+          index = 2;
+       }
+       if  (strcmp(argv[CALLNAME],"createparams") == 0)
+       {
+          P_setstring(CURRENT,"go_Options",argv[CALLNAME],index);
+          index = 2;
+       }
+
+       while (num < argc)
+       {
+          if ( strcmp(argv[num],"nocheck") )
+          {
+             P_setstring(CURRENT,"go_Options",argv[num],index);
+             if (index == 0)
+                index = 1;
+             index++;
+             if (!strcmp(argv[num],"next") || !strcmp(argv[num],"sync") )
+                waitflag = 1;
+             if (!strcmp(argv[num],"overridespin") )
+                *overridespinflag = 1;
+             if ( ! strncmp(argv[num],"autoname_",9) )
+             {
+                if (strlen(argv[num]) > 9)
+                   strcpy(a_name_option, argv[num] + 9);
+             }
+          }
+          num++;
+       }
+       if ( automode &&  ! strcmp(callname,"au") )
+       {
+          char path[MAXPATH];
+          char option[MAXPATH];
+
+          strcpy(path,autodir);
+          strcat(path,"/auargs");
+          if ( ! access(path,F_OK) )
+          {
+             FILE *fd;
+             fd = fopen(path,"r");
+             while (fscanf(fd,"%s\n",option) == 1)
+             {
+                if ( strcmp(option,"nocheck") )
+                {
+                   P_setstring(CURRENT,"go_Options",option,index);
+                   if (index == 0)
+                      index = 1;
+                   index++;
+                   if (!strcmp(option,"next") ||
+                       !strcmp(option,"sync") ||
+                       !strcmp(option,"wait")  )
+                      waitflag = 1;
+                   if (!strcmp(option,"overridespin") )
+                      *overridespinflag = 1;
+                   if ( ! strncmp(option,"autoname_",9) )
+                   {
+                      if (strlen(option) > 9)
+                         strcpy(a_name_option, (option + 9) );
+                   }
+                }
+             }
+             fclose(fd);
+          }
+       }
+       P_setprot(CURRENT,"go_Options",P_ARR | P_ACT | P_VAL);  /* do not allow any user change */
+    }
+    else
+    {
+       int nextflag = 0;
+       num = P_getsize(CURRENT,"go_Options",NULL);
+       index = 1;
+       while (index <= num)
+       {
+          P_getstring(CURRENT,"go_Options",tmpstr,index,MAXSTR-1);
+          index++;
+          if (!strcmp(tmpstr,"next"))
+                nextflag = waitflag = 1;
+          else if  (!strcmp(tmpstr,"sync") )
+                waitflag = 1;
+          else if  (!strcmp(tmpstr,"overridespin") )
+                *overridespinflag = 1;
+       }
+       if ( !nextflag)
+       {
+          P_setstring(CURRENT,"go_Options","next",num+1);
+       }
+    }
+    P_creatvar(CURRENT,"when_mask",ST_INTEGER);
+    P_setgroup(CURRENT,"when_mask",G_ACQUISITION);
+    if  (strcmp(callname,"ga") == 0)
+    {
+       when_mask |= WHEN_GA_PROC;
+    }
+    else if  (strcmp(callname,"su") == 0)
+    {
+       if (!P_getstring(CURRENT,"wsu",tmpstr,1,MAXSTR))
+       {
+          if (strlen(tmpstr))
+             when_mask |= WHEN_SU_PROC;
+       }
+    }
+    else if  (strcmp(callname,"au") == 0)
+    {
+       /* Turn on all the flags. execfromacqproc() will turn off WHEN_BS_PROC
+        * and WHEN_NT_PROC if the wbs or wnt parameters are null strings.
+        * See comment in werr() in acqhdl.c
+        */
+       when_mask = WHEN_BS_PROC | WHEN_NT_PROC | WHEN_ERR_PROC | WHEN_EXP_PROC;
+    }
+    P_setreal( CURRENT,"when_mask", (double) when_mask, 1 );
+    return(waitflag);
+}
+
+/*  Future changes to this program should be
+    coordinated with getInteractVnmrInfo, acqfuncs.c  */
 
 void getVnmrInfo(int okToSet, int okToSetSpin, int overRideSpin)
 {
@@ -794,6 +2203,158 @@ void cleanup_pars()
    P_deleteVar(CURRENT,"saveArraydim");
 }
 
+/*  The following program is compiled only on UNIX.  It uses the `statfs'
+    data structure to assess how much space is available in the current file
+    system, so it can determine if sufficent space exists for the data from
+    the proposed acquisition.  Thus is is not needed for systems with no
+    requirement to acquire data, such as the VMS.  I used the symbol UNIX
+    because, as far as I know, each UNIX system has a `statfs' data structure
+    and we do not want to rule out acquisitions on non-SUN-based systems.
+								  RL  08/27/91  */
+
+
+/*  Postponed until later is what to do about
+    the file size if nelem <> arraydim		*/
+
+static int do_space_check(int nelem)
+{
+       struct  statvfs freeblocks_buf;
+       double  free_kbytes;	/* number of free kbytes for acquired data */
+       double  req_kbytes;		/* kbytes required for acquired data */
+       double  nacqpoints;		/* number of acquired data points: NP */
+       double  nfval;           /* number of fids */
+       char    dpval[MAXSTR];
+       char    tmpdir[MAXSTR];
+       double  maxFidSizeMB = 16; /* default to standand DTM 16 MB Size */
+       double  fidSizeBytes = 0.0;
+       double  maxlbsw, sw;
+
+
+/* For a VnmrS or 400-MR the check is done in PSG 
+ * (to cover multiple receivers, etc
+ */
+    if ( P_getstring(SYSTEMGLOBAL, "Console", tmpdir, 1, MAXPATHL) < 0)
+    {   Werrprintf("Cannot find the 'Console' parameter");
+        return(-1);
+    }
+    if (strcmp(tmpdir,"vnmrs") == 0) 
+       return(0);
+    
+/*  Verify program really needs to check disk space.  */
+
+       if (nelem < 1) {
+           return( 0 );
+       }
+
+
+       sprintf(tmpdir,"%s/.",(automode) ? autodir : curexpdir);
+       statvfs( tmpdir, &freeblocks_buf);
+       free_kbytes = (double) freeblocks_buf.f_bavail;
+
+       if (P_getreal(CURRENT,"np",&nacqpoints,1))
+       {
+          Werrprintf("Cannot locate NP in parameter set");
+	  disp_acq("");
+          return( -1 );
+       }
+
+       if (P_getreal(CURRENT,"nf",&nfval,1))
+       {
+         nfval = 1.0;
+       }
+       else
+       {
+         if (nfval <= 0.0) nfval = 1.0;
+       }
+
+       if (P_getstring(CURRENT,"dp",dpval,1,MAXSTR))
+       {
+          Werrprintf("Cannot locate DP flag in parameter set");
+          dpval[0] = 'n';
+       }
+          
+       if (dpval[0] == 'y')
+       {
+          fidSizeBytes =  4.0 * nacqpoints * nfval;
+       }
+       else
+       {
+          fidSizeBytes =  2.0 * nacqpoints * nfval;
+       }
+
+       /* The next two parameters are needed to determine if in the case where
+          there are both 500KHz and 5MHz DTM/ADCs and which one is being used.
+       */
+       if (getparm("sw","real",CURRENT,&sw,1))
+        ABORT;
+
+#ifdef VNMRJ
+       if (nvAcquisition())
+          maxlbsw = 2e7;
+       else
+#endif
+       if (P_getreal(SYSTEMGLOBAL, "maxsw_loband", &maxlbsw, 1) < 0)
+          maxlbsw = 100000.1;
+       else
+          maxlbsw += 0.1;
+
+        /* new conpar parameter 1/14/03 so we can check that the FID doesn't get to big */
+       if (P_getreal(SYSTEMGLOBAL,"stmmemsize",&maxFidSizeMB,1))
+       {
+         maxFidSizeMB = 16.0;    /* default to liquids 16 MB DTM */
+       }
+       else
+       {
+         if (maxFidSizeMB <= 0.0) maxFidSizeMB = 16.0; /* default to liquids 16 MB DTM */
+       }
+
+       /* OK, this is a slight kudge, system wiwth 500KHz and 5MHz DTMs/ADCs
+          when the sw > maxlbsw then the system switches to the 5MHz DT</ADC board
+          usually in slot 4
+       */
+       if ( sw > maxlbsw ) 
+         maxFidSizeMB = 2.0;  /* Using 5MHz DTM/ADC only has 2 MB */
+
+
+       /* if arrayed experiment then need to allow double buffering in DTM
+	  Therefore halve the available memory.
+       */
+       maxFidSizeMB = (nelem > 1) ? (maxFidSizeMB / 2.0) : maxFidSizeMB;
+
+          
+       /* OK, have we exceed the DTM memory size ? */
+       /* The fudge factor takes into account some overhead headers, etc. 256 bytes */
+       if ( fidSizeBytes/MBYTE > maxFidSizeMB-MAXFIDSIZEFUDGE_MB)
+       {
+          char msge[1024];
+          /* "FID size (%5.3lf MB) too large for Console DTM Memory (%5.3lf MB), 
+	      change to single precision, or remove compression from an imaging 
+               dimension via seqcon", 
+          */
+
+          sprintf(msge,"FID size exceeds %.0f MB Max. by %.0f bytes for Console DTM Memory, reduce FID size",
+                  maxFidSizeMB, fidSizeBytes - (maxFidSizeMB-MAXFIDSIZEFUDGE_MB)*MBYTE);
+          Werrprintf(msge);
+	  disp_acq("");
+          return( -1 );
+       }
+
+       /* OK, will the data size exceed available disk space ? */
+
+       req_kbytes = fidSizeBytes * (double) nelem / 1024.0;
+       if (req_kbytes * 0.1 > MAXSIZEFUDGE)
+          req_kbytes += MAXSIZEFUDGE;
+
+       if (req_kbytes > free_kbytes)
+       {
+          Werrprintf("Insufficient disk space available to acquire data");
+	  disp_acq("");
+          return( -1 );
+       }
+
+       return( 0 );
+}
+
 /*----------------------------------------------------------------------------
 |
 |	arraytests()
@@ -898,7 +2459,1160 @@ int arraytests()
 }
 
 
+#ifdef XXXXX
+int testarrayparam()
+{
+    char  array[MAXSTR];	/* arrayed variable indexing parameter */
+    char *names[MAXARYS];	/* names of arrayed variables */
+    int   numary;		/* number of arrayed variables */
+    
+    /*------------------------------------------------------------------
+    |   A_getarynames()
+    | W A R N I N G ! !  this routine gives the addresses of then names in the
+    |  tree therefore never change the contents of what is pointed to
+    |  by the pointers else YOU WILL TRASH the VARIBLE TREE..
+    +------------------------------------------------------------------*/
+    A_getarynames(CURRENT,names,&numary,MAXARYS);
+    if (numary == -1)
+    {
+	Werrprintf("Number of arrayed variables exceeds the maximum of %d",
+			MAXARYS);
+	return(ERROR);
+    }
 
+    /*-----------------------------------------------------------------
+    |		parse the 'array' parameter and test that the variables 
+    |		listed are indeed arrayed, that diaginal sets have equal
+    |		dimensions, and calculate 'arraydim'
+    +-----------------------------------------------------------------*/
+    if (getparm("array","string",CURRENT,array,MAXSTR))
+	return(ERROR);
+
+    GPRINT1(1,"arraytests():  array: '%s' \n",array);
+    
+    if (strlen(array) > (size_t) 0)	/* does array have any thing in it */
+    {
+#ifdef XXX
+        if ( (!var_active("gain",CURRENT)) && (numary > 0) )
+        {
+	    Werrprintf("Autogain is not permitted in arrayed experiments.");
+	    return(ERROR);
+        }
+#endif
+        if (testarrayparm(array,names,&numary))
+	    return(ERROR);
+    }
+    return(OK);
+}
+#endif 
+
+#ifdef SUN
+
+#ifdef XXXX_OBSOLETED_BY_JPSG
+/*------------------------------------------------------------------------
+|	test4PS(psgpath)
+|	test for the presents and executibility of the PS .
++------------------------------------------------------------------------*/
+static int test4PS(char *psgpath)
+{
+    char    psgname[MAXPATH];
+
+    if (getparm("seqfil","string",CURRENT,psgname,MAXPATH))
+    {
+	Werrprintf("Cannot find 'seqfil' parameter.");
+	return(ERROR);
+    }
+    if (appdirFind(psgname, "seqlib", psgpath, "", R_OK|X_OK|F_OK) == 0 )
+    {
+	Werrprintf("seqfil: '%s' cannot be found",psgname);
+	return(ERROR);
+    }
+    return(OK);
+}
+#endif 
+/*------------------------------------------------------------------------
+|	test4JPS(psgpath)
+|	test for the presents and executibility of the PS .
++------------------------------------------------------------------------*/
+static int test4PS(char *psgpath)
+{
+    char    psgname[MAXPATH];
+    char    psgJname[MAXPATH];
+    char    psgJpath[MAXPATH];
+    int     jFound, cFound;
+
+    if (getparm("seqfil","string",CURRENT,psgname,MAXPATH))
+    {
+	Werrprintf("Cannot find 'seqfil' parameter.");
+	return(ERROR);
+    }
+    strcpy(psgJname,psgname);
+    strcat(psgJname,".psg");
+    jFound = appdirFind(psgJname, "seqlib", psgJpath, "", R_OK|X_OK|F_OK);
+    cFound = appdirFind(psgname, "seqlib", psgpath, "", R_OK|X_OK|F_OK);
+    if ( (cFound == 0) && (jFound == 0) )
+    {
+	Werrprintf("seqfil: '%s' cannot be found",psgname);
+	return(ERROR);
+    }
+    else if (jFound == 0)
+    {
+        /* No JPSG, only C PSG found */
+	return(USE_PSG);
+    }
+    else if (cFound == 0)
+    {
+        /* No C PSG, only JPSG found */
+        strcpy(psgpath, psgJpath);
+        return(USE_JPSG);
+    }
+    else
+    {
+        /* Both found, use one found earliest in search path */
+        if (jFound <= cFound)
+        {
+           strcpy(psgpath, psgJpath);
+	   return(USE_JPSG);
+        }
+        else
+        {
+	   return(USE_PSG);
+        }
+    }
+}
+/*------------------------------------------------------------------------
+|	test4Lock()
+|	test for the presents of the AcqProc Lock file in systemdir/acqqueue
++------------------------------------------------------------------------*/
+static int test4Lock()
+{
+    char lockpath[MAXPATH];
+    strcpy(lockpath,systemdir);	/* if path starts with '/' its absoute */
+    strcat(lockpath,"/acqqueue/acqlock");  /* e.g. /jaws/acqqueue/acqlock */
+    if ( access(lockpath,F_OK) == 0)
+    {
+    	Werrprintf("Interactive Display in use, no 'go' possible");
+    	return(ERROR);
+    }
+    return(OK);	/* not found then its OK */
+}
+/*------------------------------------------------------------------------
+|	test4ACQ(dirname,dirpath)
+|	test for the presence of the acqfile.
+|	'file' = exp then use exp#/acqfile (no test)
+|       dirname;	the acqfile names
+|       dirpath;	the absolute path found for the acqfile
++------------------------------------------------------------------------*/
+static int test4ACQ(char *dirname, char *dirpath, int acqiflag)
+{
+    char acqpath[MAXPATH];
+
+    /* if file = exp then do not create a directory, use exp#/acqfil */
+    if ( strcmp(dirname,"exp") == 0)
+    {
+        strcpy(dirpath,curexpdir);
+	strcat(dirpath,"/acqfil");
+	if ((suflag == EXEC_GO) && (!acqiflag))
+        	/*delete fid and log only if GO,not SU,LOCK,SHIM,ACQI,etc */
+	{
+            strcpy(acqpath,dirpath);
+            strcat(acqpath,"/log");
+	    unlink(acqpath);
+            strcpy(acqpath,dirpath);
+            strcat(acqpath,"/fid");
+	    unlink(acqpath);
+        }
+    }
+    else if (automode || vpmode)	/* check for the named acqfile */
+    {
+        if (dirname[0] == '/')
+           strcpy(dirpath,dirname);
+        else
+           sprintf(dirpath,"%s/%s",autodir,dirname);
+        if (vpmode)
+        {
+	   strcpy(acqpath,dirpath);
+        }
+        else
+        {
+	   strcpy(acqpath,dirpath);
+	   strcat(acqpath, ".fid");
+        }
+	GPRINT1(1,"test4ACQ(): acqpath: '%s'\n",acqpath);
+    	if (access(acqpath,F_OK))	/* is file already there ? */
+    	{					/* yes */
+	   Werrprintf("ERROR: File %s could not be created",acqpath);
+	   ABORT;
+    	}
+    }
+    else
+        ABORT;
+    RETURN;
+}
+/*------------------------------------------------------------------------
+|	test4meth(method,methodpath)
+|	test for the presence of the shimming method file.
++------------------------------------------------------------------------*/
+static int test4meth(char *method, char *methodpath)
+{
+    char   buffer[BUFSIZE];
+    char   buffer2[BUFSIZE];
+
+    FILE  *shimstream;
+    int bytes;			/* number of bytes read */
+    int i,j;
+
+    if (method[0] == '/')
+    {  
+    	if ( access(method,F_OK|R_OK) != 0)
+        {
+           Werrprintf("shim method: '%s' cannot be found",method);
+	   return(ERROR);
+        }
+        strcpy(methodpath,method);	/* absolute path to method */
+    }
+    else				/* search for method */
+    {
+        if (appdirFind(method,"shimmethods",methodpath,"",R_OK|F_OK) == 0)
+        {
+           if (appdirFind(method,"proshimmethods",methodpath,"",R_OK|F_OK))
+           {
+              strcpy(methodpath,"");	/* null path to method */
+              return(OK);
+           }
+           Werrprintf("shim method: '%s' cannot be found",method);
+	   return(ERROR);
+        }
+    }
+
+    /* found it so go head and read in method command string (128 MAX) */
+
+    shimstream = fopen(methodpath,"r");
+    bytes = fread(buffer,sizeof(*buffer),BUFSIZE,shimstream);
+    fclose(shimstream);
+    GPRINT1(1,"test4meth(): Read %d characters \n",bytes);
+    for (j=i=0; i < bytes;i++) /* remove any CR or LF from string */
+    {
+	if ((buffer[i] != 0xa) && (buffer[i] != 0xd)) 
+	    buffer2[j++] = buffer[i];
+    }
+    buffer2[j] = 0;
+    if (j >= MAXSTR)
+    {
+	Werrprintf("Method '%s' greater than maximum of %d characters",methodpath,MAXSTR);
+	return(ERROR);
+    }
+    GPRINT1(1,"method string: '%s' \n",buffer2);
+    if (setparm("com$string","string",CURRENT,buffer2,1))
+	return(ERROR);
+    return(OK);
+}
+
+/*  This program uses the status from acqproc method to get the current
+    console status block.  We check if the console is in tune mode and if
+    an acquisition is running in the current experiment.
+
+    Note that the console should not be in interactive mode; the go
+    program signals ACQI to disconnect from its interactive display.  */
+
+static int check_status_console(char *cmdname, char *hostname )
+{
+	int		 curexpnum;
+        int              acqstate;
+        int              acqsuflag;
+	char		 expid[ MAXSTR ];
+	char		 userid[ MAXSTR ];
+	char		 expuser[ MAXSTR ];
+
+        GET_ACQ_ADDR(userid);
+        P_setstring(GLOBAL,"acqaddr",userid,0);
+
+        if (GETACQSTATUS(hostname,UserName) < 0)
+        {
+            Werrprintf( "%s:  failed to obtain acquisition status", cmdname);
+            return(-1);
+        }
+        getAcqStatusInt(STATE, &acqstate);
+	if (acqstate == ACQ_TUNING ) {
+		Werrprintf( "%s:  cannot proceed, console in tune mode", cmdname );
+		return( -1 );
+	}
+	if (acqstate == ACQ_INACTIVE ) {
+		Werrprintf( "%s:  cannot proceed, Acquisition system is not active", cmdname );
+		return( -1 );
+	}
+        getAcqStatusInt(SUFLAG, &acqsuflag);
+        getAcqStatusStr(EXPID, expid, MAXSTR-1);
+        getAcqStatusStr(USERID, expuser, MAXSTR-1);
+
+/*  shim shim shim go     <=== OK
+    go go                 <=== Not OK
+
+    Multiple acquisitions (such as shim or lock)
+    that do not collect data may be queued up in
+    one experiment; however, only one go/ga/au,
+    an acquisition that collects data, may be
+    active or queued up in an experiment at a time  */
+
+#if 0
+
+/* This was the old program  */
+
+	if (strlen( &expid[ 0 ] ) > (size_t)0 /* expt in progress */
+	    && mode_of_vnmr != AUTOMATION 	/* no test in automation */
+	    && suflag == EXEC_GO 		/* this command collects data */
+	    && acqsuflag == EXEC_GO)	/* current expt collects data */
+	{
+	   int res;
+
+	   curexpnum = expdir_to_expnum( curexpdir );
+
+  /* see expactive() in acqhwcmd.c */
+
+           res = is_exp_active( curexpnum, NULL );
+	   if (res == 1)
+           {
+	      Werrprintf(
+	   "Experiment in progress, use 'aa' to abort it and then reenter '%s'",
+                   cmdname);
+	      return( -1 );
+	   }
+	   else if (res > 1)
+           {
+	      Werrprintf(
+	   "Experiment queued, use 'sa' to delete it and then reenter '%s'",
+                   cmdname);
+	      return( -1 );
+	   }
+	}
+#endif 
+
+/*  This is the new program  */
+
+	if (strlen( &expid[ 0 ] ) > (size_t)0   /* expt in progress */
+	    && mode_of_vnmr != AUTOMATION 	/* no test in automation */
+	    && suflag == EXEC_GO 		/* this command collects data */
+            && !vpmode)                         /* this command collects data in a different viewport */
+	{
+	   int res;
+
+	   if (acqsuflag == EXEC_GO)	/* current expt collects data */
+	   {
+	      char *this_expname;
+
+	  /* compare this user with expuser
+	     compare this experiment with expid
+	     if both match, experiment in progress  */
+
+	      this_expname = strrchr( curexpdir, '/' );
+              if (this_expname == NULL)
+		this_expname = &curexpdir[ 0 ];
+	      else
+		this_expname++;		/* move past the '/' */
+          
+	      if (strcmp( UserName, expuser ) == 0 &&
+		  strcmp( this_expname, expid ) == 0)
+	      {
+		 Werrprintf(
+	   "Experiment in progress, use 'aa' to abort it and then reenter '%s'",
+		      cmdname);
+		 return( -1 );
+	      }
+	   }
+
+          /*  Regardless of whether the current (active) acquisition
+	      collects data, search the queue for a data-collecting
+	      acquisition in this experiment.  The active acquisition
+	      could be a shim, with a go next in the queue.  If that
+	      go will run in the current experiment and this command
+	      would also collect data, then this command has to abort.  */
+
+	   curexpnum = expdir_to_expnum( curexpdir );
+	   res = is_data_present( curexpnum );
+	   if (res == 1)
+           {
+	      Werrprintf(
+	   "Experiment in progress, use 'aa' to abort it and then reenter '%s'",
+                   cmdname);
+	      return( -1 );
+	   }
+	   else if (res > 1)
+           {
+	      Werrprintf(
+	   "Experiment queued, use 'acqdequeue' to delete it and then reenter '%s'",
+                   cmdname);
+	      return( -1 );
+	   }
+	}
+
+	return( 0 );
+}
+
+static void runPsgPutCmd(int debugPutCmd)
+{
+   char path[MAXPATH];
+   char *name = "psgCmd";
+
+   sprintf(path,"%s/%s",curexpdir,name);
+   if ( ! access(path,R_OK))
+   {
+      if ( ! macroLoad(name,path))
+      {
+         char path2[32];
+
+         strcpy(path2,name);
+         strcat(path2,"\n");
+         execString(path2);
+         purgeOneMacro(name);
+      }
+      if ( ! debugPutCmd )
+         unlink(path);
+   }
+}
+
+/*------------------------------------------------------------------------
+|	saveVpPars(acqfile)/1
+|		copys the experiment TEXT file and parameter file to the
+|               named acqfile.
++------------------------------------------------------------------------*/
+static int saveVpPars(char *acqfile, int debugPutCmd)
+{
+    char    path[MAXPATHL];
+
+    P_setstring(CURRENT,"file","exp",1);
+    p11_saveFDAfiles_raw("go:savepars", "", acqfile);
+    runPsgPutCmd(debugPutCmd);
+    strcpy(path,acqfile);
+    strcat(path,"/procpar");
+    GPRINT1(1,"copying processed parameters to '%s' file.\n",path);
+    if (P_save(CURRENT,path))
+    {   Werrprintf("Problem saving processed parameters in '%s'.",path);
+        ABORT;
+    }
+    if (copytext(acqfile))  /* copy experiment text file to named acqfile */
+	ABORT;
+
+    GPRINT(1,"GO: Write Parameters to disk\n");
+    P_treereset(CURRENT); /* clear tree */
+    sprintf(path,"%s/curparSave",curexpdir);
+    P_read(CURRENT,path); /* reread saved current tree if in vpmode */
+    unlink(path);
+    RETURN;
+}
+/*------------------------------------------------------------------------
+|	savepars(acqfile)/1
+|		copys the experiment TEXT file and parameter file to the
+|               named acqfile.
++------------------------------------------------------------------------*/
+static int savepars(char *acqfile, int debugPutCmd)
+{
+    char    path[MAXPATHL];
+
+    p11_saveFDAfiles_raw("go:savepars", "", acqfile);
+
+    GPRINT(1,"GO: Write Parameters to disk\n");
+    P_treereset(PROCESSED); /* clear tree */
+    P_copy(CURRENT,PROCESSED); /* save current into processed tree if GO */
+    runPsgPutCmd(debugPutCmd);
+
+    if (!automode)
+    {
+       strcpy(path,userdir);
+       strcat(path,"/global");
+       GPRINT1(1,"copying Global parameters to '%s' file.\n",path);
+       if (P_save(GLOBAL,path))
+       {   Werrprintf("Problem saving global parameters in '%s'.",path);
+	   ABORT;
+       }
+    }
+    strcpy(path,acqfile);
+    strcat(path,"/procpar");
+    GPRINT1(1,"copying processed parameters to '%s' file.\n",path);
+    if (P_save(PROCESSED,path))
+    {   Werrprintf("Problem saving processed parameters in '%s'.",path);
+        ABORT;
+    }
+    if (copytext(acqfile))  /* copy experiment text file to named acqfile */
+	ABORT;
+
+    RETURN;
+}
+/*------------------------------------------------------------------------
+|	copytext/1
+|		copys the experiment TEXT file to the named acqfile.
+|		exp#/text --> pwd/dirname/text
++------------------------------------------------------------------------*/
+static int copytext(char *dirname)
+{
+    char   commnd[2 * MAXPATH + 40];
+
+    GPRINT2(1,"copytext from '%s/text' to '%s/text'\n",curexpdir,dirname);
+#ifdef OLD
+    if (automode)
+      sprintf(commnd,"cat %s/text > %s/text",curexpdir,dirname);
+    else
+#endif
+      sprintf(commnd,"cp %s/text %s/text",curexpdir,dirname);
+    system(commnd);
+    RETURN;
+}
+/*----------------------------------------------------------------
+|	test for proper parameter setting for np, rfband, and ct.
++---------------------------------------------------------------*/
+static int check_acqpar()
+{
+    char    il[10];
+    char    rfband[10];
+    char    rftype[10];
+    char    dpstr[10];
+    double  sweepwidth;
+    double  acqtime;
+    double  np_max;
+    double  re_and_im;
+    double  bs;
+    double  nt;
+    double  maxsw;
+    double  maxlbsw;
+    int     i;
+    double  numrfch;
+
+    if (getparm("np","real",CURRENT,&re_and_im,1))
+	ABORT;
+    if (getparm("rftype", "STRING", SYSTEMGLOBAL, &rftype[0], 2))
+	ABORT;
+    rftype[9]='\000';
+    if (getparm("il","string",CURRENT,il,10))
+	ABORT;
+    /*----------------------------------------------------------------
+    |	test for proper parameter setting in the case for Wideline where
+    |	sw > 100KHz or 200KHz.  Then:
+    |         np <= 16K or <= 8192 complex pairs for pre U+
+    |         np <= 256k or < 65536 complex pairs for U+
+    |
+    |         if dp != "y" then make it equal to "y" 
+    +---------------------------------------------------------------*/
+    if (getparm("sw","real",CURRENT,&sweepwidth,1))
+	ABORT;
+    if (getparm("dp", "STRING", CURRENT, &dpstr[0], 2))
+	ABORT;
+    if (P_getreal( SYSTEMGLOBAL, "parmax", &maxsw, 5 ) )
+	ABORT;
+#ifdef VNMRJ
+    if (nvAcquisition())
+       maxlbsw = 2e7;
+    else
+#endif
+    if (P_getreal(SYSTEMGLOBAL, "maxsw_loband", &maxlbsw, 1) < 0){
+	maxlbsw = 100000.1;
+    }else{
+	maxlbsw += 0.1;
+    }
+    if (sweepwidth > maxlbsw)		/* is Wideline acquisition */
+    {
+        if (rftype[0] == 'd')
+	{ if (maxsw >4.9e6) np_max = 262144.0;
+          else              np_max = 131072.0;
+        }
+        else np_max = 16384.0;
+	if ( re_and_im > np_max )
+        {
+	    GPRINT3(1,"sw = %10.2lf, old np = %lf, new np = %lf\n",
+		sweepwidth,re_and_im,np_max);
+	    re_and_im = np_max;
+	}
+    }
+    acqtime = (re_and_im / sweepwidth) / 2.0;
+    GPRINT3(1,"at = %g, np = %g, sw = %g\n",acqtime,re_and_im,sweepwidth);
+    if (setparm("np","real",CURRENT,&re_and_im,1))
+	ABORT;
+    if (setparm("at","real",CURRENT,&acqtime,1))
+	ABORT;
+    /*----------------------------------------------------------------
+    |	test for proper usage of rfband 
+    |   change to new style values if using old style values
+    +---------------------------------------------------------------*/
+    if (getparm("rfband","string",CURRENT,rfband,10))
+	ABORT;
+    GPRINT1(1,"checking rfband %s\n",rfband);
+
+    if (P_getreal(SYSTEMGLOBAL,"numrfch",&numrfch,1) >= 0)
+    {
+      if (numrfch > 1.1)
+      {
+        if (rfband[1] == '\0')
+        {
+          rfband[1] = 'c';
+          rfband[2] = '\0';
+        }
+      }
+      if (numrfch > 2.1)
+      {
+        if (rfband[2] == '\0')
+        {
+          rfband[2] = 'c';
+          rfband[3] = '\0';
+        }
+      }
+    }
+
+    /* translate old style to new style values */
+    for (i=0; i < (int) (numrfch + 0.1); i++)
+    {   switch(rfband[i])
+	{   case 'b': 	rfband[i] = 'h';
+			break;
+	    case 'a': 	rfband[i] = 'l';
+			break;
+	}
+    }
+    if (setparm("rfband","string",CURRENT,rfband,1))
+	ABORT;
+    /*----------------------------------------------------------------
+    |	Warnings if il, and bs,nt not set to rational values
+    +---------------------------------------------------------------*/
+    if ( (il[0] == 'y') || (il[0] == 'Y') )
+    {
+      if (getparm("bs","real",CURRENT,&bs,1))
+	ABORT;
+      if (getparm("nt","real",CURRENT,&nt,1))
+	ABORT;
+      if ( var_active("bs",CURRENT) )
+      {
+        if ( bs >= nt )
+	   Werrprintf("Warning: interleave has no effect, bs >= nt.");
+      }
+    }
+    RETURN;
+
+}
+/*------------------------------------------------------------------------
+|	check_loc(automode)
+|		checks loc parameter to be sure it is less that or 
+|		equal to traymax.
++------------------------------------------------------------------------*/
+static int check_loc()
+{
+    double value;
+    int traymax,loc;
+
+    if (getparm("traymax","real",SYSTEMGLOBAL,&value,1))
+    {
+        traymax = 0;
+    }
+    else
+    {
+       traymax = (int) (value + 0.01);
+       /* For new sample changer with two 48 sample zones */
+       if ( (traymax == 49) || (traymax == 97) )
+          traymax = 96;
+       if (!var_active("traymax",SYSTEMGLOBAL))         /* if traymax = 'n' */
+          traymax = 0;
+    }
+    if (getparm("loc","real",GLOBAL,&value,1))          /* sample loc */
+    {
+        loc = 0;
+    }
+    else
+    {
+       loc = (int) (value + 0.01);
+       if (!var_active("loc",GLOBAL))                   /* if loc = 'n' */
+          loc = 0;
+    }
+
+/*
+    if ( (loc < 0) || ((suflag >= EXEC_CHANGE) && (loc == 0)) ||
+	 (loc > traymax) )
+*/
+    if (loc < 0)
+    {
+        Werrprintf("Sample location of %d is invalid. loc must be >= 0",
+            loc);
+        ABORT;
+    }
+    else if (loc > traymax)
+    {
+        Werrprintf("Sample location (loc=%d) cannot exceed traymax (%d)",
+            loc,traymax);
+        ABORT;
+    }
+    RETURN;
+}
+
+/*----------------------------------------------------------------------
+|
+|	check_ra
+|       When resuming an acquisition, check for
+|		acquisition suspended
+|		acquisition not complete
+|		values of NP, DP have not been changed since SA
+-----------------------------------------------------------------------*/
+static int check_ra()
+{
+	int	ret;
+	double	aval, ceval, ctval, ntval;
+
+/*  NP, DP checks.  Each subroutine displays a message
+    if it returns a non-zero value.			*/
+
+	if (check_np_ra())
+	  return( -1 );
+	if (check_dp_ra())
+	  return( -1 );
+
+	ret = P_getreal( PROCESSED, "ct", &ctval, 1 );
+	if (ret != 0) {
+		Werrprintf( "ra:  `ct' not defined in current parameter set" );
+		return( -1 );
+	}
+	ret = P_getreal( PROCESSED, "nt", &ntval, 1 );
+	if (ret != 0) {
+		Werrprintf( "ra:  `nt' not defined in current parameter set" );
+		return( -1 );
+	}
+
+/*  Obtain value of "arraydim", "celem".  If "arraydim" not defined,
+    use value of 1 for default.  Insist on presence of "celem" in
+    the current parameter tree.						*/
+
+	ret = P_getreal( PROCESSED, "arraydim", &aval, 1 );
+    	if (ret != 0) aval = 1.0;
+
+	ceval = 0.0;
+	ret = P_getreal( PROCESSED, "celem", &ceval, 1 );
+    	if (ret != 0) {
+		Werrprintf(
+    "ra:  acquisition never suspended (current element not defined)"
+		);
+		return( -1 );
+	}
+
+/*  If `celem' < 1 and `ct' < 1, acquisition was never started.  */
+
+	if (ceval < 1.0) {
+		if (ctval < 1.0) {
+			Werrprintf( "ra:  acquisition never suspended" );
+			return( -1 );
+		}
+
+	    /*  If at least one transient present from the first 
+		element, we deduce the acquisition was suspended.
+		Execution falls through to the return( 0 ) statement.	*/
+	}
+	else if (ceval >= aval) {
+		if (ctval >= ntval) {
+			Werrprintf( "ra:  acquisition complete, cannot restart" );
+			return( -1 );
+		}
+
+	    /*  If CT < NT, we deduce the acquisition was suspended,
+		even if on the final element.  Execution falls through
+		to the return( 0 ) statement.	*/
+	}
+
+	return( 0 );
+}
+
+
+/*  Verify that `np' has not been changed between SA and RA
+    by comparing the current value with the processed value.	*/
+
+static int check_np_ra()
+{
+	int	ret;
+	double	cur_np_val, proc_np_val;
+
+	ret = P_getreal( CURRENT, "np", &cur_np_val, 1 );
+	if (ret != 0) {
+		Werrprintf( "ra:  `np' not defined in current parameter set" );
+		return( -1 );
+	}
+
+	ret = P_getreal( PROCESSED, "np", &proc_np_val, 1 );
+	if (ret != 0) {
+		Werrprintf( "ra:  `np' not defined in processed parameter set" );
+		return( -1 );
+	}
+
+	if (cur_np_val != proc_np_val) {
+		Werrprintf(
+	    "ra:  cannot change value of `np' after suspending the acquisition"
+		);
+		return( -1 );
+	}
+
+	return( 0 );
+}
+
+/*  Verify that `dp' has not been changed between SA and RA
+    by comparing the current value with the processed value.	*/
+
+static int check_dp_ra()
+{
+	char	cur_dp_buf[ 6 ], proc_dp_buf[ 6 ];
+	int	ret;
+
+	ret = P_getstring( CURRENT, "dp", &cur_dp_buf[ 0 ], 1, 4 );
+	if (ret != 0) {
+		Werrprintf( "ra:  `dp' not defined in current parameter set" );
+		return( -1 );
+	}
+
+	ret = P_getstring( PROCESSED, "dp", &proc_dp_buf[ 0 ], 1, 4 );
+	if (ret != 0) {
+		Werrprintf( "ra:  `dp' not defined in processed parameter set" );
+		return( -1 );
+	}
+
+	if (strcmp( &cur_dp_buf[ 0 ], &proc_dp_buf[ 0 ] ) != 0) {
+		Werrprintf(
+	    "ra:  cannot change value of `dp' after suspending the acquisition"
+		);
+		return( -1 );
+	}
+
+	return( 0 );
+}
+
+/*  Obtains number of new FID to be created.  It is only interesting if the
+    current command is "ra"; otherwise the value returned is `arraydim'.
+    But if this is "ra", it uses the scheme:
+
+      if (il == 'y') then
+          if (ct > bs) then
+              number of new elements is 0
+          else if (celem == 0 and ct == bs)
+              number of new elements is 0
+          else
+              number of new elements is arraydim - celem
+          endif
+      else
+          number of new elements is arraydim - celem
+      endif
+
+    It uses the processed tree to obtain values for all parameters, including
+    `arraydim', following the example in `check_ra'.
+
+    Some situations result in an internal error.  See `check_ra', it verifies
+    it can obtain values for the parameters in question.			*/
+
+static int get_number_new_fids(int this_is_ra )
+{
+	char	interleav[ 8 ];
+	int	ret;
+	double	aval, bsval, ceval, ctval, ntval;
+
+	if (this_is_ra) {
+		ret = P_getreal( PROCESSED, "arraydim", &aval, 1 );
+		if (ret != 0)
+		  aval = 1.0;
+		ret = P_getreal( PROCESSED, "celem", &ceval, 1 );
+		if (ret != 0) {
+			Werrprintf(
+	    "internal error in ra, cannot obtain value for 'celem'"
+			);
+			return( -1 );
+		}
+		ret = P_getstring( PROCESSED, "il", &interleav[ 0 ],
+				1, sizeof( interleav )
+		);
+		if (ret != 0)
+		  strcpy( &interleav[ 0 ], "n" );
+		if (strcmp( &interleav[ 0 ], "y" ) == 0) {
+
+	   /* Get value for `nt'; abort if error  */
+
+			ret = P_getreal( PROCESSED, "nt", &ntval, 1 );
+			if (ret != 0) {
+				Werrprintf(
+		    "internal error in ra, cannot obtain value for 'nt'"
+				);
+				return( -1 );
+			}
+
+	   /* Get value for `ct'; abort if error  */
+
+			ret = P_getreal( PROCESSED, "ct", &ctval, 1 );
+			if (ret != 0) {
+				Werrprintf(
+		    "internal error in ra, cannot obtain value for 'ct'"
+				);
+				return( -1 );
+			}
+
+	   /* Get value for `bs'; set to `nt' if error  */
+
+			if (var_active( "bs", CURRENT )) {
+				ret = P_getreal( PROCESSED, "bs", &bsval, 1 );
+				if (ret != 0)
+				  bsval = ntval;
+			}
+			else
+			  bsval = ntval;
+
+	   /* First test succeeds if the acquisition is on the second or
+              a later interleave cycle.
+              Second test succeeds if the acvquisition stopped at the end
+              of the 1st interleave cycle; in this case also data exists
+              for each element in the experiment.			*/
+
+			if (ctval > bsval)
+			  return( 0 );
+			else if (ceval == 0 && ctval == bsval)
+			  return( 0 );
+
+	   /* If both tests fail, fall through to the non-interleaved case.  */
+
+		}
+
+		return( (int) (aval - ceval) );
+	}
+
+/*  If command is not `ra', return `arraydim'.  Use the internal number instead
+    of the parameter; if the command is `su' this program returns 1.		*/
+
+	return( (int) arraydim );
+}
+
+/*----------------------------------------------------------------------
+|
+|	initacqqueue()
+|	creates the ACQ. PROCCESS information file in the acqqueue
+|	directory.
+|	This file contains: experiment priority
+|			    unique ID string
+|			    date and time of execution
+|			    interleave information
+|			    condition processing information
+|			    absolute path to the FID data
+|			    absolute path to the Acode file
+|
+| Was static, now global to allow usage by dps(), dps.c
+|				Greg B.  2/20/90
++----------------------------------------------------------------------*/
+int initacqqueue(int argc, char *argv[])
+{
+    char expname[MAXSTR];
+    char date2[MAXSTR];
+    char filepath[MAXSTR];
+    char logxmlfilepath[MAXSTR];
+    FILE *logxmlFD=NULL;
+    char str[MAXSTR];
+    char *chrptr;
+    int i;
+    int len;
+    struct timeval clock;
+    char date[30];
+
+    (void) argc;
+    /* --- get user's name --- */
+    P_setstring(CURRENT,"goid",UserName,1);  /* this will be overwritten */
+    P_setstring(CURRENT,"goid",UserName,2);
+
+    /* --- get experiment number --- */
+    len = expdir_to_expnum(curexpdir);	/* get experiment number	*/
+    sprintf(expname, "%d", len);	/* form file name, e.g., exp1	*/
+    P_setstring(CURRENT,"goid",expname,3);
+    sprintf(expname, "exp%d", len);	/* form file name, e.g., exp1	*/
+    P_setstring(CURRENT,"goid",expname,4);
+
+    if ((strcmp(argv[CALLNAME],"dps") == 0) ||
+        (strcmp(argv[CALLNAME],"pps") == 0))
+    {
+       sprintf(filepath, "%s/acqqueue/dps", systemdir);
+       P_setstring(CURRENT,"goid",filepath,1);
+       return(OK);
+    }
+	
+    /* --- get date and time of day --- */
+    gettimeofday(&clock, NULL);
+    chrptr = ctime(&(clock.tv_sec));	/* translate to ascii string 26char */
+    strcpy(date,chrptr);
+    len = strlen(date);
+    date[len-1] = '\0';		/* remove the embedded CR in string */
+    date[len] = '\0';		/* remove the embedded CR in string */
+    for (i=0; i<7; i++)
+       date2[i] = date[i+4];
+    for (i=7; i < 11; i++)		/* copy all 4 digits of the year */
+       date2[i] = date[13+i];	    /* reassure anyone worried about Y2K */
+    date2[11]='\0';
+
+    /* --- update 'date' in vnmr --- */
+    if (setparm("date","string",CURRENT,date2,1))
+	return(ERROR);
+
+
+    /* --- create a unique file name based on time stamp --- */
+    sprintf(str,"%s.%s.%s_%ld_%06ld", expname, UserName, HostName,
+                 (long) clock.tv_sec, (long) clock.tv_usec);
+    sprintf(filepath,"%s/acqqueue/%s", systemdir, str);
+
+    P_setstring(CURRENT,"goid",filepath,1);
+    GPRINT2(1,"initacqqueue(): ID: '%s', Date: '%s' \n",filepath,date);
+    GPRINT1(1,"initacqqueue(): Date2: '%s' \n",date2);
+    if (suflag == EXEC_GO) 
+    {
+       if (P_setstring(CURRENT,"go_id",str,0))
+       {
+           P_creatvar(CURRENT,"go_id",T_STRING);
+           P_setstring(CURRENT,"go_id",str,0);
+           P_setprot(CURRENT,"go_id",P_ARR | P_ACT | P_VAL);  /* do not allow any user change */
+       }
+       if (P_setstring(PROCESSED,"go_id",str,0))
+       {
+           P_creatvar(PROCESSED,"go_id",T_STRING);
+           P_setstring(PROCESSED,"go_id",str,0);
+           P_setprot(PROCESSED,"go_id",P_ARR | P_ACT | P_VAL);  /* do not allow any user change */
+       }
+    }
+    /* date is globals */
+    if (getparm("priority","real",CURRENT,&priority,1))
+	return(ERROR);
+    GPRINT1(1,"initacqqueue(): priority = %4.1lf \n",priority);
+
+    /* Open /vnmr/adm/accounting/loggingParamList to get the user specified params.
+       It should be a text file with 3 columns.  
+          param  real/string   global/current/etc.
+       such as:
+          tn    string   current
+          sw    real     current
+          owner string   global
+          .....
+       Eliminate params that are written in bill.c by default.  
+       That includes: operator and seqfil.
+    */
+
+    /* if /vnmr/adm/accounting/acctLog.xml does not exist, then "go" accounting
+       is turned off.  Don't do any logging stuff.
+    */
+    sprintf(logxmlfilepath, "%s/adm/accounting/acctLog.xml", systemdir);
+    logxmlFD = fopen(logxmlfilepath, "r");
+    if(logxmlFD == NULL) {
+      return(OK);
+    }
+    fclose(logxmlFD);
+
+    // Only fill optParams once
+    if(!optParamsFilled) {
+        FILE *paramListFD=NULL;
+        size_t  lineSize = 256;
+        char line[256], *word;
+        char paramListPath[MAXSTR];
+
+        sprintf(paramListPath, "%s/adm/accounting/loggingParamList", systemdir);
+
+        // Add owner, systemname and vnmraddr to the param list
+        strcpy(optParams[0].name,"owner");
+        strcpy(optParams[0].tree,"global");
+        strcpy(optParams[1].name,"systemname");
+        strcpy(optParams[1].tree,"global");
+        strcpy(optParams[2].name,"vnmraddr");
+        strcpy(optParams[2].tree,"global");
+        i=3;
+        
+        paramListFD = fopen(paramListPath, "r");
+        if(paramListFD != NULL) {
+            // start at 3 since we already filled owner, systemname and vnmraddr
+
+            while(fgets(line, lineSize-1, paramListFD)) {
+                // Skip empty lines 
+                if(strlen(line) == 0)
+                    continue;
+
+                // Get param name
+                word = strtok(line, " \t\r\n");
+                // If word  null, there was no token returned, must be white space
+                if(word == NULL)
+                    continue;
+
+                // Skip these.  Owner is above and the others are already taken
+                // care of in bill.c .  Also skip comment lines.
+                if((strcmp(word, "operator") == 0) || 
+                   (strcmp(word, "seqfil") == 0) ||
+                   (strcmp(word, "owner") == 0) ||
+                   (strcmp(word, "systemname") == 0) ||
+                   (strcmp(word, "vnmraddr") == 0) ||
+                   (word[0] == '#')) {
+                    continue;
+                }
+                strcpy(optParams[i].name, word);
+               
+                // Param location global, current etc
+                word = strtok(NULL, " \t\r\n");
+                if(word == NULL) {
+                    Werrprintf("Syntax error: %s", word);
+                    continue;
+                }
+                strcpy(optParams[i].tree,word);
+                i++;
+            }
+        }
+        else
+            Werrprintf("Cannot open: %s", paramListPath);
+
+        optParamsFilled = TRUE;
+    }
+
+    // Flag to know the last row of optParams
+    optParams[i].name[0] = 0;
+
+    /* Write params and values to logfilepath.  This info is to be included
+       in the /vnmr/adm/accounting/acctLog.xml in bill.c which will take
+       care of the actual xml file.  This is just the params and values with
+       no xml tags, in the form:
+           param1="value1"
+           param2="value2"
+           ....
+    */
+    FILE *logFileFD=NULL;
+    char logfilepath[MAXSTR];
+
+    /* Create the log file name with user specified parameter values*/
+    sprintf(logfilepath,"%s.loginfo", filepath);
+    logFileFD = fopen(logfilepath, "w");
+    //Werrprintf("log file: %s fd:%d", logfilepath,logFileFD);
+    if(logFileFD != NULL) {
+        char svalue[128];
+        double fvalue;
+        int status;
+        int tree;
+        vInfo varinfo;     /* variable information structure */
+ 
+        for(i=0; strlen(optParams[i].name)>0; i++) {
+            tree = getTreeIndex(optParams[i].tree);
+            status=P_getVarInfo(tree, optParams[i].name, &varinfo);
+            if (status <0) {
+                Werrprintf("Cannot find the variable: %s tree:%d", optParams[i].name,tree);
+                // Just skip this param and continue
+            }
+            else {
+               // Werrprintf("Found variable: %s type:%d", optParams[i].name,varinfo.basicType);
+                // Get the value for this param
+                if(varinfo.basicType == ST_REAL) {
+                  // Convert tree string to int
+                    //tree = getTreeIndex(optParams[i].tree);
+                    status = P_getreal(tree, optParams[i].name, &fvalue, 1);
+                    if(status==0) {
+                        fprintf(logFileFD, "       %s=\"%f\"\n", optParams[i].name, fvalue);
+                    }
+                }
+                else  {
+                    // Convert tree string to int
+                    //tree = getTreeIndex(optParams[i].tree);
+                    status = P_getstring(tree, optParams[i].name, svalue, 1, 63);
+                    if(status==0) {
+                        fprintf(logFileFD, "       %s=\"%s\"\n", optParams[i].name, svalue);
+                        //Werrprintf("String found: %s value:%s", optParams[i].name,svalue);
+                    }
+                    //else
+                    //    Werrprintf("String not found: %s error:%d", optParams[i].name,status);
+                }
+            }
+        }
+        fclose(logFileFD);
+    }
+
+    return(OK);
+}
+#endif 
 /*------------------------------------------------------------------
 |
 |	validcall()
@@ -2829,8 +5543,4 @@ Socket* connect2Jpsg(int port, char *host)
        return(NULL);
    }
    return(tSocket);
-}
-int initacqqueue(int argc, char *argv[])
-{
-   return(-1);
 }

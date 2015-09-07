@@ -1,11 +1,5 @@
 #! /vnmr/tcl/bin/vnmrWish -f
 # 
-# Copyright (c) 1991-2007 Agilent Technologies All Rights Reserved. 
-# This software contains proprietary and confidential
-# information of Agilent Technologies and its contributors.
-# Use, disclosure and reproduction is prohibited without
-# prior consent.
-#
 
 proc butdown {x y} {
  .plate addtag StWell closest $x $y

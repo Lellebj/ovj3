@@ -1,4 +1,3 @@
-"macro sconsPostAction"
 ln -s autocalibration AutoTest_calibration
 ln -s autocalibration AutoTestN15_calibration
 ln -s autocalibration Benzamide_calibration

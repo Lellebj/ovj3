@@ -8,7 +8,6 @@
 __author__ = "Greg Brissey"
 __version__ = "$Revision: 1.0 $"
 __date__ = "$Date: 2009/04/08 21:57:19 $"
-__copyright__ = "Copyright (c) 2009 Agilent Technologies"
 __license__ = "Python"
 
 import sys 

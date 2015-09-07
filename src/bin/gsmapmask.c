@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Stanford University
+ * Copyright (C) 2015  University of Oregon
  *
  * You may distribute under the terms of either the GNU General Public
  * License or the Apache License, as specified in the README file.
@@ -34,10 +34,9 @@ AUTHOR: S. Sukumar
 
 **********************************************************************/
 #include	<stdio.h>
-#include	<math.h>
-#include	<malloc.h>
-#include	<string.h>
 #include	<stdlib.h>
+#include	<string.h>
+#include	<math.h>
 #include	"util.h"
 
 /*
@@ -122,9 +121,9 @@ char	*argv[];
 
     /* read shim roi info */
     efgets(str,80,roiparamsfile);
-    sscanf(str,"%s",&shimregion);   /* voxel or slab shim ROI */
+    sscanf(str,"%s",shimregion);   /* voxel or slab shim ROI */
     efgets(str,80,roiparamsfile);
-    sscanf(str,"%s %f %f %f",&vorient,&vpsi,&vphi,&vtheta);  
+    sscanf(str,"%s %f %f %f",vorient,&vpsi,&vphi,&vtheta);  
     efgets(str,80,roiparamsfile);
     sscanf(str,"%f %f %f",&pos1,&pos2,&pos3);
     efgets(str,80,roiparamsfile);

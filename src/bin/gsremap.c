@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Stanford University
+ * Copyright (C) 2015  University of Oregon
  *
  * You may distribute under the terms of either the GNU General Public
  * License or the Apache License, as specified in the README file.
@@ -7,11 +7,6 @@
  * For more information, see the README file.
  */
 /* 
- * Varian,Inc. All Rights Reserved.
- * This software contains proprietary and confidential
- * information of Varian, Inc. and its contributors.
- * Use, disclosure and reproduction is prohibited without
- * prior consent.
  */
 /*******************************************************************
 
@@ -132,7 +127,7 @@ char	*argv[];
     sscanf(str,"%f",&minmapdelay);  
     /* orientation info */
     efgets(str,80,map_paramsfile);
-    sscanf(str,"%s %f %f %f",&orient,&psi,&phi,&theta);
+    sscanf(str,"%s %f %f %f",orient,&psi,&phi,&theta);
     /* pro,ppe,ppe2 */
     efgets(str,80,map_paramsfile);
     sscanf(str,"%f %f %f",&rmapoff,&pmapoff,&smapoff); 
@@ -176,15 +171,15 @@ char	*argv[];
     out = (float *) calloc((unsigned)totalmapsize,sizeof(float)); /* zero buffer */
     /* check size limits */
     if(rlim > rmapres/4) {
-      fprintf(stderr,"gslimit: Illegal RO size limit: %d\n",rlim);
+      fprintf(stderr,"gslimit: Illegal RO size limit: %f\n",rlim);
       exit(1);
     }
     if(plim > pmapres/4) {
-      fprintf(stderr,"gslimit: Illegal PE size limit: %d\n",plim);
+      fprintf(stderr,"gslimit: Illegal PE size limit: %f\n",plim);
       exit(1);
     }
     if(slim > smapres/4) {
-      fprintf(stderr,"gslimit: Illegal PE#2 size limit: %d\n",slim);
+      fprintf(stderr,"gslimit: Illegal PE#2 size limit: %f\n",slim);
       exit(1);
     }
     for ( s=slim ; s<smapres-slim ; s++ )

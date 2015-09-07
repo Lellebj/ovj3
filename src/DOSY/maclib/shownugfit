@@ -1,3 +1,4 @@
+"macro shownugfit"
 "shownugfit: show fit of gradient squared in NUG calibration "
 
 shell('touch '+curexp+'/expl.out')

@@ -1,8 +1,7 @@
 #!/bin/sh
-# '@(#)create_pgsql_user.sh 22.1 03/24/08 Copyright (c) 2000-2003 Agilent Technologies'
 # 
 #
-# Copyright (C) 2015  Stanford University
+# Copyright (C) 2015  University of Oregon
 # 
 # You may distribute under the terms of either the GNU General Public
 # License or the Apache License, as specified in the README file.

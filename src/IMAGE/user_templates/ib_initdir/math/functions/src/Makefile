@@ -1,9 +1,4 @@
 # 
-# Copyright (c) 1999-2000 Agilent Technologies All Rights Reserved. 
-# This software contains proprietary and confidential
-# information of Agilent Technologies and its contributors.
-# Use, disclosure and reproduction is prohibited without
-# prior consent.
 #
 
 BINDIR = ../bin

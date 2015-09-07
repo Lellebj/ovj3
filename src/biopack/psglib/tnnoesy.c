@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* tnnoesy  - 2D cross relaxation experiment with solvent suppression 
                by transmitter presaturation. F1 quadrature by States-TPPI.
                Gradient homospoil pulse (gt1,gzlvl1) can be used in mixing 

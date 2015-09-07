@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2015  University of Oregon
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Apache License, as specified in the README file.
+ *
+ * For more information, see the README file.
+ */
 /* gNT1T2.c     Heteronuclear T1/T2 with TROSY option
 
 	The pulse sequence is used to measure T1 or T2 of 15N with 
